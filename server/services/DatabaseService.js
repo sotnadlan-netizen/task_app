@@ -1,23 +1,41 @@
 import { createClient } from "@supabase/supabase-js";
 
-// ── Supabase client ───────────────────────────────────────────────────────────
-// Server-side: always use service_role key (bypasses RLS).
-// Falls back to anon key so the app still works while you add the service key.
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+// ── Supabase client (lazy) ────────────────────────────────────────────────────
+// Deferred so that process.env is fully populated before createClient runs.
+// Crashes at first DB call with a clear message instead of at module load time.
+let _supabase = null;
 
-if (!SUPABASE_URL) {
-  console.error("[db] ✖ SUPABASE_URL is not set in .env!");
-}
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn("[db] ⚠ SUPABASE_SERVICE_ROLE_KEY not set — using anon key.");
-  console.warn("    Get it: Supabase → Settings → API → service_role (secret)");
-} else {
-  console.log("[db] ✔ Using service_role key");
-}
+function getClient() {
+  if (_supabase) return _supabase;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const url = process.env.SUPABASE_URL;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  // ── Debug: confirm env visibility without leaking values ──────────────────
+  console.log(`[db] SUPABASE_URL present:              ${!!url}`);
+  console.log(`[db] SUPABASE_SERVICE_ROLE_KEY present: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
+  console.log(`[db] SUPABASE_ANON_KEY present:         ${!!process.env.SUPABASE_ANON_KEY}`);
+
+  if (!url) {
+    throw new Error("[db] Missing SUPABASE_URL in Environment Variables");
+  }
+  if (!key) {
+    throw new Error(
+      "[db] Missing SUPABASE_SERVICE_ROLE_KEY (and SUPABASE_ANON_KEY) in Environment Variables"
+    );
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn("[db] ⚠ SUPABASE_SERVICE_ROLE_KEY not set — using anon key.");
+    console.warn("    Get it: Supabase → Settings → API → service_role (secret)");
+  } else {
+    console.log("[db] ✔ Using service_role key");
+  }
+
+  _supabase = createClient(url, key);
+  return _supabase;
+}
 
 // ── Default system prompt ────────────────────────────────────────────────────
 const DEFAULT_PROMPT =
@@ -64,7 +82,7 @@ class DatabaseService {
   // ── Sessions ───────────────────────────────────────────────────────────────
 
   async getAllSessions() {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("sessions")
       .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
       .order("created_at", { ascending: false });
@@ -79,7 +97,7 @@ class DatabaseService {
   }
 
   async getSessionsByProvider(providerId) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("sessions")
       .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
       .eq("provider_id", providerId)
@@ -95,7 +113,7 @@ class DatabaseService {
   }
 
   async getSessionsByClientEmail(email) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("sessions")
       .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
       .eq("client_email", email)
@@ -111,7 +129,7 @@ class DatabaseService {
   }
 
   async getSessionById(id) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("sessions")
       .select("*")
       .eq("id", id)
@@ -133,7 +151,7 @@ class DatabaseService {
 
     console.log("[db] Attempting to save session with data:", JSON.stringify(payload, null, 2));
 
-    const { error } = await supabase.from("sessions").insert(payload);
+    const { error } = await getClient().from("sessions").insert(payload);
 
     if (error) {
       console.error("[db] saveSession FAILED — full error:", JSON.stringify(error, null, 2));
@@ -146,7 +164,7 @@ class DatabaseService {
 
   async replaceSessions(sessions) {
     // CASCADE on tasks FK means deleting sessions also deletes their tasks.
-    const { error: delErr } = await supabase
+    const { error: delErr } = await getClient()
       .from("sessions")
       .delete()
       .not("id", "is", null);
@@ -154,7 +172,7 @@ class DatabaseService {
     if (delErr) throw new Error(`[db] replaceSessions (delete): ${delErr.message}`);
     if (!sessions.length) return;
 
-    const { error: insErr } = await supabase.from("sessions").insert(
+    const { error: insErr } = await getClient().from("sessions").insert(
       sessions.map((s) => ({
         id:           s.id,
         created_at:   s.createdAt,
@@ -171,7 +189,7 @@ class DatabaseService {
   // ── Tasks ──────────────────────────────────────────────────────────────────
 
   async getAllTasks() {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("tasks")
       .select("*")
       .order("created_at", { ascending: false });
@@ -181,7 +199,7 @@ class DatabaseService {
   }
 
   async getTaskById(id) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("tasks")
       .select("*")
       .eq("id", id)
@@ -192,7 +210,7 @@ class DatabaseService {
   }
 
   async getTasksBySessionId(sessionId) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("tasks")
       .select("*")
       .eq("session_id", sessionId)
@@ -205,7 +223,7 @@ class DatabaseService {
   async saveTasks(tasks) {
     if (!tasks.length) return tasks;
 
-    const { error } = await supabase.from("tasks").insert(
+    const { error } = await getClient().from("tasks").insert(
       tasks.map((t) => ({
         id:          t.id,
         session_id:  t.sessionId,
@@ -226,7 +244,7 @@ class DatabaseService {
   }
 
   async replaceTasks(tasks) {
-    const { error: delErr } = await supabase
+    const { error: delErr } = await getClient()
       .from("tasks")
       .delete()
       .not("id", "is", null);
@@ -237,7 +255,7 @@ class DatabaseService {
   }
 
   async updateTaskStatus(id, completed) {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("tasks")
       .update({ completed })
       .eq("id", id)
@@ -249,7 +267,7 @@ class DatabaseService {
   }
 
   async deleteTask(id) {
-    const { error } = await supabase.from("tasks").delete().eq("id", id);
+    const { error } = await getClient().from("tasks").delete().eq("id", id);
     if (error) throw new Error(`[db] deleteTask: ${error.message}`);
     return { ok: true };
   }
@@ -257,7 +275,7 @@ class DatabaseService {
   // ── Profiles ───────────────────────────────────────────────────────────────
 
   async createProfile({ id, email, role }) {
-    const { error } = await supabase
+    const { error } = await getClient()
       .from("profiles")
       .upsert({ id, email, role });
 
@@ -268,14 +286,14 @@ class DatabaseService {
   // ── Prompt Config ──────────────────────────────────────────────────────────
 
   async getPromptConfig() {
-    const { data, error } = await supabase
+    const { data, error } = await getClient()
       .from("prompt_config")
       .select("system_prompt")
       .eq("id", 1)
       .single();
 
     if (error || !data) {
-      await supabase
+      await getClient()
         .from("prompt_config")
         .upsert({ id: 1, system_prompt: DEFAULT_PROMPT });
       return { systemPrompt: DEFAULT_PROMPT };
@@ -285,7 +303,7 @@ class DatabaseService {
   }
 
   async savePromptConfig({ systemPrompt }) {
-    const { error } = await supabase
+    const { error } = await getClient()
       .from("prompt_config")
       .upsert({ id: 1, system_prompt: systemPrompt });
 
@@ -296,7 +314,7 @@ class DatabaseService {
   // ── Health check ───────────────────────────────────────────────────────────
 
   async ping() {
-    const { error } = await supabase.from("sessions").select("id").limit(1);
+    const { error } = await getClient().from("sessions").select("id").limit(1);
     if (error) throw new Error(`Supabase ping failed: ${error.message}`);
     return true;
   }
