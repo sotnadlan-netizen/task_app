@@ -27,10 +27,19 @@ const PORT = process.env.PORT || 3001;
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 
-// Strict CORS: only allow the Vite frontend (or production domain via FRONTEND_URL)
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL || "http://localhost:8080";
+// CORS: allow the production Vercel frontend + localhost for dev
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL,        // e.g. https://your-app.vercel.app
+  "http://localhost:5173",
+  "http://localhost:8080",
+].filter(Boolean);
+
 app.use(cors({
-  origin: ALLOWED_ORIGIN,
+  origin: (origin, callback) => {
+    // allow non-browser requests (curl, Render health checks) and listed origins
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
@@ -51,6 +60,7 @@ app.use("/api/config",        configRouter);
 app.use("/api/mock-data",     mockRouter);
 app.use("/api/profiles",     profilesRouter);
 
+app.get("/",          (_req, res) => res.json({ status: "API is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
