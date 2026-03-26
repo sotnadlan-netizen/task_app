@@ -14,6 +14,7 @@ import mockRouter     from "./routes/mock.js";
 import profilesRouter from "./routes/profiles.js";
 import { db }         from "./services/DatabaseService.js";
 import { errorHandler } from "./middleware/errorHandler.js";
+import { apiLimiter, audioLimiter } from "./middleware/rateLimitMiddleware.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,12 +50,12 @@ app.use((req, _res, next) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-app.use("/api/process-audio", processRouter);
-app.use("/api/tasks",         tasksRouter);
-app.use("/api/sessions",      sessionsRouter);
-app.use("/api/config",        configRouter);
-app.use("/api/mock-data",     mockRouter);
-app.use("/api/profiles",     profilesRouter);
+app.use("/api/process-audio", audioLimiter, processRouter);
+app.use("/api/tasks",         apiLimiter,   tasksRouter);
+app.use("/api/sessions",      apiLimiter,   sessionsRouter);
+app.use("/api/config",        apiLimiter,   configRouter);
+app.use("/api/mock-data",     apiLimiter,   mockRouter);
+app.use("/api/profiles",      apiLimiter,   profilesRouter);
 
 app.get("/",          (_req, res) => res.json({ status: "API is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
