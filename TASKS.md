@@ -53,7 +53,7 @@
 |----|-------------|--------|
 | BE-020 | Implement Multer middleware for audio upload (100 MB limit, MIME validation) | `Done` |
 | BE-021 | Integrate Supabase Storage to persist uploaded audio files and save `audio_url` in DB | `Done` |
-| BE-022 | Create `GET /api/sessions/:id/audio` signed-URL endpoint for secure playback | `Todo` |
+| BE-022 | Create `GET /api/sessions/:id/audio` signed-URL endpoint for secure playback | `Done` |
 | BE-023 | Add audio file expiry policy (auto-delete from storage after N days) | `Todo` |
 
 ### Configuration & Prompt Management

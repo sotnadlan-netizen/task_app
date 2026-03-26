@@ -488,6 +488,22 @@ class DatabaseService {
     return data?.publicUrl ?? null;
   }
 
+  // Returns a signed URL for secure audio playback (expires in expiresIn seconds).
+  // Returns null if the bucket/file doesn't exist or is not configured.
+  async getAudioSignedUrl(storagePath, expiresIn = 3600) {
+    const bucket = process.env.SUPABASE_AUDIO_BUCKET || "audio-recordings";
+    const { data, error } = await getClient()
+      .storage
+      .from(bucket)
+      .createSignedUrl(storagePath, expiresIn);
+
+    if (error) {
+      console.warn("[db] getAudioSignedUrl failed:", error.message);
+      return null;
+    }
+    return data?.signedUrl ?? null;
+  }
+
   // ── Health check ───────────────────────────────────────────────────────────
 
   async ping() {

@@ -86,6 +86,48 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/sessions/:id/audio — returns a short-lived signed URL for audio playback
+router.get("/:id/audio", requireAuth, async (req, res) => {
+  try {
+    const session = await db.getSessionById(req.params.id);
+    if (!session) return res.status(404).json({ error: "Session not found" });
+
+    if (req.user.role === "client") {
+      if (session.clientEmail !== req.user.email) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    } else {
+      if (session.providerId !== req.user.id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
+    }
+
+    if (!session.audioUrl) {
+      return res.status(404).json({ error: "No audio available for this session" });
+    }
+
+    // Derive the storage path from the public URL
+    // Public URL format: .../storage/v1/object/public/<bucket>/<path>
+    const bucket = process.env.SUPABASE_AUDIO_BUCKET || "audio-recordings";
+    const marker = `/object/public/${bucket}/`;
+    const idx = session.audioUrl.indexOf(marker);
+    if (idx === -1) {
+      return res.status(500).json({ error: "Cannot derive storage path from audio URL" });
+    }
+    const storagePath = session.audioUrl.slice(idx + marker.length);
+    const signedUrl = await db.getAudioSignedUrl(storagePath);
+
+    if (!signedUrl) {
+      return res.status(500).json({ error: "Failed to generate signed URL" });
+    }
+
+    res.json({ signedUrl, expiresIn: 3600 });
+  } catch (err) {
+    console.error(`[sessions] ✖ GET /${req.params.id}/audio:`, err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // DELETE /api/sessions/:id — provider-only, cascade deletes tasks via FK
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
