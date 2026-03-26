@@ -35,7 +35,7 @@
 | BE-009 | Implement audio file cleanup after successful AI processing | `Done` |
 | BE-010 | Add `DELETE /api/sessions/:id` endpoint (provider-only, cascade deletes tasks) | `Done` |
 | BE-011 | Add `GET /api/sessions/:id` endpoint for single session detail | `Done` |
-| BE-012 | Implement pagination for `GET /api/sessions` (cursor-based) | `Todo` |
+| BE-012 | Implement pagination for `GET /api/sessions` (cursor-based) | `Done` |
 | BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `Todo` |
 
 ### Task Management
@@ -46,7 +46,7 @@
 | BE-016 | Create `DELETE /api/tasks/:id` endpoint (provider-only) | `Done` |
 | BE-017 | Create `POST /api/tasks` endpoint for manually adding tasks to a session | `Done` |
 | BE-018 | Create `PATCH /api/tasks/:id/details` endpoint to edit task title, description, priority | `Done` |
-| BE-019 | Add bulk `PATCH /api/tasks/bulk-complete` endpoint for batch completion | `Todo` |
+| BE-019 | Add bulk `PATCH /api/tasks/bulk-complete` endpoint for batch completion | `Done` |
 
 ### File & Audio Storage
 | ID | Description | Status |
@@ -83,8 +83,8 @@
 |----|-------------|--------|
 | BE-034 | Create `GET /health` health check endpoint | `Done` |
 | BE-035 | Create `POST /api/mock-data` endpoint to seed realistic Hebrew mock sessions | `Done` |
-| BE-036 | Add structured request logging (request ID, duration, status code) | `Todo` |
-| BE-037 | Add global error handler middleware with sanitized error responses | `Todo` |
+| BE-036 | Add structured request logging (request ID, duration, status code) | `Done` |
+| BE-037 | Add global error handler middleware with sanitized error responses | `Done` |
 | BE-038 | Write OpenAPI/Swagger spec for all API endpoints | `Todo` |
 
 ---
@@ -184,18 +184,18 @@
 |----|-------------|--------|
 | AI-007 | Write default Hebrew system prompt optimized for mortgage advisory context | `Done` |
 | AI-008 | Enforce strict JSON schema in prompt to minimize parsing failures | `Done` |
-| AI-009 | Add few-shot examples to default prompt for priority classification accuracy | `Todo` |
+| AI-009 | Add few-shot examples to default prompt for priority classification accuracy | `Done` |
 | AI-010 | Experiment with Gemini function-calling / tool-use for guaranteed schema output | `Todo` |
 | AI-011 | Evaluate Gemini 2.5 Pro vs Flash on transcription accuracy for Hebrew audio | `Todo` |
 
 ### Reliability & Quality
 | ID | Description | Status |
 |----|-------------|--------|
-| AI-012 | Add retry logic with exponential backoff for transient Gemini API errors | `Todo` |
-| AI-013 | Implement request timeout and graceful degradation if AI pipeline fails | `Todo` |
-| AI-014 | Add input validation: reject audio files shorter than 3 seconds | `Todo` |
-| AI-015 | Log AI token usage and cost per request to a `usage_logs` table | `Todo` |
-| AI-016 | Add post-processing step to deduplicate extracted tasks with same title | `Todo` |
+| AI-012 | Add retry logic with exponential backoff for transient Gemini API errors | `Done` |
+| AI-013 | Implement request timeout and graceful degradation if AI pipeline fails | `Done` |
+| AI-014 | Add input validation: reject audio files shorter than 3 seconds | `Done` |
+| AI-015 | Log AI token usage and cost per request to a `usage_logs` table | `Done` |
+| AI-016 | Add post-processing step to deduplicate extracted tasks with same title | `Done` |
 
 ### Future AI Capabilities
 | ID | Description | Status |

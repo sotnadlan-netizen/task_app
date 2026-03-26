@@ -44,8 +44,19 @@ const DEFAULT_PROMPT =
   '1. **סיכום עומק (Summary)**: אל תסתפק בשורה אחת. תעד את כל המספרים, הריביות, שמות הבנקים ותאריכי היעד שהוזכרו בשיחה.\n\n' +
   '2. **זיהוי משימות (Action Items)**: חלץ כל התחייבות שנאמרה. חלק אותן ל"לקוח" ו"יועץ".\n\n' +
   '3. **דיוק פיננסי**: ודא שכל מונח (כמו "ריבית פריים", "תמהיל", "גרייס") נכתב בהקשר הנכון.\n\n' +
-  'פורמט JSON בלבד:\n' +
-  '{\n  "summary": "סיכום מפורט הכולל נתונים מספריים והחלטות שהתקבלו",\n  "tasks": [{ "title": "...", "description": "...", "assignee": "Advisor", "priority": "High" }]\n}\n\n' +
+  '4. **סיווג עדיפות**: High = דחוף/בלוקר לסגירה, Medium = נדרש לפני חתימה, Low = לעקוב בשלב מאוחר.\n\n' +
+  '---\n' +
+  'דוגמה לפלט נכון (few-shot example):\n' +
+  '{\n' +
+  '  "summary": "לקוח מעוניין ברכישת דירה ב-2,400,000 ש״ח. הון עצמי: 600,000 ש״ח (25%). הוחלט על תמהיל: 50% פריים (4.6%), 30% קבועה צמודה (3.2%), 20% קבועה לא צמודה (4.1%). יעד לחתימה: תוך 45 יום. בנקים שנבדקו: לאומי, הפועלים. לאומי הציע מסלול עדיף.",\n' +
+  '  "tasks": [\n' +
+  '    { "title": "להעביר אישור עיקרון מבנק לאומי", "description": "לאסוף מסמכי הכנסה ולהגיש בקשה לאישור עיקרון תוך 7 ימים", "assignee": "Client", "priority": "High" },\n' +
+  '    { "title": "לבדוק זכאות מחיר למשתכן", "description": "לוודא שהלקוח עומד בקריטריונים לפני סגירת המשכנתה", "assignee": "Advisor", "priority": "High" },\n' +
+  '    { "title": "להכין סימולציית החזר חודשי", "description": "לחשב החזרים חודשיים לשלושת המסלולים ולשלוח ללקוח להשוואה", "assignee": "Advisor", "priority": "Medium" },\n' +
+  '    { "title": "לעדכן פוליסת ביטוח חיים", "description": "לברר האם הכיסוי הנוכחי מתאים לסכום המשכנתה החדש", "assignee": "Client", "priority": "Low" }\n' +
+  '  ]\n' +
+  '}\n\n' +
+  'פורמט JSON בלבד — אין להוסיף טקסט לפני או אחרי.\n' +
   'ערכים חוקיים: assignee → "Advisor"|"Client", priority → "High"|"Medium"|"Low"\n' +
   'שפת הפלט: עברית מקצועית, עניינית ומדויקת.';
 
@@ -112,6 +123,33 @@ class DatabaseService {
     }));
   }
 
+  // Cursor-based pagination — cursor is the `created_at` value of the last fetched item
+  async getSessionsByProviderPaginated(providerId, { limit, cursor } = {}) {
+    let query = getClient()
+      .from("sessions")
+      .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
+      .eq("provider_id", providerId)
+      .order("created_at", { ascending: false })
+      .limit(limit + 1);
+
+    if (cursor) query = query.lt("created_at", cursor);
+
+    const { data, error } = await query;
+    if (error) throw new Error(`[db] getSessionsByProviderPaginated: ${error.message}`);
+
+    const rows = data || [];
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      sessions: page.map((s) => ({
+        ...rowToSession(s),
+        taskCount:      (s.tasks || []).length,
+        completedCount: (s.tasks || []).filter((t) => t.completed).length,
+      })),
+      nextCursor: hasMore ? page[page.length - 1].created_at : null,
+    };
+  }
+
   async getSessionsByClientEmail(email) {
     const { data, error } = await getClient()
       .from("sessions")
@@ -126,6 +164,32 @@ class DatabaseService {
       taskCount:      (s.tasks || []).length,
       completedCount: (s.tasks || []).filter((t) => t.completed).length,
     }));
+  }
+
+  async getSessionsByClientEmailPaginated(email, { limit, cursor } = {}) {
+    let query = getClient()
+      .from("sessions")
+      .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
+      .eq("client_email", email)
+      .order("created_at", { ascending: false })
+      .limit(limit + 1);
+
+    if (cursor) query = query.lt("created_at", cursor);
+
+    const { data, error } = await query;
+    if (error) throw new Error(`[db] getSessionsByClientEmailPaginated: ${error.message}`);
+
+    const rows = data || [];
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      sessions: page.map((s) => ({
+        ...rowToSession(s),
+        taskCount:      (s.tasks || []).length,
+        completedCount: (s.tasks || []).filter((t) => t.completed).length,
+      })),
+      nextCursor: hasMore ? page[page.length - 1].created_at : null,
+    };
   }
 
   async getSessionById(id) {
@@ -272,6 +336,64 @@ class DatabaseService {
     return { ok: true };
   }
 
+  async updateTaskDetails(id, { title, description, priority }) {
+    const patch = {};
+    if (title !== undefined)       patch.title       = title;
+    if (description !== undefined) patch.description = description;
+    if (priority !== undefined)    patch.priority    = priority;
+
+    const { data, error } = await getClient()
+      .from("tasks")
+      .update(patch)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw new Error(`[db] updateTaskDetails: ${error.message}`);
+    return data ? rowToTask(data) : null;
+  }
+
+  async bulkUpdateTaskStatus(taskIds, completed, providerId) {
+    // Verify all tasks belong to sessions owned by this provider
+    const { data: tasks, error: fetchErr } = await getClient()
+      .from("tasks")
+      .select("id, session_id")
+      .in("id", taskIds);
+
+    if (fetchErr) throw new Error(`[db] bulkUpdateTaskStatus (fetch): ${fetchErr.message}`);
+
+    const sessionIds = [...new Set((tasks || []).map((t) => t.session_id))];
+    if (sessionIds.length > 0) {
+      const { data: sessions, error: sessErr } = await getClient()
+        .from("sessions")
+        .select("id, provider_id")
+        .in("id", sessionIds);
+
+      if (sessErr) throw new Error(`[db] bulkUpdateTaskStatus (sessions): ${sessErr.message}`);
+
+      const unauthorized = (sessions || []).some((s) => s.provider_id !== providerId);
+      if (unauthorized) throw Object.assign(new Error("Forbidden"), { status: 403 });
+    }
+
+    const { data, error } = await getClient()
+      .from("tasks")
+      .update({ completed })
+      .in("id", taskIds)
+      .select();
+
+    if (error) throw new Error(`[db] bulkUpdateTaskStatus: ${error.message}`);
+    return (data || []).map(rowToTask);
+  }
+
+  // ── Sessions ───────────────────────────────────────────────────────────────
+
+  async deleteSession(id) {
+    // Tasks are cascade-deleted via the FK constraint in Supabase
+    const { error } = await getClient().from("sessions").delete().eq("id", id);
+    if (error) throw new Error(`[db] deleteSession: ${error.message}`);
+    return { ok: true };
+  }
+
   // ── Profiles ───────────────────────────────────────────────────────────────
 
   async createProfile({ id, email, role }) {
@@ -309,6 +431,29 @@ class DatabaseService {
 
     if (error) throw new Error(`[db] savePromptConfig: ${error.message}`);
     return { systemPrompt };
+  }
+
+  // ── Usage Logging ──────────────────────────────────────────────────────────
+
+  /**
+   * Log Gemini token usage for cost tracking.
+   * Errors are caught silently — the `usage_logs` table may not exist yet in all envs.
+   *
+   * @param {{ model: string, sessionId?: string, promptTokens: number, outputTokens: number, totalTokens: number }} entry
+   */
+  async logUsage({ model, sessionId, promptTokens, outputTokens, totalTokens }) {
+    try {
+      await getClient().from("usage_logs").insert({
+        model,
+        session_id:     sessionId  || null,
+        prompt_tokens:  promptTokens  || 0,
+        output_tokens:  outputTokens  || 0,
+        total_tokens:   totalTokens   || 0,
+      });
+    } catch (err) {
+      // Non-fatal: log to console but never block the main request
+      console.warn("[db] logUsage failed (table may not exist):", err.message);
+    }
   }
 
   // ── Health check ───────────────────────────────────────────────────────────

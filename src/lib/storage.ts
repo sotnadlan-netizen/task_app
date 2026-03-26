@@ -51,8 +51,24 @@ export const DEFAULT_SYSTEM_PROMPT = `אתה סוכן תיעוד בכיר עבו
 
 // ─── Sessions API ─────────────────────────────────────────────────────────────
 
+export interface SessionsPage {
+  sessions: Session[];
+  nextCursor: string | null;
+}
+
 export async function apiFetchSessions(): Promise<Session[]> {
   const res = await apiFetch("/api/sessions");
+  if (!res.ok) throw new Error("Failed to fetch sessions");
+  return res.json();
+}
+
+export async function apiFetchSessionsPaginated(
+  limit = 20,
+  cursor?: string | null,
+): Promise<SessionsPage> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (cursor) params.set("cursor", cursor);
+  const res = await apiFetch(`/api/sessions?${params}`);
   if (!res.ok) throw new Error("Failed to fetch sessions");
   return res.json();
 }
