@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut } from "lucide-react";
+import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 
 const NAV = [
   { to: "/provider/dashboard", icon: LayoutDashboard, label: "Dashboard", sub: "Session history" },
+  { to: "/provider/analytics", icon: BarChart2, label: "Analytics", sub: "Completion metrics" },
   { to: "/provider/config", icon: Bot, label: "Agent Config", sub: "System prompt" },
 ];
 

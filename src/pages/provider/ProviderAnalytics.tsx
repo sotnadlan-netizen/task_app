@@ -1,0 +1,161 @@
+import { useEffect, useState } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { Download, Loader2, TrendingUp, CheckCircle2, Layers, ListTodo } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Layout } from "@/components/Layout";
+import { apiFetchAnalyticsOverview, type AnalyticsOverview } from "@/lib/storage";
+import { apiFetch } from "@/lib/apiClient";
+import { toast } from "sonner";
+
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+async function downloadCsvExport() {
+  const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const res = await fetch(`${API_BASE}/api/analytics/sessions/export`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new Error("Export failed");
+  const blob = await res.blob();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `sessions-export-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function ProviderAnalytics() {
+  const [data, setData]       = useState<AnalyticsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+
+  useEffect(() => {
+    apiFetchAnalyticsOverview()
+      .then(setData)
+      .catch(() => toast.error("Failed to load analytics"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      await downloadCsvExport();
+      toast.success("Export downloaded");
+    } catch {
+      toast.error("Failed to export data");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  const stats = data
+    ? [
+        { label: "Total Sessions",   value: data.totalSessions,   icon: Layers,       color: "text-indigo-600", bg: "bg-indigo-50" },
+        { label: "Total Tasks",      value: data.totalTasks,      icon: ListTodo,      color: "text-slate-600",  bg: "bg-slate-100" },
+        { label: "Completed Tasks",  value: data.completedTasks,  icon: CheckCircle2,  color: "text-emerald-600", bg: "bg-emerald-50" },
+        { label: "Completion Rate",  value: `${data.completionRate}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+      ]
+    : [];
+
+  return (
+    <Layout title="Analytics" subtitle="Session frequency and task completion metrics">
+      <div className="flex justify-end mb-6">
+        <Button
+          onClick={handleExport}
+          disabled={exporting || loading}
+          className="h-10 bg-indigo-600 hover:bg-indigo-700 gap-2"
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export CSV
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      ) : !data ? null : (
+        <div className="space-y-8">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {stats.map(({ label, value, icon: Icon, color, bg }) => (
+              <Card key={label} className="border-slate-200 shadow-sm">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+                      <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
+                    </div>
+                    <div className={`rounded-lg ${bg} p-2.5`}>
+                      <Icon className={`h-4 w-4 ${color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Sessions per Month chart */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-semibold text-slate-800">Sessions by Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {data.sessionsByMonth.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-12">No session data yet</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={data.sessionsByMonth} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      allowDecimals={false}
+                      tick={{ fontSize: 11, fill: "#94a3b8" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                      cursor={{ fill: "#f1f5f9" }}
+                    />
+                    <Bar dataKey="count" name="Sessions" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Task completion rate bar */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-sm font-semibold text-slate-800">Overall Task Completion</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-700"
+                    style={{ width: `${data.completionRate}%` }}
+                  />
+                </div>
+                <span className="text-sm font-bold text-slate-700 shrink-0">
+                  {data.completionRate}%
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                {data.completedTasks} of {data.totalTasks} tasks completed across all sessions
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </Layout>
+  );
+}

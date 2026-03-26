@@ -122,7 +122,7 @@
 | FE-018 | Add inline task editing (title, description, priority) on task cards | `Done` |
 | FE-019 | Add task delete button on card (provider-only) | `Done` |
 | FE-020 | Add drag-and-drop reordering within a column | `Todo` |
-| FE-021 | Add "All Done" celebration animation when all tasks in a column are completed | `Todo` |
+| FE-021 | Add "All Done" celebration animation when all tasks in a column are completed | `Done` |
 
 ### Client Dashboard
 | ID | Description | Status |
@@ -149,8 +149,8 @@
 ### Analytics & Reports
 | ID | Description | Status |
 |----|-------------|--------|
-| FE-032 | Build Analytics page: charts for session frequency and task completion rate | `Todo` |
-| FE-033 | Add CSV export button for session/task data (requires BE-033) | `Todo` |
+| FE-032 | Build Analytics page: charts for session frequency and task completion rate | `Done` |
+| FE-033 | Add CSV export button for session/task data (requires BE-033) | `Done` |
 
 ### UI / UX & Infrastructure
 | ID | Description | Status |
@@ -158,7 +158,7 @@
 | FE-034 | Set up Radix UI component library with Tailwind CSS design tokens | `Done` |
 | FE-035 | Set up TanStack React Query for server state caching and invalidation | `Done` |
 | FE-036 | Add global toast notifications using `sonner` | `Done` |
-| FE-037 | Add skeleton loading states to session list and task board | `Todo` |
+| FE-037 | Add skeleton loading states to session list and task board | `Done` |
 | FE-038 | Implement full RTL layout support for Hebrew text across all pages | `Todo` |
 | FE-039 | Add i18n framework (`i18next`) and extract all hardcoded Hebrew strings | `Todo` |
 | FE-040 | Build responsive mobile layout for Provider and Client dashboards | `Todo` |

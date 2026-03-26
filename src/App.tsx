@@ -12,6 +12,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ProviderDashboard from "./pages/provider/ProviderDashboard";
 import ProviderBoard from "./pages/provider/ProviderBoard";
 import AgentConfig from "./pages/AgentConfig";
+import ProviderAnalytics from "./pages/provider/ProviderAnalytics";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientBoard from "./pages/client/ClientBoard";
 import NotFound from "./pages/NotFound";
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/provider/dashboard" element={<ProviderDashboard />} />
               <Route path="/provider/board/:sessionId" element={<ProviderBoard />} />
               <Route path="/provider/config" element={<AgentConfig />} />
+              <Route path="/provider/analytics" element={<ProviderAnalytics />} />
             </Route>
 
             {/* Client routes */}
