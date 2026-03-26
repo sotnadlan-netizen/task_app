@@ -5,6 +5,7 @@ import helmet from "helmet";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { randomUUID } from "crypto";
 
 import processRouter  from "./routes/process.js";
 import tasksRouter    from "./routes/tasks.js";
@@ -44,9 +45,25 @@ app.options("*", cors(corsOptions)); // Enable pre-flight for all routes
 
 app.use(express.json({ limit: "1mb" }));
 
-// ── Request logger ────────────────────────────────────────────────────────────
-app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+// ── Structured request logger (BE-036) ───────────────────────────────────────
+app.use((req, res, next) => {
+  const reqId = randomUUID();
+  const start = Date.now();
+  req.reqId = reqId;
+
+  res.on("finish", () => {
+    const ms = Date.now() - start;
+    console.log(JSON.stringify({
+      reqId,
+      method: req.method,
+      url:    req.url,
+      status: res.statusCode,
+      ms,
+      ip:     req.ip,
+      ts:     new Date().toISOString(),
+    }));
+  });
+
   next();
 });
 

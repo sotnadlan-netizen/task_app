@@ -22,6 +22,7 @@ export interface Session {
   completedCount?: number;
   providerId?: string;
   clientEmail?: string;
+  audioUrl?: string | null;
 }
 
 export interface PromptConfig {

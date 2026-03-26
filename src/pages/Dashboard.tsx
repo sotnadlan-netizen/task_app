@@ -58,7 +58,8 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [recordOpen, setRecordOpen] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [processingStage, setProcessingStage] = useState<null | "uploading" | "analyzing">(null);
+  const processing = processingStage !== null;
   const [loadingMock, setLoadingMock] = useState(false);
 
   const loadSessions = useCallback(() => {
@@ -71,12 +72,13 @@ export default function Dashboard() {
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
-  async function handleRecordingComplete(blob: Blob) {
+  async function handleRecordingComplete(blob: Blob, clientEmail: string) {
     setRecordOpen(false);
-    setProcessing(true);
+    setProcessingStage("uploading");
     try {
       const { systemPrompt } = await apiFetchConfig();
-      const { session, tasks } = await apiProcessAudio(blob, systemPrompt, "recording.webm");
+      setProcessingStage("analyzing");
+      const { session, tasks } = await apiProcessAudio(blob, systemPrompt, "recording.webm", clientEmail);
       toast.success(`${tasks.length} tasks extracted`, { description: session.filename });
       loadSessions();
       navigate(`/board/${session.id}`);
@@ -86,7 +88,7 @@ export default function Dashboard() {
         description: err instanceof Error ? err.message : "Unknown error",
       });
     } finally {
-      setProcessing(false);
+      setProcessingStage(null);
     }
   }
 
@@ -130,8 +132,14 @@ export default function Dashboard() {
               <div className="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
             </div>
             <div>
-              <p className="text-base font-bold text-slate-900">AI Agent is listening</p>
-              <p className="text-sm text-slate-500 mt-1">Extracting insights and action items...</p>
+              <p className="text-base font-bold text-slate-900">
+                {processingStage === "uploading" ? "Uploading recording..." : "AI Agent is listening"}
+              </p>
+              <p className="text-sm text-slate-500 mt-1">
+                {processingStage === "uploading"
+                  ? "Sending audio to the server..."
+                  : "Extracting insights and action items..."}
+              </p>
             </div>
             <div className="flex gap-1">
               {[0, 0.15, 0.3].map((delay, i) => (

@@ -60,15 +60,25 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
     const base64Audio = audioBuffer.toString("base64");
     const mimeType = resolveMimeType(audioFile.originalname, audioFile.mimetype);
 
+    const sessionId = crypto.randomUUID();
+
+    // Upload audio to Supabase Storage (non-blocking fallback to null on failure)
+    const audioUrl = await db.uploadAudioToStorage(audioBuffer, {
+      sessionId,
+      providerId: req.user.id,
+      filename:   audioFile.originalname,
+    });
+
     const { summary, tasks: rawTasks, usage } = await analyzeAudio(base64Audio, mimeType, systemPrompt);
 
     const session = {
-      id:          crypto.randomUUID(),
+      id:          sessionId,
       createdAt:   new Date().toISOString(),
       filename:    audioFile.originalname,
       summary:     summary || "",
       providerId:  req.user.id,
       clientEmail: clientEmail || null,
+      audioUrl:    audioUrl   || null,
     };
     await db.saveSession(session);
 

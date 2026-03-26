@@ -70,6 +70,7 @@ function rowToSession(row) {
     summary:     row.summary  || "",
     providerId:  row.provider_id  || null,
     clientEmail: row.client_email || null,
+    audioUrl:    row.audio_url    || null,
   };
 }
 
@@ -217,6 +218,7 @@ class DatabaseService {
       summary:      session.summary  || "",
       provider_id:  session.providerId  || null,
       client_email: session.clientEmail || null,
+      audio_url:    session.audioUrl    || null,
     };
 
     console.log("[db] Attempting to save session with data:", JSON.stringify(payload, null, 2));
@@ -460,6 +462,30 @@ class DatabaseService {
       // Non-fatal: log to console but never block the main request
       console.warn("[db] logUsage failed (table may not exist):", err.message);
     }
+  }
+
+  // ── Supabase Storage ───────────────────────────────────────────────────────
+
+  // Uploads audio buffer to Supabase Storage and returns the public URL.
+  // Bucket: SUPABASE_AUDIO_BUCKET env var (default: "audio-recordings")
+  // Path:   <providerId>/<sessionId>/<filename>
+  // Returns null if Storage is not configured or upload fails (non-fatal).
+  async uploadAudioToStorage(buffer, { sessionId, providerId, filename }) {
+    const bucket = process.env.SUPABASE_AUDIO_BUCKET || "audio-recordings";
+    const storagePath = `${providerId}/${sessionId}/${filename}`;
+
+    const { error } = await getClient()
+      .storage
+      .from(bucket)
+      .upload(storagePath, buffer, { upsert: true });
+
+    if (error) {
+      console.warn(`[db] uploadAudioToStorage failed (bucket: ${bucket}):`, error.message);
+      return null;
+    }
+
+    const { data } = getClient().storage.from(bucket).getPublicUrl(storagePath);
+    return data?.publicUrl ?? null;
   }
 
   // ── Health check ───────────────────────────────────────────────────────────
