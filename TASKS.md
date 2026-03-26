@@ -75,7 +75,7 @@
 ### Analytics & Reporting
 | ID | Description | Status |
 |----|-------------|--------|
-| BE-032 | Create `GET /api/analytics/overview` endpoint: task completion rates, session counts | `Todo` |
+| BE-032 | Create `GET /api/analytics/overview` endpoint: task completion rates, session counts | `Done` |
 | BE-033 | Create `GET /api/analytics/sessions/export` endpoint: CSV/PDF export of session data | `Todo` |
 
 ### Developer & Ops
@@ -98,8 +98,8 @@
 | FE-002 | Build Signup page with role selection (Provider / Client) and profile creation | `Done` |
 | FE-003 | Implement `AuthContext` for global auth state (session, user, role) | `Done` |
 | FE-004 | Implement `ProtectedRoute` component for role-gated navigation | `Done` |
-| FE-005 | Add "Forgot Password" flow using Supabase password reset email | `Todo` |
-| FE-006 | Add logout confirmation dialog with session cleanup | `Todo` |
+| FE-005 | Add "Forgot Password" flow using Supabase password reset email | `Done` |
+| FE-006 | Add logout confirmation dialog with session cleanup | `Done` |
 
 ### Provider Dashboard
 | ID | Description | Status |
@@ -108,8 +108,8 @@
 | FE-008 | Build `RecordDialog` with in-browser mic recording and real-time waveform | `Done` |
 | FE-009 | Add client email input field inside `RecordDialog` before recording starts | `Done` |
 | FE-010 | Show upload progress indicator and AI processing state after recording stops | `Done` |
-| FE-011 | Add session search bar (filter by client email or date) | `Todo` |
-| FE-012 | Add session delete action with confirmation dialog | `Todo` |
+| FE-011 | Add session search bar (filter by client email or date) | `Done` |
+| FE-012 | Add session delete action with confirmation dialog | `Done` |
 | FE-013 | Add date range picker filter to session list | `Todo` |
 
 ### Task Board (Kanban)
