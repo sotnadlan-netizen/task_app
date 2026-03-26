@@ -110,7 +110,7 @@
 | FE-010 | Show upload progress indicator and AI processing state after recording stops | `Done` |
 | FE-011 | Add session search bar (filter by client email or date) | `Done` |
 | FE-012 | Add session delete action with confirmation dialog | `Done` |
-| FE-013 | Add date range picker filter to session list | `Todo` |
+| FE-013 | Add date range picker filter to session list | `Done` |
 
 ### Task Board (Kanban)
 | ID | Description | Status |

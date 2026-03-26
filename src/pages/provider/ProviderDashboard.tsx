@@ -13,10 +13,16 @@ import {
   ShieldCheck,
   Trash2,
   Search,
+  CalendarDays,
+  X,
 } from "lucide-react";
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Table,
   TableBody,
@@ -76,6 +82,7 @@ export default function ProviderDashboard() {
   const processing = processingStage !== null;
   const [loadingMock, setLoadingMock] = useState(false);
   const [search, setSearch] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -138,13 +145,26 @@ export default function ProviderDashboard() {
   }
 
   const filtered = sessions.filter((s) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      s.clientEmail?.toLowerCase().includes(q) ||
-      s.filename?.toLowerCase().includes(q) ||
-      s.summary?.toLowerCase().includes(q)
-    );
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const textMatch =
+        s.clientEmail?.toLowerCase().includes(q) ||
+        s.filename?.toLowerCase().includes(q) ||
+        s.summary?.toLowerCase().includes(q);
+      if (!textMatch) return false;
+    }
+    if (dateRange?.from || dateRange?.to) {
+      const d = new Date(s.createdAt);
+      if (dateRange.from && dateRange.to) {
+        if (!isWithinInterval(d, { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }))
+          return false;
+      } else if (dateRange.from) {
+        if (d < startOfDay(dateRange.from)) return false;
+      } else if (dateRange.to) {
+        if (d > endOfDay(dateRange.to)) return false;
+      }
+    }
+    return true;
   });
 
   const totalTasks = sessions.reduce((a, s) => a + (s.taskCount ?? 0), 0);
@@ -241,6 +261,45 @@ export default function ProviderDashboard() {
             className="pl-9 h-10 border-slate-200"
           />
         </div>
+
+        {/* Date range picker */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="h-10 border-slate-200 text-slate-600 gap-2 shrink-0"
+            >
+              <CalendarDays className="h-4 w-4" />
+              {dateRange?.from
+                ? dateRange.to
+                  ? `${format(dateRange.from, "d MMM")} – ${format(dateRange.to, "d MMM")}`
+                  : format(dateRange.from, "d MMM yyyy")
+                : "Date range"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="end">
+            <Calendar
+              mode="range"
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={2}
+              initialFocus
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Clear date filter */}
+        {(dateRange?.from || dateRange?.to) && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 text-slate-400 hover:text-slate-700"
+            onClick={() => setDateRange(undefined)}
+            title="Clear date filter"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Sessions table */}
@@ -263,9 +322,9 @@ export default function ProviderDashboard() {
               <Mic className="h-6 w-6 text-slate-400" />
             </div>
             <p className="text-sm font-medium text-slate-500">
-              {search ? "No sessions match your search" : "No sessions yet"}
+              {search || dateRange?.from ? "No sessions match your filters" : "No sessions yet"}
             </p>
-            {!search && (
+            {!search && !dateRange?.from && (
               <p className="text-xs text-slate-400">
                 Click <span className="font-semibold">Record Meeting</span> or load demo data to get started.
               </p>
