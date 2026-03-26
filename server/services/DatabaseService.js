@@ -123,8 +123,9 @@ class DatabaseService {
     }));
   }
 
-  // Cursor-based pagination — cursor is the `created_at` value of the last fetched item
-  async getSessionsByProviderPaginated(providerId, { limit, cursor } = {}) {
+  // Cursor-based pagination + optional search filters
+  // filters: { limit, cursor, search (client_email ilike), dateFrom, dateTo }
+  async getSessionsByProviderPaginated(providerId, { limit, cursor, search, dateFrom, dateTo } = {}) {
     let query = getClient()
       .from("sessions")
       .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
@@ -132,7 +133,10 @@ class DatabaseService {
       .order("created_at", { ascending: false })
       .limit(limit + 1);
 
-    if (cursor) query = query.lt("created_at", cursor);
+    if (cursor)   query = query.lt("created_at", cursor);
+    if (search)   query = query.ilike("client_email", `%${search}%`);
+    if (dateFrom) query = query.gte("created_at", dateFrom);
+    if (dateTo)   query = query.lte("created_at", dateTo);
 
     const { data, error } = await query;
     if (error) throw new Error(`[db] getSessionsByProviderPaginated: ${error.message}`);
@@ -166,7 +170,7 @@ class DatabaseService {
     }));
   }
 
-  async getSessionsByClientEmailPaginated(email, { limit, cursor } = {}) {
+  async getSessionsByClientEmailPaginated(email, { limit, cursor, dateFrom, dateTo } = {}) {
     let query = getClient()
       .from("sessions")
       .select("id, created_at, filename, summary, provider_id, client_email, tasks(id, completed)")
@@ -174,7 +178,9 @@ class DatabaseService {
       .order("created_at", { ascending: false })
       .limit(limit + 1);
 
-    if (cursor) query = query.lt("created_at", cursor);
+    if (cursor)   query = query.lt("created_at", cursor);
+    if (dateFrom) query = query.gte("created_at", dateFrom);
+    if (dateTo)   query = query.lte("created_at", dateTo);
 
     const { data, error } = await query;
     if (error) throw new Error(`[db] getSessionsByClientEmailPaginated: ${error.message}`);

@@ -36,7 +36,7 @@
 | BE-010 | Add `DELETE /api/sessions/:id` endpoint (provider-only, cascade deletes tasks) | `Done` |
 | BE-011 | Add `GET /api/sessions/:id` endpoint for single session detail | `Done` |
 | BE-012 | Implement pagination for `GET /api/sessions` (cursor-based) | `Done` |
-| BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `Todo` |
+| BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `In-Progress` |
 
 ### Task Management
 | ID | Description | Status |
