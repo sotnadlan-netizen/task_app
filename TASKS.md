@@ -36,7 +36,7 @@
 | BE-010 | Add `DELETE /api/sessions/:id` endpoint (provider-only, cascade deletes tasks) | `Done` |
 | BE-011 | Add `GET /api/sessions/:id` endpoint for single session detail | `Done` |
 | BE-012 | Implement pagination for `GET /api/sessions` (cursor-based) | `Done` |
-| BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `In-Progress` |
+| BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `Done` |
 
 ### Task Management
 | ID | Description | Status |
@@ -95,7 +95,7 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | FE-001 | Build Login page (email/password) with role-based redirect post-auth | `Done` |
-| FE-002 | Build Signup page with role selection (Provider / Client) and profile creation | `In-Progress` |
+| FE-002 | Build Signup page with role selection (Provider / Client) and profile creation | `Done` |
 | FE-003 | Implement `AuthContext` for global auth state (session, user, role) | `Done` |
 | FE-004 | Implement `ProtectedRoute` component for role-gated navigation | `Done` |
 | FE-005 | Add "Forgot Password" flow using Supabase password reset email | `Todo` |
@@ -107,7 +107,7 @@
 | FE-007 | Build Provider Dashboard with session list, task stats, and empty state | `Done` |
 | FE-008 | Build `RecordDialog` with in-browser mic recording and real-time waveform | `Done` |
 | FE-009 | Add client email input field inside `RecordDialog` before recording starts | `Done` |
-| FE-010 | Show upload progress indicator and AI processing state after recording stops | `In-Progress` |
+| FE-010 | Show upload progress indicator and AI processing state after recording stops | `Done` |
 | FE-011 | Add session search bar (filter by client email or date) | `Todo` |
 | FE-012 | Add session delete action with confirmation dialog | `Todo` |
 | FE-013 | Add date range picker filter to session list | `Todo` |

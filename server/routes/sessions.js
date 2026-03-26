@@ -8,25 +8,42 @@ const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE     = 100;
 
 // GET /api/sessions — list sessions for the authenticated user
-// Query params: ?limit=N&cursor=<created_at ISO string>
-// Returns { sessions, nextCursor } when `limit` param is present;
+// Query params:
+//   limit=N         page size (default 20, max 100)
+//   cursor=<ISO>    created_at of last item on previous page
+//   search=<str>    partial case-insensitive match on client_email (provider only)
+//   dateFrom=<ISO>  include only sessions on or after this date
+//   dateTo=<ISO>    include only sessions on or before this date
+// Returns { sessions, nextCursor } when any pagination/filter param present;
 // returns plain array otherwise (backward-compatible).
 router.get("/", requireAuth, async (req, res) => {
   try {
-    const usePagination = "limit" in req.query || "cursor" in req.query;
+    const { limit: rawLimit, cursor, search, dateFrom, dateTo } = req.query;
+    const usePagination = rawLimit != null || cursor != null || search != null
+      || dateFrom != null || dateTo != null;
 
     if (usePagination) {
-      const rawLimit = parseInt(req.query.limit, 10);
-      const limit    = isNaN(rawLimit) || rawLimit < 1
+      const parsed = parseInt(rawLimit, 10);
+      const limit  = isNaN(parsed) || parsed < 1
         ? DEFAULT_PAGE_SIZE
-        : Math.min(rawLimit, MAX_PAGE_SIZE);
-      const cursor   = req.query.cursor || null;
+        : Math.min(parsed, MAX_PAGE_SIZE);
 
       let result;
       if (req.user.role === "client") {
-        result = await db.getSessionsByClientEmailPaginated(req.user.email, { limit, cursor });
+        result = await db.getSessionsByClientEmailPaginated(req.user.email, {
+          limit,
+          cursor:   cursor   || null,
+          dateFrom: dateFrom || null,
+          dateTo:   dateTo   || null,
+        });
       } else {
-        result = await db.getSessionsByProviderPaginated(req.user.id, { limit, cursor });
+        result = await db.getSessionsByProviderPaginated(req.user.id, {
+          limit,
+          cursor:   cursor   || null,
+          search:   search   || null,
+          dateFrom: dateFrom || null,
+          dateTo:   dateTo   || null,
+        });
       }
       return res.json(result);
     }
