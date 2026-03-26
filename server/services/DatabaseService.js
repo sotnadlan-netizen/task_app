@@ -402,6 +402,45 @@ class DatabaseService {
     return { ok: true };
   }
 
+  // ── Analytics ──────────────────────────────────────────────────────────────
+
+  async getAnalyticsOverview(providerId) {
+    const { data: sessions, error: sErr } = await getClient()
+      .from("sessions")
+      .select("id, created_at, tasks(id, completed, assignee)")
+      .eq("provider_id", providerId)
+      .order("created_at", { ascending: false });
+
+    if (sErr) throw new Error(`[db] getAnalyticsOverview: ${sErr.message}`);
+
+    const rows = sessions || [];
+    const totalSessions = rows.length;
+    const allTasks  = rows.flatMap((s) => s.tasks || []);
+    const totalTasks     = allTasks.length;
+    const completedTasks = allTasks.filter((t) => t.completed).length;
+
+    // Sessions per day (last 30 days)
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const dailyCounts = {};
+    rows
+      .filter((s) => new Date(s.created_at) >= cutoff)
+      .forEach((s) => {
+        const day = s.created_at.slice(0, 10);
+        dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+      });
+
+    return {
+      totalSessions,
+      totalTasks,
+      completedTasks,
+      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+      sessionsPerDay: Object.entries(dailyCounts)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count })),
+    };
+  }
+
   // ── Profiles ───────────────────────────────────────────────────────────────
 
   async createProfile({ id, email, role }) {

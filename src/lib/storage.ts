@@ -80,6 +80,40 @@ export async function apiLoadMockData(): Promise<{ sessions: number; tasks: numb
   return res.json();
 }
 
+export async function apiDeleteSession(id: string): Promise<void> {
+  const res = await apiFetch(`/api/sessions/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete session");
+}
+
+export async function apiCreateTask(task: {
+  sessionId: string;
+  title: string;
+  description?: string;
+  assignee: "Advisor" | "Client";
+  priority: "High" | "Medium" | "Low";
+}): Promise<ActionItem> {
+  const res = await apiFetch("/api/tasks", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(task),
+  });
+  if (!res.ok) throw new Error("Failed to create task");
+  return res.json();
+}
+
+export async function apiUpdateTaskDetails(
+  id: string,
+  patch: { title?: string; description?: string; priority?: "High" | "Medium" | "Low" },
+): Promise<ActionItem> {
+  const res = await apiFetch(`/api/tasks/${id}/details`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) throw new Error("Failed to update task");
+  return res.json();
+}
+
 // ─── Tasks API ────────────────────────────────────────────────────────────────
 
 export async function apiFetchTasksBySession(sessionId: string): Promise<ActionItem[]> {
