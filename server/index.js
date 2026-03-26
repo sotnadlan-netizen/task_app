@@ -12,6 +12,7 @@ import sessionsRouter from "./routes/sessions.js";
 import configRouter   from "./routes/config.js";
 import mockRouter     from "./routes/mock.js";
 import profilesRouter from "./routes/profiles.js";
+import authRouter     from "./routes/auth.js";
 import { db }         from "./services/DatabaseService.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { apiLimiter, audioLimiter } from "./middleware/rateLimitMiddleware.js";
@@ -56,6 +57,7 @@ app.use("/api/sessions",      apiLimiter,   sessionsRouter);
 app.use("/api/config",        apiLimiter,   configRouter);
 app.use("/api/mock-data",     apiLimiter,   mockRouter);
 app.use("/api/profiles",      apiLimiter,   profilesRouter);
+app.use("/api/auth",          apiLimiter,   authRouter);
 
 app.get("/",          (_req, res) => res.json({ status: "API is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));

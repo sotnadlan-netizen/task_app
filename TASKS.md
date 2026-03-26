@@ -24,8 +24,8 @@
 | BE-002 | Implement JWT validation middleware using Supabase service role key | `Done` |
 | BE-003 | Implement role-based access control (provider vs client) in middleware | `Done` |
 | BE-004 | Create `POST /api/profiles` endpoint to persist user profile on signup | `Done` |
-| BE-005 | Add rate limiting middleware to all authenticated endpoints | `In-Progress` |
-| BE-006 | Add refresh-token rotation support for long-lived sessions | `Todo` |
+| BE-005 | Add rate limiting middleware to all authenticated endpoints | `Done` |
+| BE-006 | Add refresh-token rotation support for long-lived sessions | `Done` |
 
 ### Session Management
 | ID | Description | Status |
@@ -213,11 +213,11 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | QA-001 | Set up Vitest and `@testing-library/react` in the project | `Done` |
-| QA-002 | Write unit tests for `GeminiService`: JSON parsing, error handling | `Todo` |
+| QA-002 | Write unit tests for `GeminiService`: JSON parsing, error handling | `Done` <!-- [QA-Approved] 7/7 tests pass --> |
 | QA-003 | Write unit tests for `DatabaseService`: query logic and RLS bypass | `Todo` |
-| QA-004 | Write unit tests for `authMiddleware`: valid token, missing token, wrong role | `Todo` |
+| QA-004 | Write unit tests for `authMiddleware`: valid token, missing token, wrong role | `Done` <!-- [QA-Approved] 6/6 tests pass --> |
 | QA-005 | Write unit tests for `RecordDialog` component: recording state transitions | `Todo` |
-| QA-006 | Write unit tests for `ProtectedRoute`: redirects for unauthorized roles | `Todo` |
+| QA-006 | Write unit tests for `ProtectedRoute`: redirects for unauthorized roles | `Done` <!-- [QA-Approved] 6/6 tests pass --> |
 
 ### Integration Tests
 | ID | Description | Status |
