@@ -76,7 +76,7 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | BE-032 | Create `GET /api/analytics/overview` endpoint: task completion rates, session counts | `Done` |
-| BE-033 | Create `GET /api/analytics/sessions/export` endpoint: CSV/PDF export of session data | `Todo` |
+| BE-033 | Create `GET /api/analytics/sessions/export` endpoint: CSV/PDF export of session data | `Done` |
 
 ### Developer & Ops
 | ID | Description | Status |
@@ -118,8 +118,8 @@
 | FE-014 | Build Kanban board with "Advisor Tasks" and "Client Tasks" columns | `Done` |
 | FE-015 | Implement task completion toggle (checkbox) scoped by assignee role | `Done` |
 | FE-016 | Render priority badges (High/Medium/Low) with Hebrew labels and color coding | `Done` |
-| FE-017 | Add manual task creation form on the board (provider-only) | `Todo` |
-| FE-018 | Add inline task editing (title, description, priority) on task cards | `Todo` |
+| FE-017 | Add manual task creation form on the board (provider-only) | `Done` |
+| FE-018 | Add inline task editing (title, description, priority) on task cards | `Done` |
 | FE-019 | Add task delete button on card (provider-only) | `Done` |
 | FE-020 | Add drag-and-drop reordering within a column | `Todo` |
 | FE-021 | Add "All Done" celebration animation when all tasks in a column are completed | `Todo` |
@@ -214,18 +214,18 @@
 |----|-------------|--------|
 | QA-001 | Set up Vitest and `@testing-library/react` in the project | `Done` |
 | QA-002 | Write unit tests for `GeminiService`: JSON parsing, error handling | `Done` <!-- [QA-Approved] 7/7 tests pass --> |
-| QA-003 | Write unit tests for `DatabaseService`: query logic and RLS bypass | `Todo` |
+| QA-003 | Write unit tests for `DatabaseService`: query logic and RLS bypass | `Done` <!-- [QA-Approved] 20/20 tests pass --> |
 | QA-004 | Write unit tests for `authMiddleware`: valid token, missing token, wrong role | `Done` <!-- [QA-Approved] 6/6 tests pass --> |
-| QA-005 | Write unit tests for `RecordDialog` component: recording state transitions | `Todo` |
+| QA-005 | Write unit tests for `RecordDialog` component: recording state transitions | `Done` <!-- [QA-Approved] 8/8 tests pass --> |
 | QA-006 | Write unit tests for `ProtectedRoute`: redirects for unauthorized roles | `Done` <!-- [QA-Approved] 6/6 tests pass --> |
 
 ### Integration Tests
 | ID | Description | Status |
 |----|-------------|--------|
 | QA-007 | Write integration tests for `POST /api/process-audio` with a fixture audio file | `Todo` |
-| QA-008 | Write integration tests for `GET /api/sessions` with provider vs client token | `Todo` |
-| QA-009 | Write integration tests for `PATCH /api/tasks/:id` completion toggle permissions | `Todo` |
-| QA-010 | Write integration tests for `POST /api/profiles` signup → profile creation flow | `Todo` |
+| QA-008 | Write integration tests for `GET /api/sessions` with provider vs client token | `Done` <!-- [QA-Approved] 12/12 tests pass --> |
+| QA-009 | Write integration tests for `PATCH /api/tasks/:id` completion toggle permissions | `Done` <!-- [QA-Approved] 19/19 tests pass --> |
+| QA-010 | Write integration tests for `POST /api/profiles` signup → profile creation flow | `Done` <!-- [QA-Approved] 4/4 tests pass --> |
 
 ### End-to-End Tests
 | ID | Description | Status |
@@ -242,12 +242,12 @@
 | QA-016 | Load test `POST /api/process-audio` with concurrent uploads (k6 or Artillery) | `Todo` |
 | QA-017 | Run OWASP ZAP scan against staging API for common vulnerabilities | `Todo` |
 | QA-018 | Audit Supabase RLS policies for row-level data isolation | `Todo` |
-| QA-019 | Validate audio MIME type bypass attempt is rejected at server boundary | `Todo` |
+| QA-019 | Validate audio MIME type bypass attempt is rejected at server boundary | `Done` <!-- [QA-Approved] 10/10 tests pass --> |
 
 ### CI/CD
 | ID | Description | Status |
 |----|-------------|--------|
-| QA-020 | Set up GitHub Actions pipeline: lint → unit test → build on every PR | `Todo` |
+| QA-020 | Set up GitHub Actions pipeline: lint → unit test → build on every PR | `Done` <!-- [QA-Approved] .github/workflows/ci.yml created --> |
 | QA-021 | Add E2E test stage to GitHub Actions (runs against Vercel preview URL) | `Todo` |
 | QA-022 | Add code coverage reporting (threshold ≥ 70%) in CI pipeline | `Todo` |
 | QA-023 | Set up Dependabot for automated dependency security updates | `Todo` |
