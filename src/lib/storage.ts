@@ -128,6 +128,25 @@ export async function apiToggleTask(id: string): Promise<ActionItem> {
   return res.json();
 }
 
+export async function apiDeleteTask(id: string): Promise<void> {
+  const res = await apiFetch(`/api/tasks/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete task");
+}
+
+export interface AnalyticsOverview {
+  totalSessions: number;
+  totalTasks: number;
+  completedTasks: number;
+  completionRate: number;
+  sessionsByMonth: { month: string; count: number }[];
+}
+
+export async function apiFetchAnalyticsOverview(): Promise<AnalyticsOverview> {
+  const res = await apiFetch("/api/analytics/overview");
+  if (!res.ok) throw new Error("Failed to fetch analytics");
+  return res.json();
+}
+
 // ─── Process Audio API ────────────────────────────────────────────────────────
 
 export async function apiProcessAudio(

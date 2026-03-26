@@ -405,40 +405,77 @@ class DatabaseService {
   // ── Analytics ──────────────────────────────────────────────────────────────
 
   async getAnalyticsOverview(providerId) {
-    const { data: sessions, error: sErr } = await getClient()
+    const { data: sessions, error: sessErr } = await getClient()
       .from("sessions")
-      .select("id, created_at, tasks(id, completed, assignee)")
+      .select("id, created_at")
+      .eq("provider_id", providerId);
+
+    if (sessErr) throw new Error(`[db] analytics sessions: ${sessErr.message}`);
+
+    const allSessions = sessions || [];
+    if (allSessions.length === 0) {
+      return { totalSessions: 0, totalTasks: 0, completedTasks: 0, completionRate: 0, sessionsByMonth: [] };
+    }
+
+    const sessionIds = allSessions.map((s) => s.id);
+    const { data: tasks, error: taskErr } = await getClient()
+      .from("tasks")
+      .select("id, completed, created_at")
+      .in("session_id", sessionIds);
+
+    if (taskErr) throw new Error(`[db] analytics tasks: ${taskErr.message}`);
+
+    const allTasks = tasks || [];
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter((t) => t.completed).length;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const byMonth = {};
+    allSessions.forEach((s) => {
+      const month = s.created_at.slice(0, 7);
+      byMonth[month] = (byMonth[month] || 0) + 1;
+    });
+    const sessionsByMonth = Object.entries(byMonth)
+      .map(([month, count]) => ({ month, count }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+
+    return {
+      totalSessions: allSessions.length,
+      totalTasks,
+      completedTasks,
+      completionRate,
+      sessionsByMonth,
+    };
+  }
+
+  async getSessionsWithTasksForExport(providerId) {
+    const { data: sessions, error: sessErr } = await getClient()
+      .from("sessions")
+      .select("id, created_at, filename, summary, client_email, audio_url")
       .eq("provider_id", providerId)
       .order("created_at", { ascending: false });
 
-    if (sErr) throw new Error(`[db] getAnalyticsOverview: ${sErr.message}`);
+    if (sessErr) throw new Error(`[db] export sessions: ${sessErr.message}`);
+    if (!sessions || sessions.length === 0) return [];
 
-    const rows = sessions || [];
-    const totalSessions = rows.length;
-    const allTasks  = rows.flatMap((s) => s.tasks || []);
-    const totalTasks     = allTasks.length;
-    const completedTasks = allTasks.filter((t) => t.completed).length;
+    const sessionIds = sessions.map((s) => s.id);
+    const { data: tasks, error: taskErr } = await getClient()
+      .from("tasks")
+      .select("*")
+      .in("session_id", sessionIds);
 
-    // Sessions per day (last 30 days)
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - 30);
-    const dailyCounts = {};
-    rows
-      .filter((s) => new Date(s.created_at) >= cutoff)
-      .forEach((s) => {
-        const day = s.created_at.slice(0, 10);
-        dailyCounts[day] = (dailyCounts[day] || 0) + 1;
-      });
+    if (taskErr) throw new Error(`[db] export tasks: ${taskErr.message}`);
 
-    return {
-      totalSessions,
-      totalTasks,
-      completedTasks,
-      completionRate: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
-      sessionsPerDay: Object.entries(dailyCounts)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, count]) => ({ date, count })),
-    };
+    const tasksBySession = {};
+    (tasks || []).forEach((t) => {
+      if (!tasksBySession[t.session_id]) tasksBySession[t.session_id] = [];
+      tasksBySession[t.session_id].push(rowToTask(t));
+    });
+
+    return sessions.map((s) => ({
+      ...rowToSession(s),
+      tasks: tasksBySession[s.id] || [],
+    }));
   }
 
   // ── Profiles ───────────────────────────────────────────────────────────────

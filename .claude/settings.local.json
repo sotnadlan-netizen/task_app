@@ -19,7 +19,19 @@
       "Bash(timeout 5 node server/index.js)",
       "Bash(npx tsc:*)",
       "Bash(grep -r \"auth\\\\|Auth\\\\|login\\\\|Login\" /c/Users/omerv/PycharmProjects/listen_agent/src /c/Users/omerv/PycharmProjects/listen_agent/server --include=*.ts --include=*.tsx --include=*.js --include=*.jsx)",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "Bash(cd:*)",
+      "Bash(node:*)",
+      "Bash(npm test:*)",
+      "Bash(git add:*)",
+      "Bash(sed -i 's/| BE-010 | Add `DELETE \\\\/api\\\\/sessions\\\\/:id` endpoint \\(provider-only, cascade deletes tasks\\) | `Todo` |/| BE-010 | Add `DELETE \\\\/api\\\\/sessions\\\\/:id` endpoint \\(provider-only, cascade deletes tasks\\) | `Done` |/' /c/Users/omerv/PycharmProjects/listen_agent/TASKS.md)",
+      "Bash(sed -i 's/| BE-011 | Add `GET \\\\/api\\\\/sessions\\\\/:id` endpoint for single session detail | `Todo` |/| BE-011 | Add `GET \\\\/api\\\\/sessions\\\\/:id` endpoint for single session detail | `Done` |/' /c/Users/omerv/PycharmProjects/listen_agent/TASKS.md)",
+      "Bash(sed -i 's/| BE-017 | Create `POST \\\\/api\\\\/tasks` endpoint for manually adding tasks to a session | `Todo` |/| BE-017 | Create `POST \\\\/api\\\\/tasks` endpoint for manually adding tasks to a session | `Done` |/' /c/Users/omerv/PycharmProjects/listen_agent/TASKS.md)",
+      "Bash(sed -i 's/| BE-018 | Create `PATCH \\\\/api\\\\/tasks\\\\/:id\\\\/details` endpoint to edit task title, description, priority | `Todo` |/| BE-018 | Create `PATCH \\\\/api\\\\/tasks\\\\/:id\\\\/details` endpoint to edit task title, description, priority | `Done` |/' /c/Users/omerv/PycharmProjects/listen_agent/TASKS.md)",
+      "Bash(git commit:*)",
+      "Bash(npm run:*)",
+      "Bash(find /c/Users/omerv/PycharmProjects/listen_agent/src/components/features -name *.tsx)",
+      "Bash(find /c/Users/omerv/PycharmProjects/listen_agent -name *.test.*)"
     ]
   }
 }

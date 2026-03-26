@@ -14,15 +14,11 @@ import {
   Trash2,
   Search,
   CalendarDays,
-  X,
 } from "lucide-react";
-import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
-import type { DateRange } from "react-day-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Table,
   TableBody,
@@ -73,6 +69,31 @@ function StatusBadge({ taskCount, completedCount }: { taskCount: number; complet
   );
 }
 
+function SkeletonRow() {
+  return (
+    <TableRow>
+      <TableCell className="pl-5 py-3.5">
+        <Skeleton className="h-4 w-48" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-3 w-32" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-3 w-24" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-3 w-12" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-5 w-16 rounded-full" />
+      </TableCell>
+      <TableCell className="pr-5">
+        <Skeleton className="h-7 w-20" />
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function ProviderDashboard() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -82,7 +103,8 @@ export default function ProviderDashboard() {
   const processing = processingStage !== null;
   const [loadingMock, setLoadingMock] = useState(false);
   const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -144,25 +166,25 @@ export default function ProviderDashboard() {
     }
   }
 
-  const filtered = sessions.filter((s) => {
+  const filteredSessions = sessions.filter((s) => {
+    // FE-011: Search filter by client email (case-insensitive)
     if (search.trim()) {
       const q = search.toLowerCase();
-      const textMatch =
-        s.clientEmail?.toLowerCase().includes(q) ||
-        s.filename?.toLowerCase().includes(q) ||
-        s.summary?.toLowerCase().includes(q);
-      if (!textMatch) return false;
+      if (!s.clientEmail?.toLowerCase().includes(q)) return false;
     }
-    if (dateRange?.from || dateRange?.to) {
-      const d = new Date(s.createdAt);
-      if (dateRange.from && dateRange.to) {
-        if (!isWithinInterval(d, { start: startOfDay(dateRange.from), end: endOfDay(dateRange.to) }))
-          return false;
-      } else if (dateRange.from) {
-        if (d < startOfDay(dateRange.from)) return false;
-      } else if (dateRange.to) {
-        if (d > endOfDay(dateRange.to)) return false;
-      }
+    // FE-013: Date from filter
+    if (dateFrom) {
+      const sessionDate = new Date(s.createdAt);
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      if (sessionDate < fromDate) return false;
+    }
+    // FE-013: Date to filter
+    if (dateTo) {
+      const sessionDate = new Date(s.createdAt);
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      if (sessionDate > toDate) return false;
     }
     return true;
   });
@@ -252,79 +274,88 @@ export default function ProviderDashboard() {
           {loadingMock ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
           Load Demo Data
         </Button>
-        <div className="relative flex-1 min-w-[200px] max-w-xs ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by client or summary..."
-            className="pl-9 h-10 border-slate-200"
-          />
-        </div>
-
-        {/* Date range picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-10 border-slate-200 text-slate-600 gap-2 shrink-0"
-            >
-              <CalendarDays className="h-4 w-4" />
-              {dateRange?.from
-                ? dateRange.to
-                  ? `${format(dateRange.from, "d MMM")} – ${format(dateRange.to, "d MMM")}`
-                  : format(dateRange.from, "d MMM yyyy")
-                : "Date range"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="end">
-            <Calendar
-              mode="range"
-              selected={dateRange}
-              onSelect={setDateRange}
-              numberOfMonths={2}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-
-        {/* Clear date filter */}
-        {(dateRange?.from || dateRange?.to) && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 text-slate-400 hover:text-slate-700"
-            onClick={() => setDateRange(undefined)}
-            title="Clear date filter"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       {/* Sessions table */}
       <Card className="border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">Recent Sessions</p>
-          <p className="text-xs text-slate-400">
-            {filtered.length !== sessions.length
-              ? `${filtered.length} of ${sessions.length}`
-              : `${sessions.length} total`}
-          </p>
-        </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        <div className="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-800">Recent Sessions</p>
+            <p className="text-xs text-slate-400">
+              {filteredSessions.length} of {sessions.length}
+            </p>
           </div>
-        ) : filtered.length === 0 ? (
+          {/* FE-011 + FE-013: Filter controls row */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px] max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by client email…"
+                className="pl-9 h-9 border-slate-200 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-slate-400 shrink-0" />
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white"
+                aria-label="From date"
+              />
+              <span className="text-xs text-slate-400">—</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white"
+                aria-label="To date"
+              />
+            </div>
+          </div>
+        </div>
+        {/* FE-037: Skeleton loading rows */}
+        {loading ? (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-5">
+                  Session
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Client
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Date
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Tasks
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Status
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pr-5" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </TableBody>
+          </Table>
+        ) : filteredSessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
             <div className="rounded-full bg-slate-100 p-4">
               <Mic className="h-6 w-6 text-slate-400" />
             </div>
             <p className="text-sm font-medium text-slate-500">
-              {search || dateRange?.from ? "No sessions match your filters" : "No sessions yet"}
+              {search || dateFrom || dateTo ? "No sessions match your filters" : "No sessions yet"}
             </p>
-            {!search && !dateRange?.from && (
+            {!search && !dateFrom && !dateTo && (
               <p className="text-xs text-slate-400">
                 Click <span className="font-semibold">Record Meeting</span> or load demo data to get started.
               </p>
@@ -353,7 +384,7 @@ export default function ProviderDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((s) => (
+              {filteredSessions.map((s) => (
                 <TableRow
                   key={s.id}
                   className="cursor-pointer hover:bg-slate-50/80 transition-colors"
@@ -401,6 +432,7 @@ export default function ProviderDashboard() {
                       completedCount={s.completedCount ?? 0}
                     />
                   </TableCell>
+                  {/* FE-012: Delete button + View Board */}
                   <TableCell className="pr-5">
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                       <Button
@@ -415,7 +447,7 @@ export default function ProviderDashboard() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => setDeleteTarget(s)}
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(s); }}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -434,6 +466,7 @@ export default function ProviderDashboard() {
         onRecordingComplete={handleRecordingComplete}
       />
 
+      {/* FE-012: Delete confirmation AlertDialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

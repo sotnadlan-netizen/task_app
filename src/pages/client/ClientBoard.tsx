@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, UserCog, User, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,7 @@ export default function ClientBoard() {
   const [tasks, setTasks] = useState<ActionItem[]>([]);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const celebratedRef = useRef(false);
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -135,6 +136,17 @@ export default function ClientBoard() {
   const advisorTasks = tasks.filter((t) => t.assignee === "Advisor");
   const clientTasks  = tasks.filter((t) => t.assignee === "Client");
   const totalPending = tasks.filter((t) => !t.completed).length;
+  const allClientDone = clientTasks.length > 0 && clientTasks.every((t) => t.completed);
+
+  useEffect(() => {
+    if (allClientDone && !celebratedRef.current && clientTasks.length > 0) {
+      toast.success("All done! 🎉", { description: "You've completed all your tasks." });
+      celebratedRef.current = true;
+    }
+    if (!allClientDone) {
+      celebratedRef.current = false;
+    }
+  }, [allClientDone, clientTasks.length]);
 
   return (
     <ClientLayout
@@ -227,11 +239,20 @@ export default function ClientBoard() {
                     <ClientTaskCard key={item.id} item={item} onToggle={handleToggle} />
                   ))}
                   {clientTasks.filter((t) => t.completed).length > 0 && (
-                    <div className="space-y-2.5 opacity-50">
-                      {clientTasks.filter((t) => t.completed).map((item) => (
-                        <ClientTaskCard key={item.id} item={item} onToggle={handleToggle} />
-                      ))}
-                    </div>
+                    <>
+                      {allClientDone && (
+                        <div className="flex flex-col items-center justify-center py-6 gap-2 animate-in fade-in-0 zoom-in-95 duration-500">
+                          <span className="text-4xl select-none">🎉</span>
+                          <p className="text-sm font-bold text-emerald-700">All Done!</p>
+                          <p className="text-xs text-emerald-600">You've completed all your tasks.</p>
+                        </div>
+                      )}
+                      <div className="space-y-2.5 opacity-50">
+                        {clientTasks.filter((t) => t.completed).map((item) => (
+                          <ClientTaskCard key={item.id} item={item} onToggle={handleToggle} />
+                        ))}
+                      </div>
+                    </>
                   )}
                 </>
               )}
