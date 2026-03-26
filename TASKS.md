@@ -33,8 +33,8 @@
 | BE-007 | Create `GET /api/sessions` endpoint with provider/client role filtering | `Done` |
 | BE-008 | Create `POST /api/process-audio` endpoint: receive audio, trigger AI pipeline, persist session | `Done` |
 | BE-009 | Implement audio file cleanup after successful AI processing | `Done` |
-| BE-010 | Add `DELETE /api/sessions/:id` endpoint (provider-only, cascade deletes tasks) | `Todo` |
-| BE-011 | Add `GET /api/sessions/:id` endpoint for single session detail | `Todo` |
+| BE-010 | Add `DELETE /api/sessions/:id` endpoint (provider-only, cascade deletes tasks) | `Done` |
+| BE-011 | Add `GET /api/sessions/:id` endpoint for single session detail | `Done` |
 | BE-012 | Implement pagination for `GET /api/sessions` (cursor-based) | `Todo` |
 | BE-013 | Add full-text search filter to `GET /api/sessions` (by client email, date range) | `Todo` |
 
@@ -44,8 +44,8 @@
 | BE-014 | Create `GET /api/tasks?sessionId=X` endpoint with session ownership check | `Done` |
 | BE-015 | Create `PATCH /api/tasks/:id` endpoint to toggle task completion (assignee-scoped) | `Done` |
 | BE-016 | Create `DELETE /api/tasks/:id` endpoint (provider-only) | `Done` |
-| BE-017 | Create `POST /api/tasks` endpoint for manually adding tasks to a session | `Todo` |
-| BE-018 | Create `PATCH /api/tasks/:id/details` endpoint to edit task title, description, priority | `Todo` |
+| BE-017 | Create `POST /api/tasks` endpoint for manually adding tasks to a session | `Done` |
+| BE-018 | Create `PATCH /api/tasks/:id/details` endpoint to edit task title, description, priority | `Done` |
 | BE-019 | Add bulk `PATCH /api/tasks/bulk-complete` endpoint for batch completion | `Todo` |
 
 ### File & Audio Storage
