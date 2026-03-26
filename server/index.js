@@ -27,22 +27,18 @@ const PORT = process.env.PORT || 3001;
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 
-// CORS: allow the production Vercel frontend + localhost for dev
-const ALLOWED_ORIGINS = [
-  process.env.FRONTEND_URL,        // e.g. https://your-app.vercel.app
-  "http://localhost:5173",
-  "http://localhost:8080",
-].filter(Boolean);
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // allow non-browser requests (curl, Render health checks) and listed origins
-    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    callback(new Error(`CORS: origin ${origin} not allowed`));
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+const corsOptions = {
+  origin: [
+    "https://task-app-five-woad.vercel.app",
+    "http://localhost:8080",
+    "http://localhost:5173",
+  ],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-}));
+  credentials: true,
+};
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Enable pre-flight for all routes
 
 app.use(express.json({ limit: "1mb" }));
 
