@@ -40,7 +40,8 @@ export function parseGeminiResponse(text) {
   }
 
   return {
+    title:   typeof parsed.title === "string" ? parsed.title.trim() : "",
     summary: typeof parsed.summary === "string" ? parsed.summary : "",
-    tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+    tasks:   Array.isArray(parsed.tasks) ? parsed.tasks : [],
   };
 }

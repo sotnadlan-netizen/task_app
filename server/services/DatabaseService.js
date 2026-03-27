@@ -67,6 +67,7 @@ function rowToSession(row) {
     id:          row.id,
     createdAt:   row.created_at,
     filename:    row.filename,
+    title:       row.title || "",
     summary:     row.summary  || "",
     providerId:  row.provider_id  || null,
     clientEmail: row.client_email || null,
@@ -215,6 +216,7 @@ class DatabaseService {
       id:           session.id,
       created_at:   session.createdAt,
       filename:     session.filename,
+      title:        session.title || null,
       summary:      session.summary  || "",
       provider_id:  session.providerId  || null,
       client_email: session.clientEmail || null,
@@ -515,6 +517,42 @@ class DatabaseService {
 
     if (error) throw new Error(`[db] savePromptConfig: ${error.message}`);
     return { systemPrompt };
+  }
+
+  // ── Prompt History ─────────────────────────────────────────────────────────
+
+  /**
+   * Persist a snapshot of the system prompt each time it changes.
+   * Fails silently if the `prompt_history` table does not yet exist.
+   */
+  async logPromptHistory(systemPrompt, changedBy) {
+    try {
+      await getClient().from("prompt_history").insert({
+        system_prompt: systemPrompt,
+        changed_by:    changedBy,
+      });
+    } catch (err) {
+      console.warn("[db] logPromptHistory failed (table may not exist):", err.message);
+    }
+  }
+
+  /**
+   * Return the last N prompt history entries, newest first.
+   */
+  async getPromptHistory(limit = 20) {
+    const { data, error } = await getClient()
+      .from("prompt_history")
+      .select("id, system_prompt, changed_by, created_at")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    if (error) throw new Error(`[db] getPromptHistory: ${error.message}`);
+    return (data || []).map((row) => ({
+      id:           row.id,
+      systemPrompt: row.system_prompt,
+      changedBy:    row.changed_by,
+      createdAt:    row.created_at,
+    }));
   }
 
   // ── Usage Logging ──────────────────────────────────────────────────────────

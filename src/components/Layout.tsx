@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2 } from "lucide-react";
+import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ const NAV = [
   { to: "/provider/config", icon: Bot, label: "Agent Config", sub: "System prompt" },
 ];
 
-function Sidebar() {
+function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { pathname } = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -34,7 +34,21 @@ function Sidebar() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-40 flex w-60 flex-col bg-slate-900 border-r border-slate-800">
+      {/* Mobile overlay */}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/20 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 border-r border-slate-800",
+          "transform transition-transform duration-200 ease-in-out md:translate-x-0",
+          open ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
         {/* Logo */}
         <div className="flex h-16 items-center gap-3 px-5 border-b border-slate-800">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-900/50">
@@ -58,6 +72,7 @@ function Sidebar() {
               <NavLink
                 key={to}
                 to={to}
+                onClick={onClose}
                 className={cn(
                   "group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all",
                   active
@@ -133,9 +148,16 @@ function Sidebar() {
   );
 }
 
-function Navbar({ title, subtitle }: { title: string; subtitle?: string }) {
+function Navbar({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8">
+      <button
+        onClick={onMenuClick}
+        className="md:hidden p-2 rounded-md hover:bg-slate-100"
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5 text-slate-600" />
+      </button>
       <div>
         <h1 className="text-base font-bold text-slate-900 leading-none">{title}</h1>
         {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
@@ -151,11 +173,13 @@ interface LayoutProps {
 }
 
 export function Layout({ title, subtitle, children }: LayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar />
-      <div className="flex flex-1 flex-col pl-60">
-        <Navbar title={title} subtitle={subtitle} />
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="flex flex-1 flex-col md:pl-60">
+        <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
         <main className="flex-1 p-8">{children}</main>
       </div>
     </div>

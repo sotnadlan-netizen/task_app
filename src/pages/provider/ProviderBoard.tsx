@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
+import { AudioPlayer } from "@/components/features/AudioPlayer";
 import {
   apiFetchTasksBySession,
   apiFetchSessions,
@@ -568,6 +569,11 @@ export default function ProviderBoard() {
             </CardContent>
           </Card>
         )}
+      </div>
+
+      {/* Audio playback */}
+      <div className="mb-4">
+        <AudioPlayer sessionId={sessionId!} />
       </div>
 
       {loading ? (

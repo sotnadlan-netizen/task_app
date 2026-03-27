@@ -24,9 +24,9 @@ export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
         </div>
 
         {/* Page title */}
-        <div className="flex-1">
-          <h1 className="text-base font-bold text-slate-900 leading-none">{title}</h1>
-          {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-base font-bold text-slate-900 leading-none truncate hidden sm:block">{title}</h1>
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">{subtitle}</p>}
         </div>
 
         {/* User + Sign Out */}
@@ -36,10 +36,10 @@ export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
             variant="ghost"
             size="sm"
             onClick={signOut}
-            className="gap-1.5 text-slate-500 hover:text-slate-800 h-8"
+            className="gap-1.5 text-slate-500 hover:text-slate-800 h-8 text-xs sm:text-sm"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Sign Out
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </header>

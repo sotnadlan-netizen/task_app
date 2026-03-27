@@ -11,6 +11,7 @@ const JSON_FORMAT_INSTRUCTION = `IMPORTANT: Respond ONLY with a single valid JSO
 No markdown, no code fences, no extra text before or after.
 Required format:
 {
+  "title": "short 5-word Hebrew headline",
   "summary": "brief summary of the conversation",
   "tasks": [
     {
@@ -21,6 +22,10 @@ Required format:
     }
   ]
 }
+Field descriptions:
+- "title": a concise 4–6 word Hebrew headline summarizing the session topic
+- "summary": a brief summary of the conversation
+- "tasks": list of action items extracted from the session
 Valid assignee values: "Advisor" | "Client"
 Valid priority values: "High" | "Medium" | "Low"`;
 

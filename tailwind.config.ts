@@ -99,6 +99,10 @@ export default {
         "fade-up": "fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both",
         "slide-in-right": "slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) both",
       },
+      direction: {
+        rtl: 'rtl',
+        ltr: 'ltr',
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

@@ -69,12 +69,13 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       filename:   audioFile.originalname,
     });
 
-    const { summary, tasks: rawTasks, usage } = await analyzeAudio(base64Audio, mimeType, systemPrompt);
+    const { title, summary, tasks: rawTasks, usage } = await analyzeAudio(base64Audio, mimeType, systemPrompt);
 
     const session = {
       id:          sessionId,
       createdAt:   new Date().toISOString(),
       filename:    audioFile.originalname,
+      title:       title || "",
       summary:     summary || "",
       providerId:  req.user.id,
       clientEmail: clientEmail || null,

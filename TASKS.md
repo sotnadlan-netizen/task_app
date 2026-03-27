@@ -62,7 +62,7 @@
 | BE-024 | Create `GET /api/config` endpoint to fetch active system prompt | `Done` |
 | BE-025 | Create `PUT /api/config` endpoint to update system prompt (provider-only) | `Done` |
 | BE-026 | Seed default Hebrew system prompt in `prompt_config` table on first run | `Done` |
-| BE-027 | Add prompt versioning: store history of prompt changes with timestamps | `Todo` |
+| BE-027 | Add prompt versioning: store history of prompt changes with timestamps | `Done` |
 
 ### Notifications
 | ID | Description | Status |
@@ -85,7 +85,7 @@
 | BE-035 | Create `POST /api/mock-data` endpoint to seed realistic Hebrew mock sessions | `Done` |
 | BE-036 | Add structured request logging (request ID, duration, status code) | `Done` |
 | BE-037 | Add global error handler middleware with sanitized error responses | `Done` |
-| BE-038 | Write OpenAPI/Swagger spec for all API endpoints | `Todo` |
+| BE-038 | Write OpenAPI/Swagger spec for all API endpoints | `Done` |
 
 ---
 
@@ -132,14 +132,14 @@
 | FE-022 | Build Client Dashboard showing sessions assigned to the logged-in client | `Done` |
 | FE-023 | Show per-session task completion progress (e.g., 3/5 tasks done) | `Done` |
 | FE-024 | Make client task board read-only for advisor tasks, interactive for client tasks | `Done` |
-| FE-025 | Add client notification banner when new tasks are assigned | `Todo` |
+| FE-025 | Add client notification banner when new tasks are assigned | `Done` |
 | FE-043 | Add `ProgressGraph` radial SVG ring showing monthly goal completion on Client Dashboard | `Done` |
 | FE-044 | Add `TimeCapsule` component showing most recent session summary as bullet points | `Done` |
 
 ### Audio Playback
 | ID | Description | Status |
 |----|-------------|--------|
-| FE-026 | Add audio player component on session detail / board page (requires BE-022) | `Todo` |
+| FE-026 | Add audio player component on session detail / board page (requires BE-022) | `Done` |
 | FE-027 | Show audio duration and waveform preview on session card | `Todo` |
 
 ### Agent Configuration
@@ -163,10 +163,10 @@
 | FE-035 | Set up TanStack React Query for server state caching and invalidation | `Done` |
 | FE-036 | Add global toast notifications using `sonner` | `Done` |
 | FE-037 | Add skeleton loading states to session list and task board | `Done` |
-| FE-038 | Implement full RTL layout support for Hebrew text across all pages | `Todo` |
+| FE-038 | Implement full RTL layout support for Hebrew text across all pages | `Done` |
 | FE-039 | Add i18n framework (`i18next`) and extract all hardcoded Hebrew strings | `Todo` |
-| FE-040 | Build responsive mobile layout for Provider and Client dashboards | `Todo` |
-| FE-041 | Add empty state illustrations for sessions list and task board | `Todo` |
+| FE-040 | Build responsive mobile layout for Provider and Client dashboards | `Done` |
+| FE-041 | Add empty state illustrations for sessions list and task board | `Done` |
 | FE-042 | Set up Vercel deployment with SPA rewrite rules | `Done` |
 
 ---
@@ -205,7 +205,7 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | AI-017 | Add speaker diarization: distinguish advisor vs client voice in transcript | `Todo` |
-| AI-018 | Auto-generate session title from summary (short 5-word headline) | `Todo` |
+| AI-018 | Auto-generate session title from summary (short 5-word headline) | `Done` |
 | AI-019 | Implement sentiment analysis on session to flag at-risk client relationships | `Todo` |
 | AI-020 | Add follow-up question suggestions for advisor based on session gaps | `Todo` |
 
@@ -262,8 +262,8 @@
 
 | Role | Done | In-Progress | Todo | Total |
 |------|------|-------------|------|-------|
-| Backend | 31 | 0 | 7 | 38 |
-| Frontend | 37 | 0 | 9 | 46 |
-| AI-Integration | 14 | 0 | 6 | 20 |
+| Backend | 33 | 0 | 5 | 38 |
+| Frontend | 42 | 0 | 4 | 46 |
+| AI-Integration | 15 | 0 | 5 | 20 |
 | QA | 20 | 0 | 3 | 23 |
-| **Total** | **102** | **0** | **25** | **127** |
+| **Total** | **110** | **0** | **17** | **127** |

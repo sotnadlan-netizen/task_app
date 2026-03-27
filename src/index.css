@@ -68,3 +68,8 @@
     text-wrap: pretty;
   }
 }
+
+/* RTL global resets */
+[dir="rtl"] .text-left { text-align: right; }
+[dir="rtl"] .ml-auto { margin-left: unset; margin-right: auto; }
+[dir="rtl"] .mr-auto { margin-right: unset; margin-left: auto; }

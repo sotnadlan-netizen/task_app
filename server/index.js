@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { randomUUID } from "crypto";
 
+import { openapiSpec } from "./openapi.js";
 import processRouter  from "./routes/process.js";
 import tasksRouter    from "./routes/tasks.js";
 import sessionsRouter from "./routes/sessions.js";
@@ -80,6 +81,16 @@ app.use("/api/analytics",     apiLimiter,   analyticsRouter);
 
 app.get("/",          (_req, res) => res.json({ status: "API is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+// ── API Docs (RapiDoc, no npm deps) ───────────────────────────────────────────
+app.get("/api/docs/spec", (_req, res) => res.json(openapiSpec));
+app.get("/api/docs", (_req, res) => {
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!DOCTYPE html><html><head><title>Listen Agent API Docs</title>
+<meta charset="utf-8">
+<script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc/dist/rapidoc-min.js"></script>
+</head><body><rapi-doc spec-url="/api/docs/spec" theme="light" show-header="false" render-style="read" style="height:100vh;width:100%"></rapi-doc></body></html>`);
+});
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {

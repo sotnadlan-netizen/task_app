@@ -486,8 +486,8 @@ export default function ProviderDashboard() {
                 >
                   <TableCell className="pl-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-slate-800 truncate max-w-[200px]">
-                        {s.filename}
+                      <p className="text-sm font-medium text-slate-800 truncate max-w-[240px]">
+                        {s.title || s.filename}
                       </p>
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-medium text-green-700 whitespace-nowrap shrink-0">
                         <ShieldCheck className="h-3 w-3" /> Audio Deleted

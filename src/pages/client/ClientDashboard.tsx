@@ -7,6 +7,8 @@ import {
   Clock,
   ListTodo,
   Layers,
+  Bell,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +50,11 @@ export default function ClientDashboard() {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [lastVisit] = useState<number>(() => {
+    const stored = localStorage.getItem("client_last_visit");
+    return stored ? parseInt(stored, 10) : 0;
+  });
 
   const loadSessions = useCallback(() => {
     setLoading(true);
@@ -58,6 +65,16 @@ export default function ClientDashboard() {
   }, []);
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  useEffect(() => {
+    if (!loading) {
+      localStorage.setItem("client_last_visit", Date.now().toString());
+    }
+  }, [loading]);
+
+  const newSessions = sessions.filter(
+    (s) => new Date(s.createdAt).getTime() > lastVisit
+  );
 
   const totalTasks = sessions.reduce((a, s) => a + (s.taskCount ?? 0), 0);
   const totalCompleted = sessions.reduce((a, s) => a + (s.completedCount ?? 0), 0);
@@ -76,6 +93,26 @@ export default function ClientDashboard() {
 
   return (
     <ClientLayout title="My Sessions" subtitle="Advisory sessions assigned to you">
+      {/* New sessions notification banner */}
+      {!loading && !bannerDismissed && newSessions.length > 0 && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+          <Bell className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-800">
+              {newSessions.length === 1
+                ? "1 new session has been shared with you"
+                : `${newSessions.length} new sessions have been shared with you`}
+            </p>
+            <p className="text-xs text-indigo-600 mt-0.5">
+              Your advisor has shared new advisory sessions since your last visit.
+            </p>
+          </div>
+          <button onClick={() => setBannerDismissed(true)} className="text-indigo-400 hover:text-indigo-600 transition-colors shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Progress Map */}
       {!loading && (
         <>
@@ -124,14 +161,22 @@ export default function ClientDashboard() {
             <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
           </div>
         ) : sessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <div className="rounded-full bg-slate-100 p-4">
-              <ListTodo className="h-6 w-6 text-slate-400" />
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="40" cy="40" r="40" fill="#F0FDF4" />
+              <rect x="22" y="24" width="36" height="32" rx="4" fill="#BBF7D0" />
+              <rect x="28" y="32" width="24" height="2.5" rx="1.25" fill="#4ADE80" />
+              <rect x="28" y="38" width="18" height="2.5" rx="1.25" fill="#86EFAC" />
+              <rect x="28" y="44" width="20" height="2.5" rx="1.25" fill="#86EFAC" />
+              <circle cx="55" cy="55" r="10" fill="#22C55E" />
+              <path d="M51 55l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-slate-700">No sessions yet</p>
+              <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                Your advisor will share advisory sessions with you here once they've been recorded and processed.
+              </p>
             </div>
-            <p className="text-sm font-medium text-slate-500">No sessions yet</p>
-            <p className="text-xs text-slate-400">
-              Your advisor will share sessions with you here.
-            </p>
           </div>
         ) : (
           <Table>
@@ -161,7 +206,7 @@ export default function ClientDashboard() {
                 >
                   <TableCell className="pl-5 py-3.5">
                     <p className="text-sm font-medium text-slate-800 truncate max-w-[240px]">
-                      {s.filename}
+                      {s.title || s.filename}
                     </p>
                     <p className="text-xs text-slate-400 truncate max-w-[280px] mt-0.5">
                       {s.summary}
