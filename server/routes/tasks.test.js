@@ -232,3 +232,94 @@ describe("DELETE /api/tasks/:id", () => {
     expect(res.body).toEqual({ ok: true });
   });
 });
+
+// ── BE-018: PATCH /api/tasks/:id/details ─────────────────────────────────────
+describe("PATCH /api/tasks/:id/details — edit task metadata (BE-018)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockUser.role = "provider";
+    mockUser.id   = "prov-1";
+  });
+
+  it("returns 403 when client tries to edit task details", async () => {
+    mockUser.role = "client";
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({ title: "New Title" });
+    expect(res.status).toBe(403);
+    expect(res.body.error).toMatch(/providers only/i);
+  });
+
+  it("returns 400 when no updatable fields are provided", async () => {
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({});
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/at least one/i);
+  });
+
+  it("returns 400 when priority is an invalid value", async () => {
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({ priority: "Critical" });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/priority/i);
+  });
+
+  it("returns 404 when task does not exist", async () => {
+    mockDb.getTaskById.mockResolvedValue(null);
+    const res = await request(app)
+      .patch("/api/tasks/bad-id/details")
+      .set("Authorization", "Bearer tok")
+      .send({ title: "New Title" });
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 403 when provider does not own the task's session", async () => {
+    mockDb.getTaskById.mockResolvedValue(fakeTask());
+    mockDb.getSessionById.mockResolvedValue(fakeSession({ providerId: "other-prov" }));
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({ title: "New Title" });
+    expect(res.status).toBe(403);
+  });
+
+  it("updates task title successfully", async () => {
+    const updated = fakeTask({ title: "Updated Title" });
+    mockDb.getTaskById.mockResolvedValue(fakeTask());
+    mockDb.getSessionById.mockResolvedValue(fakeSession());
+    mockDb.updateTaskDetails.mockResolvedValue(updated);
+
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({ title: "Updated Title" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.title).toBe("Updated Title");
+    expect(mockDb.updateTaskDetails).toHaveBeenCalledWith("task-1", {
+      title: "Updated Title",
+      description: undefined,
+      priority: undefined,
+    });
+  });
+
+  it("updates priority and description simultaneously", async () => {
+    const updated = fakeTask({ description: "new desc", priority: "Low" });
+    mockDb.getTaskById.mockResolvedValue(fakeTask());
+    mockDb.getSessionById.mockResolvedValue(fakeSession());
+    mockDb.updateTaskDetails.mockResolvedValue(updated);
+
+    const res = await request(app)
+      .patch("/api/tasks/task-1/details")
+      .set("Authorization", "Bearer tok")
+      .send({ description: "new desc", priority: "Low" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.priority).toBe("Low");
+  });
+});

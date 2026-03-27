@@ -140,7 +140,7 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | FE-026 | Add audio player component on session detail / board page (requires BE-022) | `Done` |
-| FE-027 | Show audio duration and waveform preview on session card | `Todo` |
+| FE-027 | Show audio duration and waveform preview on session card | `Done` |
 
 ### Agent Configuration
 | ID | Description | Status |
@@ -148,7 +148,7 @@
 | FE-028 | Build Agent Config page with textarea for system prompt editing | `Done` |
 | FE-029 | Display unsaved changes indicator and save/reset controls | `Done` |
 | FE-030 | Show JSON schema hint to guide prompt authors | `Done` |
-| FE-031 | Add prompt version history view (requires BE-027) | `Todo` |
+| FE-031 | Add prompt version history view (requires BE-027) | `Done` |
 
 ### Analytics & Reports
 | ID | Description | Status |
@@ -263,7 +263,7 @@
 | Role | Done | In-Progress | Todo | Total |
 |------|------|-------------|------|-------|
 | Backend | 34 | 0 | 4 | 38 |
-| Frontend | 42 | 0 | 4 | 46 |
+| Frontend | 44 | 0 | 2 | 46 |
 | AI-Integration | 15 | 0 | 5 | 20 |
 | QA | 20 | 0 | 3 | 23 |
-| **Total** | **111** | **0** | **16** | **127** |
+| **Total** | **113** | **0** | **14** | **127** |

@@ -14,6 +14,7 @@ import {
   Trash2,
   Search,
   CalendarDays,
+  Music,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -489,9 +490,15 @@ export default function ProviderDashboard() {
                       <p className="text-sm font-medium text-slate-800 truncate max-w-[240px]">
                         {s.title || s.filename}
                       </p>
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-medium text-green-700 whitespace-nowrap shrink-0">
-                        <ShieldCheck className="h-3 w-3" /> Audio Deleted
-                      </span>
+                      {s.audioUrl ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-medium text-indigo-700 whitespace-nowrap shrink-0">
+                          <Music className="h-3 w-3" /> Audio
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-medium text-green-700 whitespace-nowrap shrink-0">
+                          <ShieldCheck className="h-3 w-3" /> Audio Deleted
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-slate-400 truncate max-w-[280px] mt-0.5">
                       {s.summary}

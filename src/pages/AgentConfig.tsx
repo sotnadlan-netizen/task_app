@@ -1,10 +1,18 @@
 import { useEffect, useState } from "react";
-import { Bot, Save, Loader2, RotateCcw, Info } from "lucide-react";
+import { Bot, Save, Loader2, RotateCcw, Info, History, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
 import { apiFetchConfig, apiSaveConfig, DEFAULT_SYSTEM_PROMPT } from "@/lib/storage";
+import { apiFetch } from "@/lib/apiClient";
 import { toast } from "sonner";
+
+interface PromptHistoryEntry {
+  id: string;
+  systemPrompt: string;
+  changedBy: string;
+  createdAt: string;
+}
 
 const SCHEMA_HINT = `// Expected JSON output schema:
 {
@@ -24,6 +32,12 @@ export default function AgentConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  // FE-031: Version history state
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<PromptHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
   useEffect(() => {
     apiFetchConfig()
@@ -48,6 +62,24 @@ export default function AgentConfig() {
   function handleReset() {
     setPrompt(DEFAULT_SYSTEM_PROMPT);
     setDirty(true);
+  }
+
+  async function handleToggleHistory() {
+    const next = !historyOpen;
+    setHistoryOpen(next);
+    if (next && history.length === 0) {
+      setHistoryLoading(true);
+      try {
+        const res = await apiFetch("/api/config/history");
+        if (!res.ok) throw new Error("Failed to fetch history");
+        const data: PromptHistoryEntry[] = await res.json();
+        setHistory(data);
+      } catch {
+        toast.error("Failed to load version history");
+      } finally {
+        setHistoryLoading(false);
+      }
+    }
   }
 
   return (
@@ -136,6 +168,85 @@ export default function AgentConfig() {
               </Button>
             </div>
           </CardContent>
+        </Card>
+
+        {/* FE-031: Version History */}
+        <Card className="border-slate-200 shadow-sm">
+          <button
+            type="button"
+            onClick={handleToggleHistory}
+            className="w-full flex items-center gap-2 px-5 py-4 text-left hover:bg-slate-50 transition-colors rounded-t-xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            aria-expanded={historyOpen}
+          >
+            {historyOpen ? (
+              <ChevronDown className="h-4 w-4 text-slate-400 shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
+            )}
+            <History className="h-4 w-4 text-indigo-500 shrink-0" />
+            <span className="text-sm font-semibold text-slate-800">Version History</span>
+          </button>
+          {historyOpen && (
+            <CardContent className="px-5 pb-5 pt-0 border-t border-slate-100">
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                </div>
+              ) : history.length === 0 ? (
+                <p className="text-sm text-slate-400 py-6 text-center">No history entries found.</p>
+              ) : (
+                <ul className="mt-3 max-h-80 overflow-y-auto space-y-2 pr-1">
+                  {history.map((entry) => (
+                    <li key={entry.id} className="rounded-lg border border-slate-100 bg-slate-50">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedEntry(expandedEntry === entry.id ? null : entry.id)
+                        }
+                        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-100 rounded-lg transition-colors focus:outline-none"
+                      >
+                        {expandedEntry === entry.id ? (
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-medium text-slate-600">
+                              {new Date(entry.createdAt).toLocaleString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            <span className="text-[10px] text-slate-400">·</span>
+                            <span className="text-[11px] text-slate-500 truncate">{entry.changedBy}</span>
+                          </div>
+                          <p className="text-xs text-slate-400 mt-0.5 truncate">
+                            {entry.systemPrompt.slice(0, 100)}
+                            {entry.systemPrompt.length > 100 ? "…" : ""}
+                          </p>
+                        </div>
+                      </button>
+                      {expandedEntry === entry.id && (
+                        <div className="px-4 pb-3">
+                          <textarea
+                            readOnly
+                            value={entry.systemPrompt}
+                            rows={8}
+                            dir="rtl"
+                            className="w-full rounded-md border border-slate-200 bg-slate-950 px-3 py-2.5 text-xs leading-6 text-slate-300 font-mono resize-none focus:outline-none"
+                          />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          )}
         </Card>
 
         {/* Schema reference */}
