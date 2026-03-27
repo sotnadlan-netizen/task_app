@@ -45,7 +45,7 @@
 | BE-015 | Create `PATCH /api/tasks/:id` endpoint to toggle task completion (assignee-scoped) | `Done` |
 | BE-016 | Create `DELETE /api/tasks/:id` endpoint (provider-only) | `Done` |
 | BE-017 | Create `POST /api/tasks` endpoint for manually adding tasks to a session | `Done` |
-| BE-018 | Create `PATCH /api/tasks/:id/details` endpoint to edit task title, description, priority | `Done` |
+| BE-018 | Create `PATCH /api/tasks/:id/details` endpoint to edit task title, description, priority | `Done` <!-- [QA-Approved] 7/7 tests pass --> |
 | BE-019 | Add bulk `PATCH /api/tasks/bulk-complete` endpoint for batch completion | `Done` |
 
 ### File & Audio Storage
@@ -53,16 +53,16 @@
 |----|-------------|--------|
 | BE-020 | Implement Multer middleware for audio upload (100 MB limit, MIME validation) | `Done` |
 | BE-021 | Integrate Supabase Storage to persist uploaded audio files and save `audio_url` in DB | `Done` |
-| BE-022 | Create `GET /api/sessions/:id/audio` signed-URL endpoint for secure playback | `Done` |
+| BE-022 | Create `GET /api/sessions/:id/audio` signed-URL endpoint for secure playback | `Done` <!-- [QA-Approved] 8/8 tests pass --> |
 | BE-023 | Add audio file expiry policy (auto-delete from storage after N days) | `Done` |
 
 ### Configuration & Prompt Management
 | ID | Description | Status |
 |----|-------------|--------|
-| BE-024 | Create `GET /api/config` endpoint to fetch active system prompt | `Done` |
-| BE-025 | Create `PUT /api/config` endpoint to update system prompt (provider-only) | `Done` |
+| BE-024 | Create `GET /api/config` endpoint to fetch active system prompt | `Done` <!-- [QA-Approved] 3/3 tests pass --> |
+| BE-025 | Create `PUT /api/config` endpoint to update system prompt (provider-only) | `Done` <!-- [QA-Approved] 4/4 tests pass --> |
 | BE-026 | Seed default Hebrew system prompt in `prompt_config` table on first run | `Done` |
-| BE-027 | Add prompt versioning: store history of prompt changes with timestamps | `Done` |
+| BE-027 | Add prompt versioning: store history of prompt changes with timestamps | `Done` <!-- [QA-Approved] 4/4 tests pass (config/history endpoint) --> |
 
 ### Notifications
 | ID | Description | Status |
@@ -75,8 +75,8 @@
 ### Analytics & Reporting
 | ID | Description | Status |
 |----|-------------|--------|
-| BE-032 | Create `GET /api/analytics/overview` endpoint: task completion rates, session counts | `Done` |
-| BE-033 | Create `GET /api/analytics/sessions/export` endpoint: CSV/PDF export of session data | `Done` |
+| BE-032 | Create `GET /api/analytics/overview` endpoint: task completion rates, session counts | `Done` <!-- [QA-Approved] 3/3 tests pass --> |
+| BE-033 | Create `GET /api/analytics/sessions/export` endpoint: CSV/PDF export of session data | `Done` <!-- [QA-Approved] 5/5 tests pass --> |
 
 ### Developer & Ops
 | ID | Description | Status |
@@ -129,10 +129,10 @@
 ### Client Dashboard
 | ID | Description | Status |
 |----|-------------|--------|
-| FE-022 | Build Client Dashboard showing sessions assigned to the logged-in client | `Done` |
-| FE-023 | Show per-session task completion progress (e.g., 3/5 tasks done) | `Done` |
+| FE-022 | Build Client Dashboard showing sessions assigned to the logged-in client | `Done` <!-- [QA-Approved] 13/13 tests pass --> |
+| FE-023 | Show per-session task completion progress (e.g., 3/5 tasks done) | `Done` <!-- [QA-Approved] covered in ClientDashboard tests --> |
 | FE-024 | Make client task board read-only for advisor tasks, interactive for client tasks | `Done` |
-| FE-025 | Add client notification banner when new tasks are assigned | `Done` |
+| FE-025 | Add client notification banner when new tasks are assigned | `Done` <!-- [QA-Approved] banner show/dismiss covered in ClientDashboard tests --> |
 | FE-043 | Add `ProgressGraph` radial SVG ring showing monthly goal completion on Client Dashboard | `Done` |
 | FE-044 | Add `TimeCapsule` component showing most recent session summary as bullet points | `Done` |
 
@@ -145,9 +145,9 @@
 ### Agent Configuration
 | ID | Description | Status |
 |----|-------------|--------|
-| FE-028 | Build Agent Config page with textarea for system prompt editing | `Done` |
-| FE-029 | Display unsaved changes indicator and save/reset controls | `Done` |
-| FE-030 | Show JSON schema hint to guide prompt authors | `Done` |
+| FE-028 | Build Agent Config page with textarea for system prompt editing | `Done` <!-- [QA-Approved] 9/9 tests pass --> |
+| FE-029 | Display unsaved changes indicator and save/reset controls | `Done` <!-- [QA-Approved] covered in AgentConfig tests --> |
+| FE-030 | Show JSON schema hint to guide prompt authors | `Done` <!-- [QA-Approved] covered in AgentConfig tests --> |
 | FE-031 | Add prompt version history view (requires BE-027) | `Done` |
 
 ### Analytics & Reports

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, UserCog, User, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,8 @@ export default function ClientBoard() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<ActionItem[]>([]);
+  // Realtime: advisor task changes appear instantly for the client
+  useRealtimeTasks(sessionId, setTasks);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const celebratedRef = useRef(false);

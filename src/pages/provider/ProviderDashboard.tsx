@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
 import {
   Mic,
@@ -102,7 +104,10 @@ function SkeletonRow() {
 
 export default function ProviderDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
+  // Realtime: push DB changes straight into local state (no polling)
+  useRealtimeSessions(setSessions, user?.id ?? null);
   const [loading, setLoading] = useState(true);
   const [recordOpen, setRecordOpen] = useState(false);
   const [processingStage, setProcessingStage] = useState<null | "uploading" | "analyzing">(null);

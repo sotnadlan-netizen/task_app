@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
 import {
   Loader2,
@@ -47,8 +49,11 @@ function StatusBadge({ taskCount, completedCount }: { taskCount: number; complet
 }
 
 export default function ClientDashboard() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
+  // Realtime: receive new/updated/deleted sessions instantly
+  useRealtimeSessions(setSessions, null, user?.email ?? null);
   const [loading, setLoading] = useState(true);
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [lastVisit] = useState<number>(() => {

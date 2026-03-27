@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -387,6 +388,8 @@ export default function ProviderBoard() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<ActionItem[]>([]);
+  // Realtime: receive task changes from other sessions or AI pipeline
+  useRealtimeTasks(sessionId, setTasks);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
