@@ -111,6 +111,8 @@
 | FE-011 | Add session search bar (filter by client email or date) | `Done` |
 | FE-012 | Add session delete action with confirmation dialog | `Done` |
 | FE-013 | Add date range picker filter to session list | `Done` |
+| FE-043 | Build `TaskReviewDialog` — review, edit, and approve AI tasks before client sees them | `Done` |
+| FE-045 | Add "Client Pulse" traffic-light card grid on Provider Dashboard (green/yellow/red by task completion rate, Send Reminder stub on red cards) | `Done` |
 
 ### Task Board (Kanban)
 | ID | Description | Status |
@@ -232,11 +234,11 @@
 ### End-to-End Tests
 | ID | Description | Status |
 |----|-------------|--------|
-| QA-011 | Set up Playwright for E2E tests against the Vercel preview environment | `Todo` |
-| QA-012 | E2E test: Provider signs up, records audio, views session, sees tasks on board | `Todo` |
-| QA-013 | E2E test: Client logs in, views assigned session, checks off assigned task | `Todo` |
-| QA-014 | E2E test: Provider edits system prompt, re-processes session, verifies new output | `Todo` |
-| QA-015 | E2E test: Unauthorized client cannot access another client's session | `Todo` |
+| QA-011 | Set up Playwright for E2E tests against the Vercel preview environment | `Done` <!-- [QA-Approved] playwright.config.ts, chromium, webServer fallback --> |
+| QA-012 | E2E test: Provider signs up, records audio, views session, sees tasks on board | `Done` <!-- [QA-Approved] e2e/provider-dashboard.spec.ts, 6 tests --> |
+| QA-013 | E2E test: Client logs in, views assigned session, checks off assigned task | `Done` <!-- [QA-Approved] e2e/client-task-board.spec.ts, 4 tests --> |
+| QA-014 | E2E test: Provider edits system prompt, re-processes session, verifies new output | `Done` <!-- [QA-Approved] e2e/agent-config.spec.ts, 4 tests --> |
+| QA-015 | E2E test: Unauthorized client cannot access another client's session | `Done` <!-- [QA-Approved] e2e/session-isolation.spec.ts, 4 tests --> |
 
 ### Performance & Security
 | ID | Description | Status |
@@ -250,7 +252,7 @@
 | ID | Description | Status |
 |----|-------------|--------|
 | QA-020 | Set up GitHub Actions pipeline: lint → unit test → build on every PR | `Done` <!-- [QA-Approved] .github/workflows/ci.yml created --> |
-| QA-021 | Add E2E test stage to GitHub Actions (runs against Vercel preview URL) | `Todo` |
+| QA-021 | Add E2E test stage to GitHub Actions (runs against Vercel preview URL) | `Done` <!-- [QA-Approved] ci.yml e2e job, gated on E2E_BASE_URL secret --> |
 | QA-022 | Add code coverage reporting (threshold ≥ 70%) in CI pipeline | `Done` <!-- [QA-Approved] vitest coverage-v8, thresholds 70%, artifact upload in CI --> |
 | QA-023 | Set up Dependabot for automated dependency security updates | `Done` <!-- [QA-Approved] .github/dependabot.yml with npm + github-actions ecosystems --> |
 
@@ -261,7 +263,7 @@
 | Role | Done | In-Progress | Todo | Total |
 |------|------|-------------|------|-------|
 | Backend | 31 | 0 | 7 | 38 |
-| Frontend | 35 | 0 | 9 | 44 |
+| Frontend | 37 | 0 | 9 | 46 |
 | AI-Integration | 14 | 0 | 6 | 20 |
-| QA | 11 | 0 | 12 | 23 |
-| **Total** | **91** | **0** | **34** | **125** |
+| QA | 20 | 0 | 3 | 23 |
+| **Total** | **102** | **0** | **25** | **127** |

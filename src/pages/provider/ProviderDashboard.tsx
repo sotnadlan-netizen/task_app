@@ -39,14 +39,19 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Layout } from "@/components/Layout";
 import { RecordDialog } from "@/components/features/RecordDialog";
+import { ClientPulseGrid } from "@/components/provider/ClientPulseGrid";
 import {
   apiFetchSessions,
   apiProcessAudio,
   apiLoadMockData,
   apiFetchConfig,
   apiDeleteSession,
+  apiUpdateTaskDetails,
+  apiDeleteTask,
+  type ActionItem,
   type Session,
 } from "@/lib/storage";
+import { TaskReviewDialog, type AiTask } from "@/components/provider/TaskReviewDialog";
 import { toast } from "sonner";
 
 function StatusBadge({ taskCount, completedCount }: { taskCount: number; completedCount: number }) {
@@ -108,6 +113,15 @@ export default function ProviderDashboard() {
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // Task review dialog state
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewData, setReviewData] = useState<{
+    sessionId: string;
+    tasks: AiTask[];
+    summary: string;
+    originalTasks: ActionItem[];
+  } | null>(null);
+
   const loadSessions = useCallback(() => {
     setLoading(true);
     apiFetchSessions()
@@ -125,9 +139,24 @@ export default function ProviderDashboard() {
       const { systemPrompt } = await apiFetchConfig();
       setProcessingStage("analyzing");
       const { session, tasks } = await apiProcessAudio(blob, systemPrompt, "recording.webm", clientEmail);
-      toast.success(`${tasks.length} tasks extracted`, { description: session.filename });
+      toast.success(`${tasks.length} tasks extracted — review before sending`, {
+        description: session.filename,
+      });
       loadSessions();
-      navigate(`/provider/board/${session.id}`);
+      // Open review dialog instead of navigating directly
+      setReviewData({
+        sessionId: session.id,
+        summary: session.summary ?? "",
+        tasks: tasks.map((t) => ({
+          id: t.id,
+          title: t.title,
+          description: t.description,
+          assignee: t.assignee,
+          priority: t.priority,
+        })),
+        originalTasks: tasks,
+      });
+      setReviewOpen(true);
     } catch (err: unknown) {
       console.error("[ProviderDashboard] process-audio failed:", err);
       toast.error("Processing failed", {
@@ -136,6 +165,51 @@ export default function ProviderDashboard() {
     } finally {
       setProcessingStage(null);
     }
+  }
+
+  async function handleApproveReview(approvedTasks: AiTask[]) {
+    if (!reviewData) return;
+    const { sessionId, originalTasks } = reviewData;
+
+    // Determine which original tasks were deleted
+    const approvedIds = new Set(approvedTasks.map((t) => t.id));
+    const deletedIds = originalTasks
+      .filter((t) => !approvedIds.has(t.id))
+      // only delete tasks that actually exist in the DB (id doesn't start with "new-")
+      .filter((t) => !t.id.startsWith("new-"))
+      .map((t) => t.id);
+
+    try {
+      // Apply edits to existing tasks
+      await Promise.all(
+        approvedTasks
+          .filter((t) => !t.id.startsWith("new-"))
+          .map((t) => {
+            const original = originalTasks.find((o) => o.id === t.id);
+            const changed =
+              !original ||
+              original.title !== t.title ||
+              original.priority !== t.priority ||
+              (original.description ?? "") !== (t.description ?? "");
+            if (!changed) return Promise.resolve();
+            return apiUpdateTaskDetails(t.id, {
+              title: t.title,
+              description: t.description,
+              priority: t.priority,
+            });
+          }),
+      );
+
+      // Delete removed tasks
+      await Promise.all(deletedIds.map((id) => apiDeleteTask(id)));
+    } catch (err) {
+      console.error("[ProviderDashboard] review apply failed:", err);
+      toast.error("Failed to apply some edits — check the board");
+    }
+
+    setReviewOpen(false);
+    setReviewData(null);
+    navigate(`/provider/board/${sessionId}`);
   }
 
   async function handleLoadMock() {
@@ -256,6 +330,9 @@ export default function ProviderDashboard() {
         ))}
       </div>
 
+      {/* Client Pulse Grid */}
+      <ClientPulseGrid sessions={sessions} />
+
       {/* Actions */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
         <Button
@@ -348,19 +425,36 @@ export default function ProviderDashboard() {
             </TableBody>
           </Table>
         ) : filteredSessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
-            <div className="rounded-full bg-slate-100 p-4">
-              <Mic className="h-6 w-6 text-slate-400" />
+          search || dateFrom || dateTo ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+              <div className="rounded-full bg-slate-100 p-4">
+                <Mic className="h-6 w-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">No sessions match your filters</p>
             </div>
-            <p className="text-sm font-medium text-slate-500">
-              {search || dateFrom || dateTo ? "No sessions match your filters" : "No sessions yet"}
-            </p>
-            {!search && !dateFrom && !dateTo && (
-              <p className="text-xs text-slate-400">
-                Click <span className="font-semibold">Record Meeting</span> or load demo data to get started.
-              </p>
-            )}
-          </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              {/* Inline SVG illustration — microphone + soundwave */}
+              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle cx="40" cy="40" r="40" fill="#EEF2FF" />
+                <rect x="33" y="18" width="14" height="26" rx="7" fill="#6366F1" />
+                <path d="M24 40c0 8.837 7.163 16 16 16s16-7.163 16-16" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+                <line x1="40" y1="56" x2="40" y2="64" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="33" y1="64" x2="47" y2="64" stroke="#6366F1" strokeWidth="2.5" strokeLinecap="round" />
+                {/* Soundwave dots */}
+                <circle cx="20" cy="40" r="2" fill="#A5B4FC" />
+                <circle cx="14" cy="40" r="1.5" fill="#C7D2FE" />
+                <circle cx="60" cy="40" r="2" fill="#A5B4FC" />
+                <circle cx="66" cy="40" r="1.5" fill="#C7D2FE" />
+              </svg>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-slate-700">No sessions yet</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-xs">
+                  Record your first advisory session using the microphone above. The AI will extract a summary and action items automatically.
+                </p>
+              </div>
+            </div>
+          )
         ) : (
           <Table>
             <TableHeader>
@@ -465,6 +559,21 @@ export default function ProviderDashboard() {
         onClose={() => setRecordOpen(false)}
         onRecordingComplete={handleRecordingComplete}
       />
+
+      {/* Task Review & Approval Dialog */}
+      {reviewData && (
+        <TaskReviewDialog
+          open={reviewOpen}
+          onOpenChange={(v) => {
+            setReviewOpen(v);
+            if (!v) setReviewData(null);
+          }}
+          sessionId={reviewData.sessionId}
+          tasks={reviewData.tasks}
+          summary={reviewData.summary}
+          onApprove={handleApproveReview}
+        />
+      )}
 
       {/* FE-012: Delete confirmation AlertDialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
