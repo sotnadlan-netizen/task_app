@@ -122,4 +122,11 @@ app.listen(PORT, async () => {
     console.error(`\n❌  Supabase connection FAILED: ${err.message}`);
     console.error("   Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env\n");
   }
+
+  // ── Audio expiry cleanup job (BE-023) ───────────────────────────────────────
+  // Run once at startup (after 60s delay) then every 24h
+  // Configure retention via AUDIO_EXPIRY_DAYS env var (default: 30)
+  const EXPIRY_DAYS = parseInt(process.env.AUDIO_EXPIRY_DAYS || "30", 10);
+  setTimeout(() => db.cleanupExpiredAudio(EXPIRY_DAYS), 60_000);
+  setInterval(() => db.cleanupExpiredAudio(EXPIRY_DAYS), 24 * 60 * 60 * 1000);
 });

@@ -618,6 +618,89 @@ class DatabaseService {
     return data?.signedUrl ?? null;
   }
 
+  // ── Audio Expiry Cleanup ───────────────────────────────────────────────────
+
+  /**
+   * Delete audio files from Supabase Storage that are older than maxAgeDays.
+   * Sets audio_url = NULL on cleaned-up session rows.
+   * Fails silently — this is a background job.
+   *
+   * AUDIO_EXPIRY_DAYS env var controls the default (default: 30).
+   */
+  async cleanupExpiredAudio(maxAgeDays = 30) {
+    try {
+      const bucket = process.env.SUPABASE_AUDIO_BUCKET || "audio-recordings";
+
+      // Find sessions with an audio_url that are older than maxAgeDays
+      const { data: sessions, error: fetchErr } = await getClient()
+        .from("sessions")
+        .select("id, audio_url")
+        .not("audio_url", "is", null)
+        .lt("created_at", new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString());
+
+      if (fetchErr) {
+        console.warn("[db] cleanupExpiredAudio: failed to fetch sessions:", fetchErr.message);
+        return;
+      }
+
+      if (!sessions || sessions.length === 0) {
+        console.log(`[db] cleanupExpiredAudio: no expired audio files found (maxAgeDays=${maxAgeDays})`);
+        return;
+      }
+
+      // Extract storage paths from audio_url values
+      // audio_url is a public URL like: https://<project>.supabase.co/storage/v1/object/public/<bucket>/<path>
+      const paths = [];
+      const sessionIds = [];
+
+      for (const session of sessions) {
+        try {
+          const url = new URL(session.audio_url);
+          // Path is everything after /public/<bucket>/
+          const marker = `/public/${bucket}/`;
+          const idx = url.pathname.indexOf(marker);
+          if (idx !== -1) {
+            paths.push(url.pathname.slice(idx + marker.length));
+            sessionIds.push(session.id);
+          }
+        } catch {
+          // Skip malformed URLs
+        }
+      }
+
+      if (paths.length === 0) {
+        console.log("[db] cleanupExpiredAudio: no valid storage paths extracted");
+        return;
+      }
+
+      // Remove files from storage
+      const { error: removeErr } = await getClient()
+        .storage
+        .from(bucket)
+        .remove(paths);
+
+      if (removeErr) {
+        console.warn("[db] cleanupExpiredAudio: storage remove error:", removeErr.message);
+        // Still try to null out the DB records
+      }
+
+      // Null out audio_url in DB for cleaned-up sessions
+      const { error: updateErr } = await getClient()
+        .from("sessions")
+        .update({ audio_url: null })
+        .in("id", sessionIds);
+
+      if (updateErr) {
+        console.warn("[db] cleanupExpiredAudio: failed to null audio_url:", updateErr.message);
+        return;
+      }
+
+      console.log(`[db] cleanupExpiredAudio: cleaned up ${paths.length} audio file(s) older than ${maxAgeDays} days`);
+    } catch (err) {
+      console.warn("[db] cleanupExpiredAudio: unexpected error:", err.message);
+    }
+  }
+
   // ── Health check ───────────────────────────────────────────────────────────
 
   async ping() {
