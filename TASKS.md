@@ -131,6 +131,8 @@
 | FE-023 | Show per-session task completion progress (e.g., 3/5 tasks done) | `Done` |
 | FE-024 | Make client task board read-only for advisor tasks, interactive for client tasks | `Done` |
 | FE-025 | Add client notification banner when new tasks are assigned | `Todo` |
+| FE-043 | Add `ProgressGraph` radial SVG ring showing monthly goal completion on Client Dashboard | `Done` |
+| FE-044 | Add `TimeCapsule` component showing most recent session summary as bullet points | `Done` |
 
 ### Audio Playback
 | ID | Description | Status |
@@ -222,7 +224,7 @@
 ### Integration Tests
 | ID | Description | Status |
 |----|-------------|--------|
-| QA-007 | Write integration tests for `POST /api/process-audio` with a fixture audio file | `Todo` |
+| QA-007 | Write integration tests for `POST /api/process-audio` with a fixture audio file | `Done` <!-- [QA-Approved] 11/11 tests pass --> |
 | QA-008 | Write integration tests for `GET /api/sessions` with provider vs client token | `Done` <!-- [QA-Approved] 12/12 tests pass --> |
 | QA-009 | Write integration tests for `PATCH /api/tasks/:id` completion toggle permissions | `Done` <!-- [QA-Approved] 19/19 tests pass --> |
 | QA-010 | Write integration tests for `POST /api/profiles` signup → profile creation flow | `Done` <!-- [QA-Approved] 4/4 tests pass --> |
@@ -249,8 +251,8 @@
 |----|-------------|--------|
 | QA-020 | Set up GitHub Actions pipeline: lint → unit test → build on every PR | `Done` <!-- [QA-Approved] .github/workflows/ci.yml created --> |
 | QA-021 | Add E2E test stage to GitHub Actions (runs against Vercel preview URL) | `Todo` |
-| QA-022 | Add code coverage reporting (threshold ≥ 70%) in CI pipeline | `Todo` |
-| QA-023 | Set up Dependabot for automated dependency security updates | `Todo` |
+| QA-022 | Add code coverage reporting (threshold ≥ 70%) in CI pipeline | `Done` <!-- [QA-Approved] vitest coverage-v8, thresholds 70%, artifact upload in CI --> |
+| QA-023 | Set up Dependabot for automated dependency security updates | `Done` <!-- [QA-Approved] .github/dependabot.yml with npm + github-actions ecosystems --> |
 
 ---
 
@@ -259,7 +261,7 @@
 | Role | Done | In-Progress | Todo | Total |
 |------|------|-------------|------|-------|
 | Backend | 31 | 0 | 7 | 38 |
-| Frontend | 33 | 0 | 9 | 42 |
+| Frontend | 35 | 0 | 9 | 44 |
 | AI-Integration | 14 | 0 | 6 | 20 |
 | QA | 11 | 0 | 12 | 23 |
-| **Total** | **89** | **0** | **34** | **123** |
+| **Total** | **91** | **0** | **34** | **125** |

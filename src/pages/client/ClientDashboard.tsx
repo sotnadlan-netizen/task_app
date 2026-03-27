@@ -21,6 +21,8 @@ import {
 import { ClientLayout } from "@/components/layouts/ClientLayout";
 import { apiFetchSessions, type Session } from "@/lib/storage";
 import { toast } from "sonner";
+import { ProgressGraph } from "@/components/client/ProgressGraph";
+import { TimeCapsule } from "@/components/client/TimeCapsule";
 
 function StatusBadge({ taskCount, completedCount }: { taskCount: number; completedCount: number }) {
   if (taskCount === 0)
@@ -70,8 +72,28 @@ export default function ClientDashboard() {
     { label: "Completed Tasks", value: totalCompleted, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
   ];
 
+  const mostRecent = sessions[0];
+
   return (
     <ClientLayout title="My Sessions" subtitle="Advisory sessions assigned to you">
+      {/* Progress Map */}
+      {!loading && (
+        <>
+          <ProgressGraph
+            totalTasks={totalTasks}
+            completedTasks={totalCompleted}
+            sessionCount={sessions.length}
+          />
+          {mostRecent && mostRecent.summary && (
+            <TimeCapsule
+              summary={mostRecent.summary}
+              createdAt={mostRecent.createdAt}
+              filename={mostRecent.filename}
+            />
+          )}
+        </>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(({ label, value, icon: Icon, color, bg }) => (
