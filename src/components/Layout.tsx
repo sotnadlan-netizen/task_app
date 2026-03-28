@@ -101,14 +101,22 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         {/* Footer */}
         <div className="px-4 py-4 border-t border-slate-800 space-y-2">
           <div className="flex items-center gap-2.5">
-            <div className="h-7 w-7 rounded-full bg-indigo-600/20 flex items-center justify-center shrink-0">
-              <span className="text-xs font-bold text-indigo-400">
-                {user?.email?.[0]?.toUpperCase() ?? "A"}
-              </span>
-            </div>
+            {user?.user_metadata?.avatar_url ? (
+              <img
+                src={user.user_metadata.avatar_url}
+                alt="avatar"
+                className="h-7 w-7 rounded-full object-cover ring-2 ring-indigo-500/30 shrink-0"
+              />
+            ) : (
+              <div className="h-7 w-7 rounded-full bg-indigo-600/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-indigo-400">
+                  {user?.email?.[0]?.toUpperCase() ?? "A"}
+                </span>
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-slate-300 leading-none truncate">
-                {user?.email ?? "Advisor"}
+                {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "Advisor"}
               </p>
               <p className="text-[10px] text-slate-600 mt-0.5">Provider</p>
             </div>

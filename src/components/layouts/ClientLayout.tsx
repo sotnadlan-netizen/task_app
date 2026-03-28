@@ -1,4 +1,5 @@
 import { Mic, LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -10,6 +11,14 @@ interface ClientLayoutProps {
 
 export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email;
+  const avatarUrl   = user?.user_metadata?.avatar_url;
+
+  async function handleSignOut() {
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
@@ -31,11 +40,28 @@ export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
 
         {/* User + Sign Out */}
         <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500 hidden sm:block">{user?.email}</span>
+          <div className="hidden sm:flex items-center gap-2">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="avatar"
+                className="h-7 w-7 rounded-full object-cover ring-2 ring-slate-200"
+              />
+            ) : (
+              <div className="h-7 w-7 rounded-full bg-indigo-100 flex items-center justify-center">
+                <span className="text-xs font-bold text-indigo-600">
+                  {displayName?.[0]?.toUpperCase() ?? "C"}
+                </span>
+              </div>
+            )}
+            <span className="text-xs font-medium text-slate-700 max-w-[140px] truncate">
+              {displayName}
+            </span>
+          </div>
           <Button
             variant="ghost"
             size="sm"
-            onClick={signOut}
+            onClick={handleSignOut}
             className="gap-1.5 text-slate-500 hover:text-slate-800 h-8 text-xs sm:text-sm"
           >
             <LogOut className="h-3.5 w-3.5" />
