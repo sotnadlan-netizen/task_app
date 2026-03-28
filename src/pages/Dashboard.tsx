@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   Mic,
@@ -54,6 +55,7 @@ function StatusBadge({ taskCount, completedCount }: { taskCount: number; complet
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -241,18 +243,23 @@ export default function Dashboard() {
                 >
                   <TableCell className="pl-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-slate-800 truncate max-w-[200px]">
-                        {s.filename}
+                      <p className="text-sm font-semibold text-slate-900 truncate max-w-[220px]">
+                        {s.title || s.filename}
                       </p>
                       <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-medium text-green-700 whitespace-nowrap shrink-0">
                         <ShieldCheck className="h-3 w-3" /> Audio Deleted
                       </span>
                     </div>
+                    {s.title && (
+                      <p className="text-[11px] text-slate-400 truncate max-w-[280px] mt-0.5 font-mono">
+                        {s.filename}
+                      </p>
+                    )}
                     <p className="text-xs text-slate-400 truncate max-w-[280px] mt-0.5">
                       {s.summary}
                     </p>
                     <p className="text-[10px] text-slate-300 mt-1">
-                      🔐 השיחה עובדה ונמחקה לצמיתות מטעמי פרטיות
+                      {t("dashboard.privacyNotice")}
                     </p>
                   </TableCell>
                   <TableCell className="text-xs text-slate-500 whitespace-nowrap">

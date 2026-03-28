@@ -1,13 +1,14 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, Link } from "react-router-dom";
 import { Mic, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/lib/supabaseClient";
-import { apiFetch } from "@/lib/apiClient";
 import { toast } from "sonner";
 
 export default function Signup() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -25,11 +26,15 @@ export default function Signup() {
       });
       if (error) throw error;
 
-      // Create profile record on the server
-      await apiFetch("/api/profiles", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      // Create profile row directly via Supabase (bypasses cold-start backend)
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        await supabase.from("profiles").upsert({
+          id:    newUser.id,
+          email: newUser.email,
+          role,
+        });
+      }
 
       toast.success("Account created!");
       navigate(role === "client" ? "/client/dashboard" : "/provider/dashboard", { replace: true });
@@ -96,7 +101,7 @@ export default function Signup() {
                         : "border-slate-200 text-slate-600 hover:border-slate-300"
                     }`}
                   >
-                    {r === "provider" ? "יועץ / ספק" : "לקוח"}
+                    {r === "provider" ? t("signup.providerRole") : t("signup.clientRole")}
                   </button>
                 ))}
               </div>

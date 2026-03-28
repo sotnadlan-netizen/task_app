@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
 import {
-  Loader2,
   ChevronRight,
   CheckCircle2,
   Clock,
@@ -24,9 +23,25 @@ import {
 } from "@/components/ui/table";
 import { ClientLayout } from "@/components/layouts/ClientLayout";
 import { apiFetchSessions, type Session } from "@/lib/storage";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ProgressGraph } from "@/components/client/ProgressGraph";
 import { TimeCapsule } from "@/components/client/TimeCapsule";
+
+function SkeletonRow() {
+  return (
+    <TableRow>
+      <TableCell className="pl-5 py-3.5">
+        <Skeleton className="h-4 w-48 mb-1" />
+        <Skeleton className="h-3 w-64" />
+      </TableCell>
+      <TableCell><Skeleton className="h-3 w-20" /></TableCell>
+      <TableCell><Skeleton className="h-3 w-10" /></TableCell>
+      <TableCell><Skeleton className="h-5 w-16 rounded-full" /></TableCell>
+      <TableCell className="pr-5"><Skeleton className="h-7 w-20 rounded-md" /></TableCell>
+    </TableRow>
+  );
+}
 
 function StatusBadge({ taskCount, completedCount }: { taskCount: number; completedCount: number }) {
   if (taskCount === 0)
@@ -162,9 +177,20 @@ export default function ClientDashboard() {
           <p className="text-xs text-slate-400">{sessions.length} total</p>
         </div>
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-5">Session</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Date</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">My Tasks</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pr-5" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow /><SkeletonRow />
+            </TableBody>
+          </Table>
         ) : sessions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -210,7 +236,7 @@ export default function ClientDashboard() {
                   onClick={() => navigate(`/client/board/${s.id}`)}
                 >
                   <TableCell className="pl-5 py-3.5">
-                    <p className="text-sm font-medium text-slate-800 truncate max-w-[240px]">
+                    <p className="text-sm font-semibold text-slate-900 truncate max-w-[240px]">
                       {s.title || s.filename}
                     </p>
                     <p className="text-xs text-slate-400 truncate max-w-[280px] mt-0.5">

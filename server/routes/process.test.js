@@ -29,7 +29,7 @@ vi.mock("../middleware/uploadMiddleware.js", () => ({
     single: () => (req, _res, next) => {
       if (req.headers["x-test-has-file"] !== "false") {
         req.file = {
-          path:         "/tmp/test-audio.webm",
+          buffer:       Buffer.from("fake-audio-data"),
           originalname: "test-recording.webm",
           mimetype:     "audio/webm",
           size:         50_000,

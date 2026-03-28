@@ -68,10 +68,10 @@ describe("ClientDashboard (FE-022 / FE-023)", () => {
   });
 
   // ── FE-022: basic rendering ───────────────────────────────────────────────
-  it("shows a loading spinner while sessions are fetching", () => {
+  it("shows skeleton rows while sessions are fetching", () => {
     mockFetchSessions.mockReturnValue(new Promise(() => {}));
     const { container } = renderDashboard();
-    expect(container.querySelector("svg.animate-spin")).toBeTruthy();
+    expect(container.querySelector(".animate-pulse")).toBeTruthy();
   });
 
   it("shows 'No sessions yet' when the list is empty", async () => {

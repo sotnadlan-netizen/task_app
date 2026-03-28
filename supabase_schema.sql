@@ -66,10 +66,83 @@ CREATE INDEX IF NOT EXISTS tasks_session_id_idx    ON tasks(session_id);
 CREATE INDEX IF NOT EXISTS sessions_created_at_idx ON sessions(created_at DESC);
 
 
--- ── 5. Disable RLS (server uses service_role key) ────────────
-ALTER TABLE sessions      DISABLE ROW LEVEL SECURITY;
-ALTER TABLE tasks         DISABLE ROW LEVEL SECURITY;
-ALTER TABLE prompt_config DISABLE ROW LEVEL SECURITY;
+-- ── 5. RLS — enable and add policies ─────────────────────────
+--
+-- Frontend now queries Supabase directly with the anon key, so
+-- we MUST enforce row-level security instead of relying solely
+-- on the service-role key in the backend.
+--
+ALTER TABLE sessions      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE prompt_config ENABLE ROW LEVEL SECURITY;
+
+-- sessions: provider sees their own; client sees sessions addressed to them
+DROP POLICY IF EXISTS "sessions_provider_select" ON sessions;
+CREATE POLICY "sessions_provider_select" ON sessions
+  FOR SELECT USING (
+    auth.uid() = provider_id
+  );
+
+DROP POLICY IF EXISTS "sessions_client_select" ON sessions;
+CREATE POLICY "sessions_client_select" ON sessions
+  FOR SELECT USING (
+    client_email = (SELECT email FROM profiles WHERE id = auth.uid())
+  );
+
+DROP POLICY IF EXISTS "sessions_provider_insert" ON sessions;
+CREATE POLICY "sessions_provider_insert" ON sessions
+  FOR INSERT WITH CHECK (auth.uid() = provider_id);
+
+DROP POLICY IF EXISTS "sessions_provider_delete" ON sessions;
+CREATE POLICY "sessions_provider_delete" ON sessions
+  FOR DELETE USING (auth.uid() = provider_id);
+
+-- tasks: accessible when the parent session is accessible
+DROP POLICY IF EXISTS "tasks_select" ON tasks;
+CREATE POLICY "tasks_select" ON tasks
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM sessions s
+      WHERE s.id = tasks.session_id
+        AND (
+          s.provider_id = auth.uid()
+          OR s.client_email = (SELECT email FROM profiles WHERE id = auth.uid())
+        )
+    )
+  );
+
+DROP POLICY IF EXISTS "tasks_provider_write" ON tasks;
+CREATE POLICY "tasks_provider_write" ON tasks
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM sessions s
+      WHERE s.id = tasks.session_id AND s.provider_id = auth.uid()
+    )
+  );
+
+DROP POLICY IF EXISTS "tasks_client_toggle" ON tasks;
+CREATE POLICY "tasks_client_toggle" ON tasks
+  FOR UPDATE USING (
+    assignee = 'Client'
+    AND EXISTS (
+      SELECT 1 FROM sessions s
+      WHERE s.id = tasks.session_id
+        AND s.client_email = (SELECT email FROM profiles WHERE id = auth.uid())
+    )
+  );
+
+-- prompt_config: providers only
+DROP POLICY IF EXISTS "prompt_config_provider_select" ON prompt_config;
+CREATE POLICY "prompt_config_provider_select" ON prompt_config
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'provider')
+  );
+
+DROP POLICY IF EXISTS "prompt_config_provider_write" ON prompt_config;
+CREATE POLICY "prompt_config_provider_write" ON prompt_config
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'provider')
+  );
 
 
 -- ── 6. Schema cache reload ───────────────────────────────────
@@ -124,8 +197,25 @@ END $$;
 CREATE INDEX IF NOT EXISTS sessions_provider_id_idx  ON sessions(provider_id);
 CREATE INDEX IF NOT EXISTS sessions_client_email_idx ON sessions(client_email);
 
--- Keep RLS disabled — backend enforces access via WHERE clauses
-ALTER TABLE profiles DISABLE ROW LEVEL SECURITY;
+-- profiles: each user can read/write their own row
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "profiles_self" ON profiles;
+CREATE POLICY "profiles_self" ON profiles
+  FOR ALL USING (auth.uid() = id);
 
 -- IMPORTANT: After running this migration, reload the PostgREST
 -- schema cache: Supabase → Settings → API → Reload schema cache
+
+-- AI-019/020: Add sentiment and follow_up_questions to sessions
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_name='sessions' AND column_name='sentiment') THEN
+    ALTER TABLE sessions ADD COLUMN sentiment text NOT NULL DEFAULT 'Neutral'
+      CHECK (sentiment IN ('Positive', 'Neutral', 'At-Risk'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+    WHERE table_name='sessions' AND column_name='follow_up_questions') THEN
+    ALTER TABLE sessions ADD COLUMN follow_up_questions jsonb NOT NULL DEFAULT '[]'::jsonb;
+  END IF;
+END $$;

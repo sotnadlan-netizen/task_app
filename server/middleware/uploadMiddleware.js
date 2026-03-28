@@ -1,17 +1,14 @@
 import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
  * Multer middleware for audio uploads.
- * - Strict audio/* mimetype check (rejects non-audio at the middleware layer)
- * - 100 MB max file size
- * - Temp files land in /uploads/ and are deleted immediately after processing
+ * - Uses memoryStorage: no disk I/O, no ephemeral-filesystem dependency on Render.
+ * - Strict audio/* mimetype check (rejects non-audio at the middleware layer).
+ * - 100 MB max file size.
+ * - req.file.buffer is passed directly to Gemini — no temp file to clean up.
  */
 export const uploadAudio = multer({
-  dest: path.join(__dirname, "../../uploads/"),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 100 * 1024 * 1024 },
   fileFilter(_req, file, cb) {
     const mime = file.mimetype.split(";")[0].trim();

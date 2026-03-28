@@ -1,13 +1,12 @@
 import express from "express";
 import path from "path";
-import fs from "fs/promises";
-import { unlinkSync } from "fs";
 import { uploadAudio } from "../middleware/uploadMiddleware.js";
 import { analyzeAudio } from "../services/GeminiService.js";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateAudioBuffer } from "../utils/validateAudio.js";
 import { deduplicateTasks } from "../utils/deduplicateTasks.js";
+import { sendNewSessionEmail } from "../services/EmailService.js";
 
 const router = express.Router();
 
@@ -35,8 +34,17 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       return res.status(400).json({ error: "No audio file provided." });
     }
 
-    // Resolve system prompt: prefer value sent from UI, fall back to stored config
+    // Dual-role payload check
+    const providerId = req.user?.id;
+    if (!providerId) {
+      console.warn("[process] ⚠️  Missing provider_id — auth middleware did not populate req.user");
+    }
+
     let { systemPrompt, clientEmail } = req.body;
+    if (!clientEmail) {
+      console.warn("[process] ⚠️  client_email not provided — session will not be assigned to a client");
+    }
+
     if (!systemPrompt) {
       const config = await db.getPromptConfig();
       systemPrompt = config.systemPrompt;
@@ -48,7 +56,8 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       `mime: ${audioFile.mimetype}`
     );
 
-    const audioBuffer = await fs.readFile(audioFile.path);
+    // Memory storage — buffer is already in req.file.buffer, no disk read needed
+    const audioBuffer = audioFile.buffer;
 
     // AI-014: Reject recordings that are too short (~< 3 seconds)
     try {
@@ -62,24 +71,21 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
 
     const sessionId = crypto.randomUUID();
 
-    // Upload audio to Supabase Storage (non-blocking fallback to null on failure)
-    const audioUrl = await db.uploadAudioToStorage(audioBuffer, {
-      sessionId,
-      providerId: req.user.id,
-      filename:   audioFile.originalname,
-    });
-
-    const { title, summary, tasks: rawTasks, usage } = await analyzeAudio(base64Audio, mimeType, systemPrompt);
+    // Privacy-first: audio is NOT stored — process directly and discard
+    const { title, summary, sentiment, followUpQuestions, tasks: rawTasks, usage } =
+      await analyzeAudio(base64Audio, mimeType, systemPrompt);
 
     const session = {
-      id:          sessionId,
-      createdAt:   new Date().toISOString(),
-      filename:    audioFile.originalname,
-      title:       title || "",
-      summary:     summary || "",
-      providerId:  req.user.id,
-      clientEmail: clientEmail || null,
-      audioUrl:    audioUrl   || null,
+      id:                sessionId,
+      createdAt:         new Date().toISOString(),
+      filename:          audioFile.originalname,
+      title:             title || "",
+      summary:           summary || "",
+      sentiment:         sentiment || "Neutral",
+      followUpQuestions: followUpQuestions || [],
+      providerId:        providerId || null,
+      clientEmail:       clientEmail || null,
+      audioUrl:          null, // audio is never persisted
     };
     await db.saveSession(session);
 
@@ -99,6 +105,11 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
 
     await db.saveTasks(newTasks);
 
+    // BE-029: Notify client of new session (fire-and-forget)
+    if (clientEmail) {
+      sendNewSessionEmail(clientEmail, session.title || session.filename, newTasks.length).catch(() => {});
+    }
+
     // AI-015: Log token usage (fire-and-forget — never blocks the response)
     if (usage) {
       const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -111,42 +122,41 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       }).catch(() => {});
     }
 
-    console.log(`[process] ✔ Session saved — ${newTasks.length} tasks extracted. Audio deleted.`);
+    console.log(`[process] ✔ Session saved — ${newTasks.length} tasks extracted. Audio discarded (privacy).`);
     res.json({ session, tasks: newTasks });
 
   } catch (err) {
+    // Full error visibility for debugging
+    console.error("[Audio Process Error]:", err);
+
     const msg = err.message || "";
 
     if (msg.includes("429") || msg.includes("quota") || msg.includes("RESOURCE_EXHAUSTED")) {
-      console.error("[process] ✖ QUOTA EXCEEDED:", msg.slice(0, 300));
       return res.status(429).json({
         error: "AI quota exceeded — check billing or try a different model.",
         detail: msg.slice(0, 300),
       });
     }
     if (msg.includes("401") || msg.includes("API key") || msg.includes("API_KEY")) {
-      console.error("[process] ✖ AUTH ERROR:", msg.slice(0, 200));
       return res.status(401).json({ error: "Invalid or missing Google API key." });
     }
     if (msg.includes("404") || msg.includes("not found")) {
       const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-      console.error("[process] ✖ MODEL NOT FOUND:", msg.slice(0, 200));
       return res.status(502).json({
         error: `Gemini model "${MODEL}" not found. Set GEMINI_MODEL in .env to a valid model name.`,
       });
     }
     if (msg.includes("timed out")) {
-      console.error("[process] ✖ TIMEOUT:", msg.slice(0, 200));
       return res.status(504).json({ error: "AI request timed out. Please try again." });
     }
 
-    next(err);
-
-  } finally {
-    if (audioFile?.path) {
-      try { unlinkSync(audioFile.path); } catch (_) {}
-    }
+    // Generic 500 — include message and stack for debugging
+    return res.status(500).json({
+      error: err.message || "Internal error",
+      stack: process.env.NODE_ENV !== "production" ? err.stack : undefined,
+    });
   }
+  // No finally/unlink needed — memoryStorage leaves no temp files on disk
 });
 
 export default router;
