@@ -89,4 +89,26 @@ describe("GeminiService.analyzeAudio", () => {
       "Quota exceeded"
     );
   });
+
+  // ── AI-018: session title field ───────────────────────────────────────────
+  it("returns the title field from AI response (AI-018)", async () => {
+    const payload = {
+      title: "דיון על משכנתה ראשונה",
+      summary: "We discussed the first mortgage.",
+      tasks: [],
+    };
+    mockResponse(JSON.stringify(payload));
+
+    const result = await analyzeAudio("base64data", "audio/webm", "system prompt");
+    expect(result.title).toBe("דיון על משכנתה ראשונה");
+  });
+
+  it("returns a falsy title when AI omits the title field", async () => {
+    const payload = { summary: "No title in this response.", tasks: [] };
+    mockResponse(JSON.stringify(payload));
+
+    const result = await analyzeAudio("base64data", "audio/webm", "system prompt");
+    // Service normalises missing title to "" or null/undefined — all are falsy
+    expect(result.title).toBeFalsy();
+  });
 });

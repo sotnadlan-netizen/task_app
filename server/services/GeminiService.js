@@ -13,6 +13,11 @@ Required format:
 {
   "title": "short 5-word Hebrew headline",
   "summary": "brief summary of the conversation",
+  "sentiment": "Positive",
+  "followUpQuestions": [
+    "What is the client's timeline for signing?",
+    "Has the client compared rates at other banks?"
+  ],
   "tasks": [
     {
       "title": "task title",
@@ -25,9 +30,15 @@ Required format:
 Field descriptions:
 - "title": a concise 4–6 word Hebrew headline summarizing the session topic
 - "summary": a brief summary of the conversation
+- "sentiment": overall emotional tone of the client in the session
+- "followUpQuestions": 2–4 clarifying questions the advisor should ask in the next session to fill any information gaps
 - "tasks": list of action items extracted from the session
 Valid assignee values: "Advisor" | "Client"
-Valid priority values: "High" | "Medium" | "Low"`;
+Valid priority values: "High" | "Medium" | "Low"
+Valid sentiment values: "Positive" | "Neutral" | "At-Risk"
+  - "Positive": client is engaged, optimistic, moving forward confidently
+  - "Neutral": no strong signals either way
+  - "At-Risk": client expressed hesitation, frustration, confusion, or financial stress`;
 
 // ── Retry helpers ─────────────────────────────────────────────────────────────
 
@@ -96,9 +107,39 @@ export async function analyzeAudio(base64Audio, mimeType, systemPrompt) {
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+  // AI-010: structured output via responseSchema — guarantees valid JSON without relying solely on prompt
+  const responseSchema = {
+    type: "object",
+    properties: {
+      title:             { type: "string" },
+      summary:           { type: "string" },
+      sentiment:         { type: "string", enum: ["Positive", "Neutral", "At-Risk"] },
+      followUpQuestions: { type: "array", items: { type: "string" } },
+      tasks: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title:       { type: "string" },
+            description: { type: "string" },
+            assignee:    { type: "string", enum: ["Advisor", "Client"] },
+            priority:    { type: "string", enum: ["High", "Medium", "Low"] },
+          },
+          required: ["title", "description", "assignee", "priority"],
+        },
+      },
+    },
+    required: ["title", "summary", "sentiment", "followUpQuestions", "tasks"],
+  };
+
   const model = genAI.getGenerativeModel({
     model: MODEL,
     systemInstruction: systemPrompt,
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema,
+    },
   });
 
   if (DEBUG) {

@@ -2,6 +2,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { sendAllTasksCompleteEmail } from "../services/EmailService.js";
 
 const router = express.Router();
 
@@ -118,6 +119,22 @@ router.patch("/:id", requireAuth, async (req, res) => {
     }
 
     const updated = await db.updateTaskStatus(req.params.id, !task.completed);
+
+    // BE-031: If the toggled task is now complete, check if ALL client tasks are done
+    if (updated && updated.completed && updated.assignee === "Client") {
+      const allDone = await db.areAllClientTasksComplete(task.sessionId);
+      if (allDone) {
+        const providerEmail = await db.getProviderEmailBySession(task.sessionId);
+        if (providerEmail && session.clientEmail) {
+          sendAllTasksCompleteEmail(
+            providerEmail,
+            session.clientEmail,
+            session.title || session.filename,
+          ).catch(() => {});
+        }
+      }
+    }
+
     res.json(updated);
   } catch (err) {
     console.error(`[tasks] ✖ PATCH /${req.params.id}:`, err);

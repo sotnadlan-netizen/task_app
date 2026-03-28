@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, UserCog, User, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ function TaskCard({
   item: ActionItem;
   onToggle: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const pri = priorityConfig[item.priority];
   return (
     <div
@@ -36,7 +38,7 @@ function TaskCard({
       <span
         className={`absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${pri.bg} ${pri.color}`}
       >
-        {pri.label}
+        {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
       <div className="flex gap-3 pr-16">
         <Checkbox

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Loader2, UserCog, User, CheckCircle2 } from "lucide-react";
@@ -16,9 +17,9 @@ import {
 import { toast } from "sonner";
 
 const priorityConfig = {
-  High: { label: "גבוהה", bg: "bg-rose-100", color: "text-rose-700" },
-  Medium: { label: "בינונית", bg: "bg-amber-100", color: "text-amber-700" },
-  Low: { label: "נמוכה", bg: "bg-slate-100", color: "text-slate-500" },
+  High:   { label: "גבוהה",   bg: "bg-rose-100",  color: "text-rose-700",  ring: "ring-1 ring-rose-200" },
+  Medium: { label: "בינונית", bg: "bg-amber-100", color: "text-amber-700", ring: "ring-1 ring-amber-200" },
+  Low:    { label: "נמוכה",   bg: "bg-slate-100", color: "text-slate-500", ring: "ring-1 ring-slate-200" },
 } as const;
 
 function ClientTaskCard({
@@ -28,16 +29,17 @@ function ClientTaskCard({
   item: ActionItem;
   onToggle: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const pri = priorityConfig[item.priority];
   return (
     <div
-      className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className="group relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-px transition-all cursor-pointer"
       onClick={() => onToggle(item.id)}
     >
       <span
-        className={`absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${pri.bg} ${pri.color}`}
+        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
-        {pri.label}
+        {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
       <div className="flex gap-3 pr-16">
         <Checkbox
@@ -64,13 +66,14 @@ function ClientTaskCard({
 }
 
 function AdvisorTaskCard({ item }: { item: ActionItem }) {
+  const { t } = useTranslation();
   const pri = priorityConfig[item.priority];
   return (
-    <div className="relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm opacity-60 cursor-not-allowed">
+    <div className="relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm opacity-60 cursor-not-allowed">
       <span
-        className={`absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${pri.bg} ${pri.color}`}
+        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
-        {pri.label}
+        {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
       <div className="flex gap-3 pr-16">
         <Checkbox
@@ -210,7 +213,7 @@ export default function ClientBoard() {
                 read-only
               </span>
             </div>
-            <div className="flex-1 space-y-2.5 p-4 bg-slate-50/60 min-h-[200px]">
+            <div className="flex-1 space-y-3 p-5 bg-slate-50/60 min-h-[200px]">
               {advisorTasks.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-8">No tasks assigned</p>
               ) : (
@@ -233,7 +236,7 @@ export default function ClientBoard() {
                 {clientTasks.filter((t) => !t.completed).length} pending
               </span>
             </div>
-            <div className="flex-1 space-y-2.5 p-4 bg-slate-50/60 min-h-[200px]">
+            <div className="flex-1 space-y-3 p-5 bg-slate-50/60 min-h-[200px]">
               {clientTasks.length === 0 ? (
                 <p className="text-xs text-slate-400 text-center py-8">No tasks assigned</p>
               ) : (

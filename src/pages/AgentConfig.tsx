@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Bot, Save, Loader2, RotateCcw, Info, History, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,7 @@ const SCHEMA_HINT = `// Expected JSON output schema:
 }`;
 
 export default function AgentConfig() {
+  const { t } = useTranslation();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -134,7 +136,7 @@ export default function AgentConfig() {
                   dir="rtl"
                   rows={18}
                   className="w-full rounded-lg border border-slate-200 bg-slate-950 px-4 py-3.5 text-sm leading-7 text-slate-100 font-mono placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none shadow-inner"
-                  placeholder="הזן הוראות לסוכן ה-AI..."
+                  placeholder={t("agentConfig.promptPlaceholder")}
                   spellCheck={false}
                 />
                 <div className="absolute bottom-3 left-3 text-[10px] text-slate-600 font-mono">

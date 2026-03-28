@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -12,6 +13,7 @@ import {
   Trash2,
   Check,
   X,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,11 +39,27 @@ import {
   type Session,
 } from "@/lib/storage";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { useAuth } from "@/contexts/AuthContext";
 
 const priorityConfig = {
-  High: { label: "גבוהה", bg: "bg-rose-100", color: "text-rose-700" },
-  Medium: { label: "בינונית", bg: "bg-amber-100", color: "text-amber-700" },
-  Low: { label: "נמוכה", bg: "bg-slate-100", color: "text-slate-500" },
+  High:   { label: "גבוהה",   bg: "bg-rose-100",   color: "text-rose-700",   ring: "ring-1 ring-rose-200" },
+  Medium: { label: "בינונית", bg: "bg-amber-100",  color: "text-amber-700",  ring: "ring-1 ring-amber-200" },
+  Low:    { label: "נמוכה",   bg: "bg-slate-100",  color: "text-slate-500",  ring: "ring-1 ring-slate-200" },
 } as const;
 
 // ── TaskCard ───────────────────────────────────────────────────────────────────
@@ -51,6 +69,7 @@ function TaskCard({
   onToggle,
   onEdit,
   onDelete,
+  draggable,
 }: {
   item: ActionItem;
   onToggle: (id: string) => void;
@@ -59,11 +78,29 @@ function TaskCard({
     patch: { title: string; description: string; priority: "High" | "Medium" | "Low" },
   ) => void;
   onDelete: (id: string) => void;
+  draggable?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
   const [editDescription, setEditDescription] = useState(item.description ?? "");
   const [editPriority, setEditPriority] = useState<"High" | "Medium" | "Low">(item.priority);
+
+  const { t } = useTranslation();
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id, disabled: !draggable });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const pri = priorityConfig[item.priority];
 
@@ -86,7 +123,11 @@ function TaskCard({
 
   if (editing) {
     return (
-      <div className="rounded-xl border-2 border-indigo-300 bg-white p-3 shadow-sm space-y-2">
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="rounded-xl border-2 border-indigo-300 bg-white p-3 shadow-sm space-y-2"
+      >
         <Input
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
@@ -108,9 +149,9 @@ function TaskCard({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="High">High — גבוהה</SelectItem>
-            <SelectItem value="Medium">Medium — בינונית</SelectItem>
-            <SelectItem value="Low">Low — נמוכה</SelectItem>
+            <SelectItem value="High">{t('priority.highLabel')}</SelectItem>
+            <SelectItem value="Medium">{t('priority.mediumLabel')}</SelectItem>
+            <SelectItem value="Low">{t('priority.lowLabel')}</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex gap-1.5 justify-end">
@@ -137,12 +178,26 @@ function TaskCard({
 
   return (
     <div
-      className="group relative rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      ref={setNodeRef}
+      style={style}
+      className="group relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md hover:-translate-y-px transition-all cursor-pointer"
       onClick={() => onToggle(item.id)}
     >
+      {/* Drag handle — only visible for provider */}
+      {draggable && (
+        <div
+          className="absolute top-1/2 -translate-y-1/2 left-1 hidden group-hover:flex items-center text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+          onClick={(e) => e.stopPropagation()}
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      )}
+
       {/* Edit / Delete icons — top-left, visible on hover */}
       <div
-        className="absolute top-2 left-2 hidden group-hover:flex gap-1"
+        className={`absolute top-2 hidden group-hover:flex gap-1 ${draggable ? "left-7" : "left-2"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -162,9 +217,9 @@ function TaskCard({
       </div>
 
       <span
-        className={`absolute top-3.5 right-3.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${pri.bg} ${pri.color}`}
+        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
-        {pri.label}
+        {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
       <div className="flex gap-3 pr-16">
         <Checkbox
@@ -203,6 +258,7 @@ function Column({
   onAddTask,
   onEdit,
   onDelete,
+  draggable,
 }: {
   title: string;
   icon: React.ElementType;
@@ -217,7 +273,9 @@ function Column({
     patch: { title: string; description: string; priority: "High" | "Medium" | "Low" },
   ) => void;
   onDelete: (id: string) => void;
+  draggable?: boolean;
 }) {
+  const { t } = useTranslation();
   const [addingTask, setAddingTask] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -251,9 +309,9 @@ function Column({
   };
 
   return (
-    <div className={`flex flex-col rounded-2xl border-2 ${accentBorder} overflow-hidden`}>
+    <div className={`flex flex-col rounded-2xl border-2 ${accentBorder} overflow-hidden shadow-md`}>
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-5 py-3.5 bg-white border-b border-slate-100">
+      <div className="flex items-center gap-2.5 px-5 py-4 bg-white border-b border-slate-100">
         <Icon className="h-4 w-4" />
         <span className="text-sm font-bold">{title}</span>
         <span
@@ -274,7 +332,7 @@ function Column({
       </div>
 
       {/* Body */}
-      <div className="flex-1 space-y-2.5 p-4 bg-slate-50/60 min-h-[200px]">
+      <div className="flex-1 space-y-3 p-5 bg-slate-50/60 min-h-[200px]">
         {/* FE-017: Inline add-task form at TOP of list */}
         {addingTask && (
           <div className="rounded-xl border border-indigo-200 bg-white p-3 shadow-sm space-y-2">
@@ -297,9 +355,9 @@ function Column({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="High">High — גבוהה</SelectItem>
-                <SelectItem value="Medium">Medium — בינונית</SelectItem>
-                <SelectItem value="Low">Low — נמוכה</SelectItem>
+                <SelectItem value="High">{t('priority.highLabel')}</SelectItem>
+                <SelectItem value="Medium">{t('priority.mediumLabel')}</SelectItem>
+                <SelectItem value="Low">{t('priority.lowLabel')}</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex gap-1.5">
@@ -334,31 +392,11 @@ function Column({
               <p className="text-xs text-slate-500">Every task is complete.</p>
             </div>
             {/* Completed tasks at 50% opacity */}
-            <div className="space-y-2.5 opacity-50">
-              {done.map((item) => (
-                <TaskCard
-                  key={item.id}
-                  item={item}
-                  onToggle={onToggle}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            {pending.map((item) => (
-              <TaskCard
-                key={item.id}
-                item={item}
-                onToggle={onToggle}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            ))}
-            {done.length > 0 && (
-              <div className="space-y-2.5 opacity-50">
+            <SortableContext
+              items={done.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3 opacity-50">
                 {done.map((item) => (
                   <TaskCard
                     key={item.id}
@@ -366,9 +404,49 @@ function Column({
                     onToggle={onToggle}
                     onEdit={onEdit}
                     onDelete={onDelete}
+                    draggable={draggable}
                   />
                 ))}
               </div>
+            </SortableContext>
+          </>
+        ) : (
+          <>
+            <SortableContext
+              items={pending.map((i) => i.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {pending.map((item) => (
+                  <TaskCard
+                    key={item.id}
+                    item={item}
+                    onToggle={onToggle}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    draggable={draggable}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+            {done.length > 0 && (
+              <SortableContext
+                items={done.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-3 opacity-50">
+                  {done.map((item) => (
+                    <TaskCard
+                      key={item.id}
+                      item={item}
+                      onToggle={onToggle}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      draggable={draggable}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
             )}
           </>
         )}
@@ -387,6 +465,8 @@ function Column({
 export default function ProviderBoard() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { role } = useAuth();
+  const isProvider = role === "provider";
   const [tasks, setTasks] = useState<ActionItem[]>([]);
   // Realtime: receive task changes from other sessions or AI pipeline
   useRealtimeTasks(sessionId, setTasks);
@@ -530,6 +610,61 @@ export default function ProviderBoard() {
     [load],
   );
 
+  // ── Drag-and-drop (FE-020) ──────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    }),
+  );
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      setTasks((prev) => {
+        const activeIdx = prev.findIndex((t) => t.id === active.id);
+        const overIdx = prev.findIndex((t) => t.id === over.id);
+        if (activeIdx === -1 || overIdx === -1) return prev;
+        // Only allow reordering within the same column (same assignee)
+        if (prev[activeIdx].assignee !== prev[overIdx].assignee) return prev;
+        return arrayMove(prev, activeIdx, overIdx);
+      });
+    },
+    [],
+  );
+
+  const boardContent = (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Column
+        title="Advisor Tasks"
+        icon={UserCog}
+        accentBorder="border-indigo-200"
+        accentBadge="bg-indigo-100 text-indigo-700"
+        items={advisorTasks}
+        assignee="Advisor"
+        onToggle={handleToggle}
+        onAddTask={(taskData) => handleAddTask("Advisor", taskData)}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+        draggable={isProvider}
+      />
+      <Column
+        title="Client Tasks"
+        icon={User}
+        accentBorder="border-emerald-200"
+        accentBadge="bg-emerald-100 text-emerald-700"
+        items={clientTasks}
+        assignee="Client"
+        onToggle={handleToggle}
+        onAddTask={(taskData) => handleAddTask("Client", taskData)}
+        onEdit={handleEditTask}
+        onDelete={handleDeleteTask}
+        draggable={isProvider}
+      />
+    </div>
+  );
+
   return (
     <Layout
       title="Session Board"
@@ -549,10 +684,37 @@ export default function ProviderBoard() {
         {session && (
           <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
             <CardContent className="px-5 py-4 flex items-start gap-4">
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-indigo-900 mb-1">Session Summary</p>
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
+                  {session.sentiment && (
+                    <span className={[
+                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                      session.sentiment === "Positive" && "bg-emerald-100 text-emerald-700",
+                      session.sentiment === "At-Risk"  && "bg-red-100 text-red-700",
+                      session.sentiment === "Neutral"  && "bg-slate-100 text-slate-600",
+                    ].filter(Boolean).join(" ")}>
+                      {session.sentiment === "Positive" && "✓ Positive"}
+                      {session.sentiment === "Neutral"  && "Neutral"}
+                      {session.sentiment === "At-Risk"  && "⚠ At-Risk"}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-slate-700 leading-relaxed">{session.summary}</p>
-                <div className="flex items-center gap-4 mt-2">
+                {session.followUpQuestions && session.followUpQuestions.length > 0 && (
+                  <div className="mt-2 border-t border-indigo-100 pt-2">
+                    <p className="text-xs font-semibold text-indigo-700 mb-1">Follow-up Questions</p>
+                    <ul className="space-y-0.5">
+                      {session.followUpQuestions.map((q, i) => (
+                        <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                          <span className="text-indigo-400 shrink-0">›</span>
+                          {q}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <div className="flex items-center gap-4 mt-1">
                   <p className="text-xs text-slate-400">
                     {new Date(session.createdAt).toLocaleString("he-IL")}
                   </p>
@@ -590,33 +752,16 @@ export default function ProviderBoard() {
           </div>
           <p className="text-sm font-medium text-slate-500">No tasks for this session</p>
         </div>
+      ) : isProvider ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          {boardContent}
+        </DndContext>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Column
-            title="Advisor Tasks"
-            icon={UserCog}
-            accentBorder="border-indigo-200"
-            accentBadge="bg-indigo-100 text-indigo-700"
-            items={advisorTasks}
-            assignee="Advisor"
-            onToggle={handleToggle}
-            onAddTask={(taskData) => handleAddTask("Advisor", taskData)}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-          />
-          <Column
-            title="Client Tasks"
-            icon={User}
-            accentBorder="border-emerald-200"
-            accentBadge="bg-emerald-100 text-emerald-700"
-            items={clientTasks}
-            assignee="Client"
-            onToggle={handleToggle}
-            onAddTask={(taskData) => handleAddTask("Client", taskData)}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-          />
-        </div>
+        boardContent
       )}
     </Layout>
   );

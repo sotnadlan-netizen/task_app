@@ -64,14 +64,16 @@ const DEFAULT_PROMPT =
 
 function rowToSession(row) {
   return {
-    id:          row.id,
-    createdAt:   row.created_at,
-    filename:    row.filename,
-    title:       row.title || "",
-    summary:     row.summary  || "",
-    providerId:  row.provider_id  || null,
-    clientEmail: row.client_email || null,
-    audioUrl:    row.audio_url    || null,
+    id:                row.id,
+    createdAt:         row.created_at,
+    filename:          row.filename,
+    title:             row.title || "",
+    summary:           row.summary  || "",
+    sentiment:         row.sentiment         || "Neutral",
+    followUpQuestions: row.follow_up_questions || [],
+    providerId:        row.provider_id  || null,
+    clientEmail:       row.client_email || null,
+    audioUrl:          row.audio_url    || null,
   };
 }
 
@@ -213,14 +215,16 @@ class DatabaseService {
 
   async saveSession(session) {
     const payload = {
-      id:           session.id,
-      created_at:   session.createdAt,
-      filename:     session.filename,
-      title:        session.title || null,
-      summary:      session.summary  || "",
-      provider_id:  session.providerId  || null,
-      client_email: session.clientEmail || null,
-      audio_url:    session.audioUrl    || null,
+      id:                  session.id,
+      created_at:          session.createdAt,
+      filename:            session.filename,
+      title:               session.title || null,
+      summary:             session.summary  || "",
+      sentiment:           session.sentiment || "Neutral",
+      follow_up_questions: session.followUpQuestions || [],
+      provider_id:         session.providerId  || null,
+      client_email:        session.clientEmail || null,
+      audio_url:           session.audioUrl    || null,
     };
 
     console.log("[db] Attempting to save session with data:", JSON.stringify(payload, null, 2));
@@ -699,6 +703,95 @@ class DatabaseService {
     } catch (err) {
       console.warn("[db] cleanupExpiredAudio: unexpected error:", err.message);
     }
+  }
+
+  // ── Email helpers ──────────────────────────────────────────────────────────
+
+  /**
+   * Returns sessions that have incomplete Client tasks older than 3 days.
+   * Used by the reminder email scheduled job (BE-030).
+   *
+   * @returns {Promise<Array<{ clientEmail: string, sessionTitle: string, pendingCount: number }>>}
+   */
+  async getPendingClientTaskSessions() {
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: tasks, error: taskErr } = await getClient()
+      .from("tasks")
+      .select("session_id")
+      .eq("assignee", "Client")
+      .eq("completed", false)
+      .lt("created_at", threeDaysAgo);
+
+    if (taskErr) throw new Error(`[db] getPendingClientTaskSessions (tasks): ${taskErr.message}`);
+    if (!tasks || tasks.length === 0) return [];
+
+    // Count pending tasks per session
+    const countBySession = {};
+    for (const t of tasks) {
+      countBySession[t.session_id] = (countBySession[t.session_id] || 0) + 1;
+    }
+
+    const sessionIds = Object.keys(countBySession);
+    const { data: sessions, error: sessErr } = await getClient()
+      .from("sessions")
+      .select("id, title, filename, client_email")
+      .in("id", sessionIds)
+      .not("client_email", "is", null);
+
+    if (sessErr) throw new Error(`[db] getPendingClientTaskSessions (sessions): ${sessErr.message}`);
+
+    return (sessions || []).map((s) => ({
+      clientEmail:  s.client_email,
+      sessionTitle: s.title || s.filename,
+      pendingCount: countBySession[s.id] || 0,
+    }));
+  }
+
+  /**
+   * Returns true if all Client-assignee tasks in the given session are completed.
+   * Used to trigger the "all tasks done" email to the provider (BE-031).
+   *
+   * @param {string} sessionId
+   * @returns {Promise<boolean>}
+   */
+  async areAllClientTasksComplete(sessionId) {
+    const { data, error } = await getClient()
+      .from("tasks")
+      .select("id, completed")
+      .eq("session_id", sessionId)
+      .eq("assignee", "Client");
+
+    if (error) throw new Error(`[db] areAllClientTasksComplete: ${error.message}`);
+    const tasks = data || [];
+    if (tasks.length === 0) return false;
+    return tasks.every((t) => t.completed);
+  }
+
+  /**
+   * Returns the email address of the provider who owns the given session.
+   * Looks up profiles table by session.provider_id.
+   *
+   * @param {string} sessionId
+   * @returns {Promise<string|null>}
+   */
+  async getProviderEmailBySession(sessionId) {
+    const { data: session, error: sessErr } = await getClient()
+      .from("sessions")
+      .select("provider_id")
+      .eq("id", sessionId)
+      .single();
+
+    if (sessErr || !session) return null;
+
+    const { data: profile, error: profErr } = await getClient()
+      .from("profiles")
+      .select("email")
+      .eq("id", session.provider_id)
+      .single();
+
+    if (profErr || !profile) return null;
+    return profile.email || null;
   }
 
   // ── Health check ───────────────────────────────────────────────────────────

@@ -39,9 +39,15 @@ export function parseGeminiResponse(text) {
     }
   }
 
+  const VALID_SENTIMENTS = ["Positive", "Neutral", "At-Risk"];
+
   return {
-    title:   typeof parsed.title === "string" ? parsed.title.trim() : "",
-    summary: typeof parsed.summary === "string" ? parsed.summary : "",
-    tasks:   Array.isArray(parsed.tasks) ? parsed.tasks : [],
+    title:              typeof parsed.title === "string" ? parsed.title.trim() : "",
+    summary:            typeof parsed.summary === "string" ? parsed.summary : "",
+    sentiment:          VALID_SENTIMENTS.includes(parsed.sentiment) ? parsed.sentiment : "Neutral",
+    followUpQuestions:  Array.isArray(parsed.followUpQuestions)
+                          ? parsed.followUpQuestions.filter((q) => typeof q === "string")
+                          : [],
+    tasks:              Array.isArray(parsed.tasks) ? parsed.tasks : [],
   };
 }

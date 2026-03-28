@@ -1,0 +1,20 @@
+{
+  "priority": {
+    "high": "גבוהה",
+    "medium": "בינונית",
+    "low": "נמוכה",
+    "highLabel": "High — גבוהה",
+    "mediumLabel": "Medium — בינונית",
+    "lowLabel": "Low — נמוכה"
+  },
+  "signup": {
+    "providerRole": "יועץ / ספק",
+    "clientRole": "לקוח"
+  },
+  "agentConfig": {
+    "promptPlaceholder": "הזן הוראות לסוכן ה-AI..."
+  },
+  "dashboard": {
+    "privacyNotice": "🔐 השיחה עובדה ונמחקה לצמיתות מטעמי פרטיות"
+  }
+}
