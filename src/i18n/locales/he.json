@@ -1,4 +1,11 @@
 {
+  "nav": {
+    "home": "דף הבית",
+    "clients": "לקוחות",
+    "tasks": "משימות",
+    "analytics": "ניתוחים",
+    "settings": "הגדרות"
+  },
   "priority": {
     "high": "גבוהה",
     "medium": "בינונית",

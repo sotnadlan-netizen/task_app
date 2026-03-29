@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon, Users, ListTodo } from "lucide-react";
+import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon, Users, ListTodo, Settings, Contrast } from "lucide-react";
+import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,34 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const NAV = [
-  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית", sub: "סקירה כללית" },
-  { to: "/provider/clients",   icon: Users,           label: "לקוחות",   sub: "ניהול לקוחות" },
-  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות פתוחות", sub: "מרכז משימות" },
-  { to: "/provider/analytics", icon: BarChart2,       label: "ניתוחים",  sub: "מדדי השלמה" },
-  { to: "/provider/config",    icon: Bot,             label: "הגדרות AI", sub: "פרומפט מערכת" },
+  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית",        sub: "סקירה כללית" },
+  { to: "/provider/clients",   icon: Users,           label: "לקוחות",          sub: "ניהול לקוחות" },
+  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות פתוחות",   sub: "מרכז משימות" },
+  { to: "/provider/analytics", icon: BarChart2,       label: "ניתוחים",         sub: "מדדי השלמה" },
+  { to: "/provider/config",    icon: Bot,             label: "הגדרות AI",        sub: "פרומפט מערכת" },
 ];
+
+// Language cycle: he (RTL) → en (LTR) → ru (LTR)
+const LANGS: { code: string; label: string; dir: 'rtl' | 'ltr' }[] = [
+  { code: 'he', label: 'עב', dir: 'rtl' },
+  { code: 'en', label: 'EN', dir: 'ltr' },
+  { code: 'ru', label: 'РУ', dir: 'ltr' },
+];
+
+function cycleLang() {
+  const current = localStorage.getItem('lng') ?? 'he';
+  const idx     = LANGS.findIndex((l) => l.code === current);
+  const next    = LANGS[(idx + 1) % LANGS.length];
+  localStorage.setItem('lng', next.code);
+  document.documentElement.setAttribute('lang', next.code);
+  document.documentElement.setAttribute('dir', next.dir);
+  i18n.changeLanguage(next.code);
+}
+
+function toggleHighContrast() {
+  const on = document.documentElement.classList.toggle('hc');
+  localStorage.setItem('hc', on ? '1' : '0');
+}
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { pathname } = useLocation();
@@ -135,6 +158,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             Sign Out
           </Button>
           <div className="flex items-center gap-1 pt-1">
+            {/* Dark mode toggle */}
             <button
               onClick={() => {
                 const isDark = document.documentElement.classList.toggle('dark');
@@ -143,22 +167,24 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
               className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
               aria-label="Toggle dark mode"
             >
-              {/* Rendered at runtime based on current class — show Sun in dark, Moon in light */}
               <Sun className="h-3.5 w-3.5 hidden dark:block" />
               <Moon className="h-3.5 w-3.5 block dark:hidden" />
             </button>
+            {/* High-contrast toggle */}
             <button
-              onClick={() => {
-                const isRTL = document.documentElement.dir === 'rtl';
-                document.documentElement.dir = isRTL ? 'ltr' : 'rtl';
-                document.documentElement.lang = isRTL ? 'en' : 'he';
-                localStorage.setItem('dir', isRTL ? 'ltr' : 'rtl');
-              }}
-              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors text-xs font-medium"
-              aria-label="Toggle RTL/LTR"
+              onClick={toggleHighContrast}
+              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+              aria-label="Toggle high contrast"
             >
-              <span className="ltr:hidden">EN</span>
-              <span className="rtl:hidden">עב</span>
+              <Contrast className="h-3.5 w-3.5" />
+            </button>
+            {/* Language cycle: he → en → ru */}
+            <button
+              onClick={cycleLang}
+              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors text-xs font-bold min-w-[32px] text-center"
+              aria-label="Switch language"
+            >
+              {LANGS.find((l) => l.code === (localStorage.getItem('lng') ?? 'he'))?.label ?? 'עב'}
             </button>
           </div>
         </div>
@@ -215,12 +241,13 @@ const BOTTOM_NAV = [
   { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית" },
   { to: "/provider/clients",   icon: Users,           label: "לקוחות" },
   { to: "/provider/tasks",     icon: ListTodo,        label: "משימות" },
+  { to: "/provider/config",    icon: Settings,        label: "הגדרות" },
 ];
 
 function MobileBottomNav() {
   const { pathname } = useLocation();
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 h-14 flex items-center justify-around bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-700 backdrop-blur-sm safe-area-pb">
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around mobile-tab-bar">
       {BOTTOM_NAV.map(({ to, icon: Icon, label }) => {
         const active = pathname === to || pathname.startsWith(to + "/");
         return (
@@ -228,8 +255,8 @@ function MobileBottomNav() {
             key={to}
             to={to}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors",
-              active ? "text-indigo-600" : "text-slate-400"
+              "flex flex-col items-center gap-0.5 flex-1 py-2 transition-colors no-min-height",
+              active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
             )}
           >
             <Icon className="h-5 w-5" />
@@ -253,7 +280,7 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main id="main-content" tabIndex={-1} className="flex-1 p-4 pb-20 md:pb-0 md:p-8 dark:bg-slate-900">
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 md:p-8 mobile-content-area md:pb-8 dark:bg-slate-900">
           {children}
         </main>
       </div>

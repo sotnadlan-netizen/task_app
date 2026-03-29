@@ -1,0 +1,27 @@
+{
+  "priority": {
+    "high": "Высокий",
+    "medium": "Средний",
+    "low": "Низкий",
+    "highLabel": "Высокий",
+    "mediumLabel": "Средний",
+    "lowLabel": "Низкий"
+  },
+  "signup": {
+    "providerRole": "Советник / Поставщик",
+    "clientRole": "Клиент"
+  },
+  "agentConfig": {
+    "promptPlaceholder": "Введите инструкции для AI агента..."
+  },
+  "dashboard": {
+    "privacyNotice": "🔐 Запись обработана и безвозвратно удалена из соображений конфиденциальности"
+  },
+  "nav": {
+    "home": "Главная",
+    "clients": "Клиенты",
+    "tasks": "Задачи",
+    "analytics": "Аналитика",
+    "settings": "Настройки"
+  }
+}

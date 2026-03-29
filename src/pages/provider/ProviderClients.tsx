@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, Search, X, ChevronLeft } from "lucide-react";
+import { CheckCircle2, Clock, AlertCircle, Search, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -185,6 +186,7 @@ function SentimentIcon({ rate }: { rate: number }) {
 }
 
 function ClientDetailPanel({ client, sessions, onClose }: { client: ClientSummary; sessions: Session[]; onClose: () => void }) {
+  const navigate = useNavigate();
   const clientSessions = useMemo(
     () => sessions
       .filter((s) => (s.clientEmail ?? "(no email)") === client.clientEmail)
@@ -219,9 +221,10 @@ function ClientDetailPanel({ client, sessions, onClose }: { client: ClientSummar
           const done  = s.completedCount ?? 0;
           const rate  = total > 0 ? Math.round((done / total) * 100) : 0;
           return (
-            <div
+            <button
               key={s.id}
-              className="flex items-start gap-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-3"
+              onClick={() => { onClose(); navigate(`/provider/board/${s.id}`); }}
+              className="w-full text-start flex items-start gap-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-3 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors group"
             >
               <SentimentIcon rate={rate} />
               <div className="flex-1 min-w-0">
@@ -245,7 +248,8 @@ function ClientDetailPanel({ client, sessions, onClose }: { client: ClientSummar
                   </div>
                 </div>
               </div>
-            </div>
+              <ChevronRightIcon className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 shrink-0 mt-1 rtl:rotate-180 transition-colors" />
+            </button>
           );
         })}
 

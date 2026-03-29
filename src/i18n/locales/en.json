@@ -1,0 +1,27 @@
+{
+  "priority": {
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "highLabel": "High",
+    "mediumLabel": "Medium",
+    "lowLabel": "Low"
+  },
+  "signup": {
+    "providerRole": "Advisor / Provider",
+    "clientRole": "Client"
+  },
+  "agentConfig": {
+    "promptPlaceholder": "Enter AI agent instructions..."
+  },
+  "dashboard": {
+    "privacyNotice": "🔐 Recording was processed and permanently deleted for privacy"
+  },
+  "nav": {
+    "home": "Home",
+    "clients": "Clients",
+    "tasks": "Tasks",
+    "analytics": "Analytics",
+    "settings": "Settings"
+  }
+}

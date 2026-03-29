@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
@@ -26,9 +26,10 @@ import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 
 const queryClient = new QueryClient();
 
-/** Applies persisted dark mode and dir preferences on mount */
+/** Applies persisted dark mode, dir, language, and high-contrast preferences
+ *  BEFORE first paint using useLayoutEffect to prevent white flash. */
 function AppBootstrap() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     // Dark mode
     const savedTheme = localStorage.getItem('theme');
     if (
@@ -40,10 +41,21 @@ function AppBootstrap() {
       document.documentElement.classList.remove('dark');
     }
 
-    // RTL / LTR
-    const savedDir = localStorage.getItem('dir') ?? 'ltr';
-    document.documentElement.setAttribute('dir', savedDir);
-    document.documentElement.setAttribute('lang', savedDir === 'rtl' ? 'he' : 'en');
+    // High-contrast mode
+    if (localStorage.getItem('hc') === '1') {
+      document.documentElement.classList.add('hc');
+    }
+
+    // Language + direction
+    const savedLng = localStorage.getItem('lng') ?? 'he';
+    const dir = savedLng === 'he' ? 'rtl' : 'ltr';
+    document.documentElement.setAttribute('dir', dir);
+    document.documentElement.setAttribute('lang', savedLng);
+
+    // Sync i18n library
+    import('@/i18n').then(({ default: i18n }) => {
+      if (i18n.language !== savedLng) i18n.changeLanguage(savedLng);
+    });
   }, []);
 
   return null;
