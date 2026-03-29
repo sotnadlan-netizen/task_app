@@ -21,19 +21,19 @@ export function TimeCapsule({ summary, createdAt, filename }: TimeCapsuleProps) 
   });
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-white border border-indigo-100 shadow-sm p-6 mb-6">
-      <div className="flex items-start justify-between mb-4">
-        <div>
+    <div className="rounded-2xl glass shadow-glass p-6 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-0 sm:justify-between mb-4">
+        <div className="flex-1 min-w-0">
           <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-400 mb-1">
             Last Session
           </p>
-          <h3 className="text-base font-semibold text-slate-800 truncate max-w-xs">
+          <h3 className="text-base font-semibold text-slate-800 truncate">
             {filename}
           </h3>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-100 rounded-full px-3 py-1.5 shadow-sm whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white border border-slate-100 rounded-full px-3 py-1.5 shadow-sm whitespace-nowrap self-start sm:shrink-0 sm:ml-4">
           <CalendarDays className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-          {formattedDate}
+          <span className="ltr-in-rtl">{formattedDate}</span>
         </div>
       </div>
 

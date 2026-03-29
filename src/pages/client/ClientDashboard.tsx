@@ -127,8 +127,8 @@ export default function ClientDashboard() {
               Your advisor has shared new advisory sessions since your last visit.
             </p>
           </div>
-          <button onClick={() => setBannerDismissed(true)} className="text-indigo-400 hover:text-indigo-600 transition-colors shrink-0">
-            <X className="h-4 w-4" />
+          <button onClick={() => setBannerDismissed(true)} aria-label="Dismiss notification" className="no-min-height text-indigo-500 hover:text-indigo-700 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 rounded">
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -151,27 +151,85 @@ export default function ClientDashboard() {
         </>
       )}
 
+      {/* Executive Summary */}
+      <div className="glass shadow-glass rounded-2xl p-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-3 mb-3">
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Your Journey Summary</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Updated after each session with your advisor</p>
+          </div>
+          <span className="shrink-0 px-2.5 py-1 rounded-full bg-primary/15 text-primary text-xs font-medium border border-primary/25">
+            In Progress
+          </span>
+        </div>
+        <p className="text-base text-foreground/80 leading-relaxed">
+          You&apos;re making excellent progress on your mortgage application. Your advisor has reviewed your documents and identified priority actions. Complete these steps to move to the next stage.
+        </p>
+        <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-border/50 text-sm text-muted-foreground">
+          <span>📁 Documents: <strong className="text-foreground">4/6 submitted</strong></span>
+          <span>✅ Tasks: <strong className="text-foreground">2/5 complete</strong></span>
+        </div>
+      </div>
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="border-slate-200 shadow-sm">
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
+      {loading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl p-4 border border-border bg-card space-y-2">
+              <Skeleton className="h-3 w-14 rounded" />
+              <Skeleton className="h-7 w-20 rounded" />
+              <Skeleton className="h-3 w-16 rounded" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
+          {stats.map(({ label, value, icon: Icon, color, bg }) => (
+            <Card key={label} className="border-slate-200 shadow-sm">
+              <CardContent className="p-4 md:p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+                    <p className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{value}</p>
+                  </div>
+                  <div className={`rounded-lg ${bg} p-2 md:p-2.5`}>
+                    <Icon className={`h-4 w-4 ${color}`} />
+                  </div>
                 </div>
-                <div className={`rounded-lg ${bg} p-2.5`}>
-                  <Icon className={`h-4 w-4 ${color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Progress Checklist */}
+      <div className="glass shadow-glass rounded-2xl p-6 mb-6">
+        <h2 className="text-lg font-semibold text-foreground mb-4">Steps to Completion</h2>
+        <ol className="space-y-3">
+          {[
+            { step: 'Initial consultation completed', done: true },
+            { step: 'Submit proof of income documents', done: true },
+            { step: 'Advisor review of credit history', done: false, active: true },
+            { step: 'Pre-approval application submitted', done: false },
+            { step: 'Property valuation & final approval', done: false },
+          ].map((item, i) => (
+            <li key={i} className={`flex items-center gap-3 text-sm ${item.done ? 'text-muted-foreground' : item.active ? 'text-foreground font-medium' : 'text-muted-foreground/50'}`}>
+              <span className={`flex-none w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 ${item.done ? 'bg-success/20 border-success text-success' : item.active ? 'bg-primary/20 border-primary text-primary' : 'border-border text-muted-foreground/30'}`}>
+                {item.done ? '✓' : i + 1}
+              </span>
+              <span className={item.done ? 'line-through' : ''}>{item.step}</span>
+              {item.active && (
+                <span className="ml-auto text-[11px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/25">
+                  Current
+                </span>
+              )}
+            </li>
+          ))}
+        </ol>
       </div>
 
       {/* Sessions table */}
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
+      <Card className="border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">Your Sessions</p>
           <p className="text-xs text-slate-400">{sessions.length} total</p>

@@ -21,7 +21,7 @@ export function ProgressGraph({ totalTasks, completedTasks, sessionCount }: Prog
   ];
 
   return (
-    <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 mb-6 flex flex-col items-center">
+    <div className="rounded-2xl glass shadow-glass p-4 md:p-6 mb-6 flex flex-col items-center">
       <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-5">
         Monthly Goals
       </p>
@@ -67,11 +67,11 @@ export function ProgressGraph({ totalTasks, completedTasks, sessionCount }: Prog
         {pct}% of monthly goals
       </p>
 
-      <div className="flex gap-3 flex-wrap justify-center">
+      <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
         {stats.map(({ label, value }) => (
           <div
             key={label}
-            className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-xl px-4 py-2.5 min-w-[90px]"
+            className="flex flex-col items-center bg-slate-50 border border-slate-100 rounded-xl px-2 py-2.5"
           >
             <span className="text-2xl font-bold text-slate-800">{value}</span>
             <span className="text-[11px] text-slate-500 text-center mt-0.5 leading-tight">{label}</span>

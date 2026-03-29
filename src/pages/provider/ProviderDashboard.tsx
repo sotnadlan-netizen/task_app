@@ -1,4 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
@@ -118,6 +126,20 @@ export default function ProviderDashboard() {
   const [dateTo, setDateTo] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Command palette state
+  const [cmdOpen, setCmdOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdOpen(p => !p);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
 
   // Task review dialog state
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -315,17 +337,24 @@ export default function ProviderDashboard() {
         </div>
       )}
 
+      {/* ⌘K hint */}
+      <div className="flex items-center justify-end mb-2">
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground font-mono ml-2">
+          ⌘K
+        </kbd>
+      </div>
+
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="border-slate-200 shadow-sm">
-            <CardContent className="p-5">
+          <Card key={label} className="glass shadow-glass border-slate-200">
+            <CardContent className="p-4 md:p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+                  <p className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{value}</p>
                 </div>
-                <div className={`rounded-lg ${bg} p-2.5`}>
+                <div className={`rounded-lg ${bg} p-2 md:p-2.5`}>
                   <Icon className={`h-4 w-4 ${color}`} />
                 </div>
               </div>
@@ -358,7 +387,7 @@ export default function ProviderDashboard() {
       </div>
 
       {/* Sessions table */}
-      <Card className="border-slate-200 shadow-sm overflow-hidden">
+      <Card className="border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <div className="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-800">Recent Sessions</p>
@@ -367,23 +396,24 @@ export default function ProviderDashboard() {
             </p>
           </div>
           {/* FE-011 + FE-013: Filter controls row */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[200px] max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" aria-hidden="true" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by client email…"
-                className="pl-9 h-9 border-slate-200 text-xs"
+                aria-label="Search sessions by client email"
+                className="pl-9 h-9 border-slate-200 text-xs w-full"
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CalendarDays className="h-4 w-4 text-slate-400 shrink-0" />
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white"
+                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white min-h-[36px]"
                 aria-label="From date"
               />
               <span className="text-xs text-slate-400">—</span>
@@ -391,7 +421,7 @@ export default function ProviderDashboard() {
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white"
+                className="border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-700 bg-white min-h-[36px]"
                 aria-label="To date"
               />
             </div>
@@ -550,10 +580,11 @@ export default function ProviderDashboard() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`Delete session ${s.title || s.filename}`}
                         className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
                         onClick={(e) => { e.stopPropagation(); setDeleteTarget(s); }}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </Button>
                     </div>
                   </TableCell>
@@ -584,6 +615,23 @@ export default function ProviderDashboard() {
           onApprove={handleApproveReview}
         />
       )}
+
+      {/* Command palette */}
+      <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
+        <CommandInput placeholder="Search sessions, clients, actions..." />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Quick Actions">
+            <CommandItem onSelect={() => setCmdOpen(false)}>Start new recording</CommandItem>
+            <CommandItem onSelect={() => setCmdOpen(false)}>Review pending tasks</CommandItem>
+          </CommandGroup>
+          <CommandGroup heading="Navigate">
+            <CommandItem onSelect={() => setCmdOpen(false)}>Dashboard</CommandItem>
+            <CommandItem onSelect={() => setCmdOpen(false)}>Analytics</CommandItem>
+            <CommandItem onSelect={() => setCmdOpen(false)}>Board</CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
 
       {/* FE-012: Delete confirmation AlertDialog */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>

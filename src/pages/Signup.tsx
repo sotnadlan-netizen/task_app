@@ -48,7 +48,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 shadow-lg">
@@ -60,14 +60,15 @@ export default function Signup() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
           <h1 className="text-xl font-bold text-slate-900 mb-1">Create account</h1>
           <p className="text-sm text-slate-500 mb-6">Sign up to get started</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-slate-700 mb-1 block">Email</label>
+              <label htmlFor="signup-email" className="text-xs font-medium text-slate-700 mb-1 block">Email</label>
               <Input
+                id="signup-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -77,8 +78,9 @@ export default function Signup() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-700 mb-1 block">Password</label>
+              <label htmlFor="signup-password" className="text-xs font-medium text-slate-700 mb-1 block">Password</label>
               <Input
+                id="signup-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -89,13 +91,14 @@ export default function Signup() {
             </div>
             <div>
               <label className="text-xs font-medium text-slate-700 mb-2 block">Role</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Select role">
                 {(["provider", "client"] as const).map((r) => (
                   <button
                     key={r}
                     type="button"
                     onClick={() => setRole(r)}
-                    className={`rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-all ${
+                    aria-pressed={role === r}
+                    className={`rounded-lg border-2 px-3 py-2.5 min-h-[44px] text-sm font-medium transition-all ${
                       role === r
                         ? "border-indigo-600 bg-indigo-50 text-indigo-700"
                         : "border-slate-200 text-slate-600 hover:border-slate-300"

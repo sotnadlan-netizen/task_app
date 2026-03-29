@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu } from "lucide-react";
+import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,9 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 border-r border-slate-800 dark:bg-slate-950 dark:border-slate-700",
+          "fixed inset-y-0 z-50 flex w-60 flex-col glass-sidebar",
+          "ltr:left-0 rtl:right-0 rtl:left-auto",
+          "border-r rtl:border-l-0 rtl:border-r border-slate-800 dark:border-slate-700",
           "transform transition-transform duration-200 ease-in-out md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
@@ -92,7 +94,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
                     {sub}
                   </p>
                 </div>
-                {active && <ChevronRight className="h-3.5 w-3.5 text-indigo-300" />}
+                {active && <ChevronRight className="h-3.5 w-3.5 text-indigo-300 rtl:rotate-180" />}
               </NavLink>
             );
           })}
@@ -104,7 +106,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             {user?.user_metadata?.avatar_url ? (
               <img
                 src={user.user_metadata.avatar_url}
-                alt="avatar"
+                alt={`${user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || "User"} avatar`}
                 className="h-7 w-7 rounded-full object-cover ring-2 ring-indigo-500/30 shrink-0"
               />
             ) : (
@@ -130,6 +132,33 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             <LogOut className="h-3.5 w-3.5" />
             Sign Out
           </Button>
+          <div className="flex items-center gap-1 pt-1">
+            <button
+              onClick={() => {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('theme', isDark ? 'dark' : 'light');
+              }}
+              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
+              aria-label="Toggle dark mode"
+            >
+              {/* Rendered at runtime based on current class — show Sun in dark, Moon in light */}
+              <Sun className="h-3.5 w-3.5 hidden dark:block" />
+              <Moon className="h-3.5 w-3.5 block dark:hidden" />
+            </button>
+            <button
+              onClick={() => {
+                const isRTL = document.documentElement.dir === 'rtl';
+                document.documentElement.dir = isRTL ? 'ltr' : 'rtl';
+                document.documentElement.lang = isRTL ? 'en' : 'he';
+                localStorage.setItem('dir', isRTL ? 'ltr' : 'rtl');
+              }}
+              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors text-xs font-medium"
+              aria-label="Toggle RTL/LTR"
+            >
+              <span className="ltr:hidden">EN</span>
+              <span className="rtl:hidden">עב</span>
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -186,9 +215,9 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex flex-1 flex-col md:pl-60">
+      <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 p-8 dark:bg-slate-900">{children}</main>
+        <main className="flex-1 p-4 md:p-8 dark:bg-slate-900">{children}</main>
       </div>
     </div>
   );

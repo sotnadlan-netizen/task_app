@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { LineChart, Line, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -179,6 +180,16 @@ function ClientPulseCard({ client }: { client: ClientPulse }) {
             }`}
             style={{ width: `${client.completionRate}%` }}
           />
+        </div>
+
+        {/* Sentiment sparkline */}
+        <div className="mt-2 pt-2 border-t border-border/40">
+          <p className="text-[11px] text-muted-foreground mb-1">Sentiment trend</p>
+          <ResponsiveContainer width="100%" height={36}>
+            <LineChart data={[{v:0.6},{v:0.7},{v:0.5},{v:0.8},{v:0.75}]}>
+              <Line type="monotone" dataKey="v" stroke="oklch(0.65 0.10 145)" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Reminder button — only on red cards */}

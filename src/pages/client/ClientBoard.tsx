@@ -172,7 +172,7 @@ export default function ClientBoard() {
 
         {session && (
           <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
-            <CardContent className="px-5 py-4 flex items-start gap-4">
+            <CardContent className="px-4 md:px-5 py-4 flex flex-col sm:flex-row items-start gap-4">
               <div className="flex-1">
                 <p className="text-sm font-semibold text-indigo-900 mb-1">Session Summary</p>
                 <p className="text-sm text-slate-700 leading-relaxed">{session.summary}</p>
@@ -180,7 +180,7 @@ export default function ClientBoard() {
                   {new Date(session.createdAt).toLocaleString("he-IL")}
                 </p>
               </div>
-              <div className="shrink-0 flex flex-col items-center gap-3">
+              <div className="sm:shrink-0 flex flex-row sm:flex-col items-center gap-3">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
                   <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
@@ -228,7 +228,7 @@ export default function ClientBoard() {
           <p className="text-sm font-medium text-slate-500">No tasks for this session</p>
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
           {/* Advisor column — read-only */}
           <div className="flex flex-col rounded-2xl border-2 border-indigo-200 overflow-hidden">
             <div className="flex items-center gap-2.5 px-5 py-3.5 bg-white border-b border-slate-100">

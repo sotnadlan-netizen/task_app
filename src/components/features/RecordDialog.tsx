@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Mic, MicOff, Square, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -171,20 +172,28 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
             </div>
 
             {/* Waveform bars */}
-            <div className="flex items-center justify-center gap-0.5 h-16">
-              {bars.map((h, i) => (
-                <div
+            <div className="flex items-center justify-center gap-[3px] h-16" aria-hidden="true">
+              {bars.map((height, i) => (
+                <motion.div
                   key={i}
-                  className="w-1.5 rounded-full transition-all duration-75"
-                  style={{
-                    height: phase === "recording" ? `${h}%` : "8%",
-                    backgroundColor:
-                      phase === "recording"
-                        ? `hsl(${239 + i * 0.5}, 84%, ${55 + h * 0.1}%)`
-                        : "#334155",
+                  className="w-1 rounded-full bg-primary"
+                  animate={{
+                    height: phase === "recording" ? `${Math.max(4, height * 56 / 255)}px` : "4px",
+                    opacity: phase === "recording" ? 0.5 + (height / 255) * 0.5 : 0.25,
                   }}
+                  transition={{ duration: 0.08, ease: "easeOut" }}
+                  style={{ minHeight: "4px" }}
                 />
               ))}
+            </div>
+
+            {/* Privacy badge */}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 mt-3">
+              <svg className="w-4 h-4 shrink-0 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="text-sm font-medium text-primary">Privacy protected</span>
+              <span className="text-sm text-muted-foreground">· Processed in-memory. Never saved to disk.</span>
             </div>
           </div>
         </div>
@@ -194,10 +203,11 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
           {/* Client email input — only shown in idle phase */}
           {phase === "idle" && (
             <div>
-              <label className="text-xs font-medium text-slate-700 mb-1 block">
+              <label htmlFor="record-client-email" className="text-xs font-medium text-slate-700 mb-1 block">
                 Client Email
               </label>
               <Input
+                id="record-client-email"
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
@@ -233,13 +243,29 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
           )}
 
           {phase === "recording" && (
-            <Button
-              onClick={stopRecording}
-              className="w-full h-12 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 gap-2"
-            >
-              <Square className="h-4 w-4 fill-white" />
-              Stop & Analyze
-            </Button>
+            <div className="relative flex items-center justify-center">
+              <motion.div
+                className="absolute rounded-full bg-primary/20 pointer-events-none"
+                animate={{ scale: [1, 1.7], opacity: [0.5, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                style={{ width: 80, height: 80 }}
+                aria-hidden="true"
+              />
+              <motion.div
+                className="absolute rounded-full bg-primary/10 pointer-events-none"
+                animate={{ scale: [1, 2.1], opacity: [0.3, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+                style={{ width: 80, height: 80 }}
+                aria-hidden="true"
+              />
+              <Button
+                onClick={stopRecording}
+                className="relative z-10 w-full h-12 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 gap-2"
+              >
+                <Square className="h-4 w-4 fill-white" />
+                Stop & Analyze
+              </Button>
+            </div>
           )}
 
           {phase === "stopping" && (

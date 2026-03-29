@@ -89,7 +89,7 @@ export default function AgentConfig() {
       title="Agent Configuration"
       subtitle="Define how the AI interprets and extracts insights from meeting recordings"
     >
-      <div className="max-w-3xl space-y-6">
+      <div className="max-w-3xl w-full space-y-6">
         {/* Info card */}
         <Card className="border-indigo-100 bg-indigo-50/50 shadow-sm">
           <CardContent className="px-5 py-4 flex gap-3">
@@ -130,7 +130,9 @@ export default function AgentConfig() {
               </div>
             ) : (
               <div className="relative">
+                <label htmlFor="agent-system-prompt" className="sr-only">System Prompt</label>
                 <textarea
+                  id="agent-system-prompt"
                   value={prompt}
                   onChange={(e) => { setPrompt(e.target.value); setDirty(true); }}
                   dir="rtl"
@@ -205,12 +207,14 @@ export default function AgentConfig() {
                         onClick={() =>
                           setExpandedEntry(expandedEntry === entry.id ? null : entry.id)
                         }
-                        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-100 rounded-lg transition-colors focus:outline-none"
+                        aria-expanded={expandedEntry === entry.id}
+                        aria-label={`Version from ${new Date(entry.createdAt).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} by ${entry.changedBy}`}
+                        className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-slate-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300"
                       >
                         {expandedEntry === entry.id ? (
-                          <ChevronDown className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                          <ChevronDown className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" aria-hidden="true" />
                         ) : (
-                          <ChevronRight className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
+                          <ChevronRight className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" aria-hidden="true" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -223,7 +227,7 @@ export default function AgentConfig() {
                                 minute: "2-digit",
                               })}
                             </span>
-                            <span className="text-[10px] text-slate-400">·</span>
+                            <span className="text-[10px] text-slate-400" aria-hidden="true">·</span>
                             <span className="text-[11px] text-slate-500 truncate">{entry.changedBy}</span>
                           </div>
                           <p className="text-xs text-slate-400 mt-0.5 truncate">
@@ -234,7 +238,11 @@ export default function AgentConfig() {
                       </button>
                       {expandedEntry === entry.id && (
                         <div className="px-4 pb-3">
+                          <label htmlFor={`history-prompt-${entry.id}`} className="sr-only">
+                            Prompt version from {new Date(entry.createdAt).toLocaleString("en-GB")}
+                          </label>
                           <textarea
+                            id={`history-prompt-${entry.id}`}
                             readOnly
                             value={entry.systemPrompt}
                             rows={8}

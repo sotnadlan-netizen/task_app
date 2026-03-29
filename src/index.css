@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,47 +6,108 @@
 
 @layer base {
   :root {
-    --background: 220 20% 97%;
-    --foreground: 220 40% 9%;
+    /* ── Warm Minimalism — OKLCH Palette ── */
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 40% 9%;
+    /* Backgrounds */
+    --background: oklch(0.985 0.008 90);        /* Cream off-white */
+    --foreground: oklch(0.15 0.015 255);         /* Deep graphite navy */
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 40% 9%;
+    --card: oklch(0.995 0.003 90);               /* Near-white card */
+    --card-foreground: oklch(0.15 0.015 255);
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
+    --popover: oklch(0.995 0.003 90);
+    --popover-foreground: oklch(0.15 0.015 255);
 
-    --secondary: 220 15% 93%;
-    --secondary-foreground: 220 25% 20%;
+    /* Primary: Sage Green */
+    --primary: oklch(0.65 0.10 145);             /* #A7C080 equivalent */
+    --primary-foreground: oklch(0.10 0.01 145);  /* Deep green for text on sage */
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 10% 50%;
+    /* Secondary: Slate Blue */
+    --secondary: oklch(0.55 0.08 255);           /* #7D8CC4 equivalent */
+    --secondary-foreground: oklch(0.98 0.005 255);
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 239 84% 50%;
+    /* Muted */
+    --muted: oklch(0.94 0.008 90);
+    --muted-foreground: oklch(0.40 0.015 255);   /* ~6:1 contrast on muted bg */
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    /* Accent: warm amber accent */
+    --accent: oklch(0.92 0.05 80);
+    --accent-foreground: oklch(0.30 0.06 80);
 
-    --border: 220 18% 88%;
-    --input: 220 18% 88%;
-    --ring: 239 84% 67%;
+    /* Destructive */
+    --destructive: oklch(0.52 0.20 25);
+    --destructive-foreground: oklch(0.98 0.005 25);
 
-    --radius: 0.625rem;
+    /* Borders */
+    --border: oklch(0.88 0.01 90);
+    --input: oklch(0.88 0.01 90);
+    --ring: oklch(0.65 0.10 145);                /* Sage green ring */
 
-    --sidebar-background: 220 40% 9%;
-    --sidebar-foreground: 220 15% 90%;
-    --sidebar-primary: 239 84% 67%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 20% 22%;
-    --sidebar-accent-foreground: 220 15% 90%;
-    --sidebar-border: 220 18% 25%;
-    --sidebar-ring: 239 84% 67%;
+    --radius: 0.75rem;
 
-    --success: 152 60% 40%;
-    --success-foreground: 0 0% 100%;
+    /* Sidebar: deep slate glass */
+    --sidebar-background: oklch(0.17 0.02 255);
+    --sidebar-foreground: oklch(0.93 0.008 90);
+    --sidebar-primary: oklch(0.72 0.09 145);
+    --sidebar-primary-foreground: oklch(0.10 0.01 145);
+    --sidebar-accent: oklch(0.25 0.02 255);
+    --sidebar-accent-foreground: oklch(0.93 0.008 90);
+    --sidebar-border: oklch(0.28 0.02 255);
+    --sidebar-ring: oklch(0.72 0.09 145);
+
+    /* Success */
+    --success: oklch(0.55 0.14 145);
+    --success-foreground: oklch(0.98 0.005 145);
+
+    /* Glass utilities */
+    --glass-bg: oklch(0.99 0.003 90 / 0.7);
+    --glass-border: oklch(0.88 0.01 90 / 0.5);
+    --glass-blur: 20px;
+  }
+
+  .dark {
+    --background: oklch(0.13 0.015 255);         /* Deep graphite */
+    --foreground: oklch(0.93 0.008 90);           /* Cream text */
+
+    --card: oklch(0.18 0.015 255);
+    --card-foreground: oklch(0.93 0.008 90);
+
+    --popover: oklch(0.18 0.015 255);
+    --popover-foreground: oklch(0.93 0.008 90);
+
+    --primary: oklch(0.72 0.10 145);             /* Lighter sage in dark mode */
+    --primary-foreground: oklch(0.10 0.01 145);
+
+    --secondary: oklch(0.62 0.08 255);
+    --secondary-foreground: oklch(0.10 0.01 255);
+
+    --muted: oklch(0.22 0.015 255);
+    --muted-foreground: oklch(0.65 0.012 255);
+
+    --accent: oklch(0.28 0.025 80);
+    --accent-foreground: oklch(0.88 0.04 80);
+
+    --destructive: oklch(0.58 0.20 25);
+    --destructive-foreground: oklch(0.98 0.005 25);
+
+    --border: oklch(0.28 0.02 255);
+    --input: oklch(0.28 0.02 255);
+    --ring: oklch(0.72 0.10 145);
+
+    --sidebar-background: oklch(0.10 0.015 255);
+    --sidebar-foreground: oklch(0.93 0.008 90);
+    --sidebar-primary: oklch(0.72 0.09 145);
+    --sidebar-primary-foreground: oklch(0.10 0.01 145);
+    --sidebar-accent: oklch(0.18 0.02 255);
+    --sidebar-accent-foreground: oklch(0.93 0.008 90);
+    --sidebar-border: oklch(0.22 0.02 255);
+    --sidebar-ring: oklch(0.72 0.09 145);
+
+    --success: oklch(0.65 0.14 145);
+    --success-foreground: oklch(0.10 0.01 145);
+
+    --glass-bg: oklch(0.18 0.015 255 / 0.7);
+    --glass-border: oklch(0.35 0.02 255 / 0.4);
   }
 }
 
@@ -55,8 +116,16 @@
     @apply border-border;
   }
 
+  html {
+    /* Base font size: 18px — all rem units scale from here */
+    font-size: 18px;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* Explicit minimum font size for body text */
+    font-size: 1rem; /* 18px via html root */
+    line-height: 1.65;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -67,9 +136,90 @@
   p {
     text-wrap: pretty;
   }
+
+  /* Global focus-visible styles — keyboard navigation accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Remove default outline only when focus-visible is supported */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Ensure interactive elements have minimum touch target size */
+  button, a, [role="button"], input, select, textarea {
+    min-height: 2.75rem; /* 44px touch target (WCAG 2.5.5 recommendation) */
+  }
+
+  /* Override min-height for decorative/layout-only interactive elements */
+  [role="button"].no-min-height,
+  button.no-min-height {
+    min-height: unset;
+  }
+}
+
+/* Prevent horizontal scroll on mobile */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Responsive images — prevent overflow */
+img, svg, video {
+  max-width: 100%;
+  height: auto;
 }
 
 /* RTL global resets */
 [dir="rtl"] .text-left { text-align: right; }
 [dir="rtl"] .ml-auto { margin-left: unset; margin-right: auto; }
 [dir="rtl"] .mr-auto { margin-right: unset; margin-left: auto; }
+
+@layer components {
+  /* Glassmorphism */
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+  .glass-sidebar {
+    background: oklch(0.17 0.02 255 / 0.85);
+    border-inline-end: 1px solid oklch(0.28 0.02 255 / 0.6);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+
+  /* Hebrew font helper */
+  .font-hebrew {
+    font-family: 'Assistant', 'Inter', system-ui, sans-serif;
+    font-size: 1.125em; /* ~2px larger than surrounding English */
+  }
+
+  /* Post-Neumorphism card */
+  .card-neu {
+    box-shadow: var(--shadow-neu, 4px 4px 10px oklch(0.82 0.01 140 / 0.4), -4px -4px 10px oklch(0.99 0.005 100 / 0.9));
+    background: var(--card);
+  }
+
+  /* Shimmer loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      oklch(0.94 0.008 90) 25%,
+      oklch(0.97 0.005 90) 50%,
+      oklch(0.94 0.008 90) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* LTR override for numbers/dates within RTL context */
+  .ltr-in-rtl {
+    direction: ltr;
+    unicode-bidi: isolate;
+    display: inline-block;
+  }
+}

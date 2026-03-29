@@ -174,8 +174,8 @@ describe("ClientDashboard (FE-022 / FE-023)", () => {
     renderDashboard();
 
     await waitFor(() => screen.getByText(/new session has been shared with you/i));
-    // Find dismiss button (aria-label not set, so find by role/icon proximity)
-    const dismissBtn = screen.getByRole("button", { name: "" });
+    // Find dismiss button by its accessible label
+    const dismissBtn = screen.getByRole("button", { name: /dismiss notification/i });
     fireEvent.click(dismissBtn);
 
     expect(screen.queryByText(/new session has been shared with you/i)).not.toBeInTheDocument();

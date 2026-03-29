@@ -30,7 +30,7 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 shadow-lg">
@@ -42,7 +42,7 @@ export default function ForgotPassword() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
           {sent ? (
             <div className="text-center space-y-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 mx-auto">
@@ -70,8 +70,9 @@ export default function ForgotPassword() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-slate-700 mb-1 block">Email</label>
+                  <label htmlFor="forgot-email" className="text-xs font-medium text-slate-700 mb-1 block">Email</label>
                   <Input
+                    id="forgot-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}

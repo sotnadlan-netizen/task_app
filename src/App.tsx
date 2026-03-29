@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
@@ -21,6 +22,29 @@ import ClientBoard from "./pages/client/ClientBoard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+/** Applies persisted dark mode and dir preferences on mount */
+function AppBootstrap() {
+  useEffect(() => {
+    // Dark mode
+    const savedTheme = localStorage.getItem('theme');
+    if (
+      savedTheme === 'dark' ||
+      (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // RTL / LTR
+    const savedDir = localStorage.getItem('dir') ?? 'ltr';
+    document.documentElement.setAttribute('dir', savedDir);
+    document.documentElement.setAttribute('lang', savedDir === 'rtl' ? 'he' : 'en');
+  }, []);
+
+  return null;
+}
 
 /** Inner component so useLocation can run inside BrowserRouter */
 function AnimatedRoutes() {
@@ -59,6 +83,7 @@ function AnimatedRoutes() {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AppBootstrap />
       <Toaster />
       <Sonner richColors position="top-right" />
       <BrowserRouter>

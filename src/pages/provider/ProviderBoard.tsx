@@ -195,12 +195,15 @@ function TaskCard({
       {/* Drag handle — only visible for provider */}
       {draggable && (
         <div
-          className="absolute top-1/2 -translate-y-1/2 left-1 hidden group-hover:flex items-center text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing"
+          className="absolute top-1/2 -translate-y-1/2 left-1 hidden group-hover:flex items-center text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
           onClick={(e) => e.stopPropagation()}
+          role="button"
+          aria-label="Drag to reorder task"
+          tabIndex={0}
           {...attributes}
           {...listeners}
         >
-          <GripVertical className="h-4 w-4" />
+          <GripVertical className="h-4 w-4" aria-hidden="true" />
         </div>
       )}
 
@@ -210,18 +213,20 @@ function TaskCard({
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="p-0.5 rounded text-slate-300 hover:text-indigo-500 transition-colors"
+          className="no-min-height p-1 rounded text-slate-400 hover:text-indigo-600 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1"
           onClick={() => setEditing(true)}
           title="Edit task"
+          aria-label={`Edit task: ${item.title}`}
         >
-          <Pencil className="h-3.5 w-3.5" />
+          <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
         <button
-          className="p-0.5 rounded text-slate-300 hover:text-red-400 transition-colors"
+          className="no-min-height p-1 rounded text-slate-400 hover:text-red-500 transition-colors focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1"
           onClick={() => onDelete(item.id)}
           title="Delete task"
+          aria-label={`Delete task: ${item.title}`}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
 
@@ -335,8 +340,9 @@ function Column({
           className="h-6 w-6 p-0 text-slate-400 hover:text-indigo-600 ml-1"
           onClick={() => setAddingTask(true)}
           title={`Add task for ${assignee}`}
+          aria-label={`Add task for ${assignee}`}
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
 
@@ -696,7 +702,7 @@ export default function ProviderBoard() {
   );
 
   const boardContent = (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
       <Column
         title="Advisor Tasks"
         icon={UserCog}
@@ -744,7 +750,7 @@ export default function ProviderBoard() {
 
         {session && (
           <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
-            <CardContent className="px-5 py-4 flex items-start gap-4">
+            <CardContent className="px-4 md:px-5 py-4 flex flex-col sm:flex-row items-start gap-4">
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
@@ -786,7 +792,7 @@ export default function ProviderBoard() {
                   )}
                 </div>
               </div>
-              <div className="shrink-0 flex flex-col items-center gap-3">
+              <div className="sm:shrink-0 flex flex-row sm:flex-col items-center gap-3">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
                   <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">

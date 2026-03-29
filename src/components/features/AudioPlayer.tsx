@@ -51,19 +51,19 @@ export function AudioPlayer({ sessionId }: AudioPlayerProps) {
 
   if (loadingUrl)
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-400">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading audio…
+      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600" role="status" aria-live="polite">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Loading audio…
       </div>
     );
   if (error)
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-400">
-        <AlertCircle className="h-3.5 w-3.5 text-slate-300" /> {error}
+      <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600" role="alert">
+        <AlertCircle className="h-3.5 w-3.5 text-slate-500 shrink-0" aria-hidden="true" /> {error}
       </div>
     );
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3" role="region" aria-label="Audio player">
       {url && (
         <audio
           ref={audioRef}
@@ -75,12 +75,13 @@ export function AudioPlayer({ sessionId }: AudioPlayerProps) {
       )}
       <button
         onClick={togglePlay}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+        aria-label={playing ? "Pause audio" : "Play audio"}
+        className="no-min-height flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2"
       >
-        {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+        {playing ? <Pause className="h-3.5 w-3.5" aria-hidden="true" /> : <Play className="h-3.5 w-3.5 ml-0.5" aria-hidden="true" />}
       </button>
       <div className="flex flex-1 items-center gap-2 min-w-0">
-        <span className="text-[11px] tabular-nums text-slate-400 shrink-0">
+        <span className="text-xs tabular-nums text-slate-600 shrink-0" aria-live="off">
           {fmt(audioRef.current?.currentTime ?? 0)}
         </span>
         <input
@@ -90,13 +91,17 @@ export function AudioPlayer({ sessionId }: AudioPlayerProps) {
           step={0.001}
           value={progress}
           onChange={handleSeek}
-          className="h-1.5 flex-1 cursor-pointer accent-indigo-600"
+          aria-label="Seek audio position"
+          aria-valuemin={0}
+          aria-valuemax={1}
+          aria-valuenow={progress}
+          className="h-1.5 flex-1 cursor-pointer accent-indigo-600 no-min-height"
         />
-        <span className="text-[11px] tabular-nums text-slate-400 shrink-0">
+        <span className="text-xs tabular-nums text-slate-600 shrink-0">
           {fmt(duration)}
         </span>
       </div>
-      <Volume2 className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+      <Volume2 className="h-3.5 w-3.5 text-slate-500 shrink-0" aria-hidden="true" />
     </div>
   );
 }

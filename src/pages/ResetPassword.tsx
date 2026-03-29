@@ -39,7 +39,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 shadow-lg">
@@ -51,14 +51,15 @@ export default function ResetPassword() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
           <h1 className="text-xl font-bold text-slate-900 mb-1">Set new password</h1>
           <p className="text-sm text-slate-500 mb-6">Choose a strong password for your account.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-slate-700 mb-1 block">New password</label>
+              <label htmlFor="reset-password" className="text-xs font-medium text-slate-700 mb-1 block">New password</label>
               <Input
+                id="reset-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -68,8 +69,9 @@ export default function ResetPassword() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-700 mb-1 block">Confirm password</label>
+              <label htmlFor="reset-confirm" className="text-xs font-medium text-slate-700 mb-1 block">Confirm password</label>
               <Input
+                id="reset-confirm"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}

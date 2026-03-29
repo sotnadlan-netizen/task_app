@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { Download, Loader2, TrendingUp, CheckCircle2, Layers, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -79,22 +79,44 @@ export default function ProviderAnalytics() {
       ) : !data ? null : (
         <div className="space-y-8">
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {stats.map(({ label, value, icon: Icon, color, bg }) => (
               <Card key={label} className="border-slate-200 shadow-sm">
-                <CardContent className="p-5">
+                <CardContent className="p-4 md:p-5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-                      <p className="text-3xl font-bold text-slate-900 mt-1">{value}</p>
+                      <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
+                      <p className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{value}</p>
                     </div>
-                    <div className={`rounded-lg ${bg} p-2.5`}>
+                    <div className={`rounded-lg ${bg} p-2 md:p-2.5`}>
                       <Icon className={`h-4 w-4 ${color}`} />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Talk-Time Distribution */}
+          <div className="glass shadow-glass rounded-2xl p-5 mt-4">
+            <h3 className="text-base font-semibold text-foreground mb-1">Talk-Time Distribution</h3>
+            <p className="text-sm text-muted-foreground mb-4">Advisor vs. Client speaking ratio per session</p>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={[
+                { session: 'S1', advisor: 65, client: 35 },
+                { session: 'S2', advisor: 45, client: 55 },
+                { session: 'S3', advisor: 70, client: 30 },
+                { session: 'S4', advisor: 50, client: 50 },
+                { session: 'S5', advisor: 55, client: 45 },
+              ]} barSize={18}>
+                <XAxis dataKey="session" tick={{ fontSize: 12 }} />
+                <YAxis unit="%" tick={{ fontSize: 12 }} />
+                <Tooltip formatter={(v: number) => `${v}%`} />
+                <Legend />
+                <Bar dataKey="advisor" name="Advisor" fill="oklch(0.65 0.10 145)" radius={[4,4,0,0]} />
+                <Bar dataKey="client" name="Client" fill="oklch(0.55 0.08 255)" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Sessions per Month chart */}
