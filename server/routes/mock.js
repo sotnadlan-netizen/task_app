@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -108,7 +109,7 @@ router.post("/", requireAuth, async (req, res) => {
 
     res.json({ sessions: sessions.length, tasks: tasks.length });
   } catch (err) {
-    console.error("[mock] ✖ Error loading demo data:", err);
+    logger.error({ err: err.message }, "[mock] POST / failed");
     res.status(500).json({ error: err.message });
   }
 });

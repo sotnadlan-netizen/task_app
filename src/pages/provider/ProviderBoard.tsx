@@ -14,7 +14,16 @@ import {
   Check,
   X,
   GripVertical,
+  Share2,
+  Copy,
+  Download,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -460,6 +469,58 @@ function Column({
   );
 }
 
+// ── Export helpers ────────────────────────────────────────────────────────────
+
+function formatSessionExport(session: Session, tasks: ActionItem[]): string {
+  const date = new Date(session.createdAt).toLocaleString("en-GB");
+  const advisorTasks = tasks.filter((t) => t.assignee === "Advisor");
+  const clientTasks  = tasks.filter((t) => t.assignee === "Client");
+
+  const taskLines = (list: ActionItem[]) =>
+    list.length === 0
+      ? "  (none)"
+      : list
+          .map((t) => `  [${t.completed ? "x" : " "}] ${t.title} (${t.priority})${t.description ? `\n      ${t.description}` : ""}`)
+          .join("\n");
+
+  return [
+    `SESSION SUMMARY`,
+    `===============`,
+    `Title:   ${session.title || session.filename}`,
+    `Date:    ${date}`,
+    `File:    ${session.filename}`,
+    session.clientEmail ? `Client:  ${session.clientEmail}` : null,
+    session.sentiment   ? `Mood:    ${session.sentiment}` : null,
+    ``,
+    `SUMMARY`,
+    `-------`,
+    session.summary,
+    ``,
+    `ADVISOR TASKS (${advisorTasks.length})`,
+    `${"─".repeat(20)}`,
+    taskLines(advisorTasks),
+    ``,
+    `CLIENT TASKS (${clientTasks.length})`,
+    `${"─".repeat(20)}`,
+    taskLines(clientTasks),
+    ...(session.followUpQuestions?.length
+      ? [``, `FOLLOW-UP QUESTIONS`, `${"─".repeat(20)}`, ...session.followUpQuestions.map((q, i) => `  ${i + 1}. ${q}`)]
+      : []),
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+}
+
+function downloadTextFile(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement("a"), { href: url, download: filename });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── ProviderBoard ──────────────────────────────────────────────────────────────
 
 export default function ProviderBoard() {
@@ -685,7 +746,7 @@ export default function ProviderBoard() {
           <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
             <CardContent className="px-5 py-4 flex items-start gap-4">
               <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
                   {session.sentiment && (
                     <span className={[
@@ -725,11 +786,44 @@ export default function ProviderBoard() {
                   )}
                 </div>
               </div>
-              <div className="shrink-0 text-center">
-                <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
-                <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
-                  Pending
-                </p>
+              <div className="shrink-0 flex flex-col items-center gap-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
+                  <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
+                    Pending
+                  </p>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                      <Share2 className="h-3.5 w-3.5" /> Share
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const text = formatSessionExport(session, tasks);
+                        navigator.clipboard.writeText(text).then(() =>
+                          toast.success("Copied to clipboard")
+                        ).catch(() => toast.error("Clipboard not available"));
+                      }}
+                      className="gap-2 text-xs"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy as text
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const text = formatSessionExport(session, tasks);
+                        const slug = (session.title || session.filename).replace(/[^a-z0-9]/gi, "-").toLowerCase();
+                        downloadTextFile(text, `${slug}-summary.txt`);
+                        toast.success("Downloaded");
+                      }}
+                      className="gap-2 text-xs"
+                    >
+                      <Download className="h-3.5 w-3.5" /> Download .txt
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </CardContent>
           </Card>

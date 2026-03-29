@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.post("/", requireAuth, async (req, res) => {
     });
     res.json({ ok: true });
   } catch (err) {
-    console.error("[profiles] ✖ Error:", err);
+    logger.error({ err: err.message }, "[profiles] POST / failed");
     res.status(500).json({ error: err.message });
   }
 });

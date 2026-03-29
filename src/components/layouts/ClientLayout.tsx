@@ -21,21 +21,21 @@ export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-slate-900">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-6">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-6 dark:border-slate-700 dark:bg-slate-900/90">
         {/* Logo */}
         <div className="flex items-center gap-2.5 mr-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
             <Mic className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-sm font-bold text-slate-900">Advisor AI</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Advisor AI</span>
         </div>
 
         {/* Page title */}
         <div className="flex-1 min-w-0">
-          <h1 className="text-base font-bold text-slate-900 leading-none truncate hidden sm:block">{title}</h1>
-          {subtitle && <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">{subtitle}</p>}
+          <h1 className="text-base font-bold text-slate-900 leading-none truncate hidden sm:block dark:text-slate-100">{title}</h1>
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5 hidden sm:block dark:text-slate-400">{subtitle}</p>}
         </div>
 
         {/* User + Sign Out */}
@@ -70,7 +70,7 @@ export function ClientLayout({ title, subtitle, children }: ClientLayoutProps) {
         </div>
       </header>
 
-      <main className="flex-1 p-8">{children}</main>
+      <main className="flex-1 p-8 dark:bg-slate-900">{children}</main>
     </div>
   );
 }

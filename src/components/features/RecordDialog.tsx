@@ -132,7 +132,6 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
     const capturedEmail = clientEmail;
     mediaRecorderRef.current.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-      console.log("[RecordDialog] Blob size:", blob.size, "type:", blob.type);
       stopEverything();
       onRecordingComplete(blob, capturedEmail);
     };

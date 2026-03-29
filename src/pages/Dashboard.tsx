@@ -85,7 +85,6 @@ export default function Dashboard() {
       loadSessions();
       navigate(`/board/${session.id}`);
     } catch (err: unknown) {
-      console.error("[Dashboard] process-audio failed:", err);
       toast.error("Processing failed", {
         description: err instanceof Error ? err.message : "Unknown error",
       });

@@ -118,28 +118,28 @@ describe("POST /api/tasks — manual task creation", () => {
     mockUser.role = "client";
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "s1", title: "T", assignee: "Advisor", priority: "High" });
+      .send({ sessionId: "00000000-0000-0000-0000-000000000001", title: "T", assignee: "Advisor", priority: "High" });
     expect(res.status).toBe(403);
   });
 
   it("returns 400 when required fields are missing", async () => {
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "s1", title: "T" }); // missing assignee + priority
+      .send({ sessionId: "00000000-0000-0000-0000-000000000001", title: "T" }); // missing assignee + priority
     expect(res.status).toBe(400);
   });
 
   it("returns 400 for invalid assignee value", async () => {
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "s1", title: "T", assignee: "Manager", priority: "High" });
+      .send({ sessionId: "00000000-0000-0000-0000-000000000001", title: "T", assignee: "Manager", priority: "High" });
     expect(res.status).toBe(400);
   });
 
   it("returns 400 for invalid priority value", async () => {
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "s1", title: "T", assignee: "Advisor", priority: "Critical" });
+      .send({ sessionId: "00000000-0000-0000-0000-000000000001", title: "T", assignee: "Advisor", priority: "Critical" });
     expect(res.status).toBe(400);
   });
 
@@ -147,7 +147,7 @@ describe("POST /api/tasks — manual task creation", () => {
     mockDb.getSessionById.mockResolvedValue(null);
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "s1", title: "T", assignee: "Advisor", priority: "High" });
+      .send({ sessionId: "00000000-0000-0000-0000-000000000001", title: "T", assignee: "Advisor", priority: "High" });
     expect(res.status).toBe(404);
   });
 
@@ -156,7 +156,7 @@ describe("POST /api/tasks — manual task creation", () => {
     mockDb.saveTasks.mockImplementation(async (tasks) => tasks);
     const res = await request(app)
       .post("/api/tasks")
-      .send({ sessionId: "sess-1", title: "New Task", assignee: "Client", priority: "Medium" });
+      .send({ sessionId: "00000000-0000-0000-0000-000000000002", title: "New Task", assignee: "Client", priority: "Medium" });
     expect(res.status).toBe(201);
     expect(res.body.title).toBe("New Task");
     expect(res.body.assignee).toBe("Client");
@@ -174,7 +174,7 @@ describe("PATCH /api/tasks/bulk-complete", () => {
     mockUser.role = "client";
     const res = await request(app)
       .patch("/api/tasks/bulk-complete")
-      .send({ taskIds: ["t1"], completed: true });
+      .send({ taskIds: ["00000000-0000-0000-0000-000000000001"], completed: true });
     expect(res.status).toBe(403);
   });
 
@@ -188,7 +188,7 @@ describe("PATCH /api/tasks/bulk-complete", () => {
   it("returns 400 when completed is not boolean", async () => {
     const res = await request(app)
       .patch("/api/tasks/bulk-complete")
-      .send({ taskIds: ["t1"], completed: "yes" });
+      .send({ taskIds: ["00000000-0000-0000-0000-000000000001"], completed: "yes" });
     expect(res.status).toBe(400);
   });
 
@@ -196,7 +196,7 @@ describe("PATCH /api/tasks/bulk-complete", () => {
     mockDb.bulkUpdateTaskStatus.mockResolvedValue([fakeTask({ completed: true })]);
     const res = await request(app)
       .patch("/api/tasks/bulk-complete")
-      .send({ taskIds: ["task-1"], completed: true });
+      .send({ taskIds: ["00000000-0000-0000-0000-000000000001"], completed: true });
     expect(res.status).toBe(200);
     expect(res.body[0].completed).toBe(true);
   });
@@ -257,7 +257,7 @@ describe("PATCH /api/tasks/:id/details — edit task metadata (BE-018)", () => {
       .set("Authorization", "Bearer tok")
       .send({});
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/at least one/i);
+    expect(res.body.details[0].message).toMatch(/at least one/i);
   });
 
   it("returns 400 when priority is an invalid value", async () => {
@@ -266,7 +266,7 @@ describe("PATCH /api/tasks/:id/details — edit task metadata (BE-018)", () => {
       .set("Authorization", "Bearer tok")
       .send({ priority: "Critical" });
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/priority/i);
+    expect(res.body.details[0].path).toMatch(/priority/i);
   });
 
   it("returns 404 when task does not exist", async () => {

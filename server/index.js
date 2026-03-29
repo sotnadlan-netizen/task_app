@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { randomUUID } from "crypto";
+import logger from "./utils/logger.js";
 
 import { openapiSpec } from "./openapi.js";
 import processRouter  from "./routes/process.js";
@@ -47,15 +48,14 @@ app.use((req, res, next) => {
 
   res.on("finish", () => {
     const ms = Date.now() - start;
-    console.log(JSON.stringify({
+    logger.info({
       reqId,
       method: req.method,
       url:    req.url,
       status: res.statusCode,
       ms,
       ip:     req.ip,
-      ts:     new Date().toISOString(),
-    }));
+    });
   });
 
   next();
@@ -97,7 +97,7 @@ app.get("/api/docs", (_req, res) => {
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
-  console.warn(`[404] ${req.method} ${req.url}`);
+  logger.warn({ method: req.method, url: req.url }, "404 Not Found");
   res.status(404).json({ error: `Route not found: ${req.method} ${req.url}` });
 });
 
@@ -107,23 +107,19 @@ app.use(errorHandler);
 // ── Start ─────────────────────────────────────────────────────────────────────
 const server = app.listen(PORT, async () => {
   const isProd = process.env.NODE_ENV === "production";
-  console.log(`\n✅  API server running → http://localhost:${PORT} [${isProd ? "production" : "development"}]`);
+  logger.info({ port: PORT, env: isProd ? "production" : "development" }, "API server started");
 
   const missing = ["GOOGLE_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
     .filter((k) => !process.env[k]);
   if (missing.length) {
-    console.warn(`\n⚠️  Missing env vars: ${missing.join(", ")}`);
-    if (missing.includes("SUPABASE_SERVICE_ROLE_KEY")) {
-      console.warn("   → Get it from: Supabase Dashboard → Settings → API → service_role");
-    }
+    logger.warn({ missing }, "Missing environment variables");
   }
 
   try {
     await db.ping();
-    console.log("✅  Supabase connection OK\n");
+    logger.info("Supabase connection OK");
   } catch (err) {
-    console.error(`\n❌  Supabase connection FAILED: ${err.message}`);
-    console.error("   Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in .env\n");
+    logger.error({ err: err.message }, "Supabase connection FAILED — check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
   }
 
   // ── Audio expiry cleanup job (BE-023) ───────────────────────────────────────
@@ -141,10 +137,10 @@ const server = app.listen(PORT, async () => {
         sendReminderEmail(clientEmail, sessionTitle, pendingCount).catch(() => {});
       }
       if (pending.length) {
-        console.log(`[reminder] Sent ${pending.length} reminder email(s)`);
+        logger.info({ count: pending.length }, "Sent reminder emails");
       }
     } catch (err) {
-      console.error("[reminder] Reminder job failed:", err.message);
+      logger.error({ err: err.message }, "Reminder job failed");
     }
   }
   setTimeout(runReminderJob, 2 * 60 * 1000);
@@ -155,18 +151,15 @@ const server = app.listen(PORT, async () => {
 const SHUTDOWN_TIMEOUT_MS = 30_000; // max wait for in-flight audio jobs
 
 function shutdown(signal) {
-  console.log(`\n⚡  ${signal} received — graceful shutdown in progress...`);
+  logger.info({ signal }, "Graceful shutdown in progress");
 
-  // Stop accepting new connections immediately
   server.close(() => {
-    console.log("✅  HTTP server closed — no new connections accepted.");
-    console.log("✅  Graceful shutdown complete.");
+    logger.info("HTTP server closed — graceful shutdown complete");
     process.exit(0);
   });
 
-  // Wait for active Gemini/audio-processing jobs to finish
   if (activeAudioJobs > 0) {
-    console.log(`⏳  Waiting for ${activeAudioJobs} active audio job(s) to complete...`);
+    logger.info({ activeAudioJobs }, "Waiting for active audio jobs to complete");
   }
 
   const poll = setInterval(() => {
@@ -176,10 +169,9 @@ function shutdown(signal) {
     }
   }, 200);
 
-  // Hard timeout — don't hang the deploy pipeline
   setTimeout(() => {
     clearInterval(poll);
-    console.warn(`⚠️  Shutdown timeout (${SHUTDOWN_TIMEOUT_MS / 1000}s) reached — forcing exit.`);
+    logger.warn({ timeoutMs: SHUTDOWN_TIMEOUT_MS }, "Shutdown timeout reached — forcing exit");
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
 }

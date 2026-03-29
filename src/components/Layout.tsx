@@ -44,7 +44,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 border-r border-slate-800",
+          "fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-slate-900 border-r border-slate-800 dark:bg-slate-950 dark:border-slate-700",
           "transform transition-transform duration-200 ease-in-out md:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full"
         )}
@@ -158,7 +158,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function Navbar({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8 dark:border-slate-700 dark:bg-slate-900/90">
       <button
         onClick={onMenuClick}
         className="md:hidden p-2 rounded-md hover:bg-slate-100"
@@ -167,8 +167,8 @@ function Navbar({ title, subtitle, onMenuClick }: { title: string; subtitle?: st
         <Menu className="h-5 w-5 text-slate-600" />
       </button>
       <div>
-        <h1 className="text-base font-bold text-slate-900 leading-none">{title}</h1>
-        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        <h1 className="text-base font-bold text-slate-900 leading-none dark:text-slate-100">{title}</h1>
+        {subtitle && <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{subtitle}</p>}
       </div>
     </header>
   );
@@ -184,11 +184,11 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col md:pl-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 p-8">{children}</main>
+        <main className="flex-1 p-8 dark:bg-slate-900">{children}</main>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -57,7 +58,7 @@ router.get("/", requireAuth, async (req, res) => {
     }
     res.json(sessions);
   } catch (err) {
-    console.error("[sessions] ✖ GET /:", err);
+    logger.error({ err: err.message }, "[sessions] GET / failed");
     res.status(500).json({ error: err.message });
   }
 });
@@ -81,7 +82,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     const tasks = await db.getTasksBySessionId(req.params.id);
     res.json({ ...session, tasks });
   } catch (err) {
-    console.error(`[sessions] ✖ GET /${req.params.id}:`, err);
+    logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] GET /:id failed");
     res.status(500).json({ error: err.message });
   }
 });
@@ -123,7 +124,7 @@ router.get("/:id/audio", requireAuth, async (req, res) => {
 
     res.json({ signedUrl, expiresIn: 3600 });
   } catch (err) {
-    console.error(`[sessions] ✖ GET /${req.params.id}/audio:`, err);
+    logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] GET /:id/audio failed");
     res.status(500).json({ error: err.message });
   }
 });
@@ -145,7 +146,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
     await db.deleteSession(req.params.id);
     res.json({ ok: true });
   } catch (err) {
-    console.error(`[sessions] ✖ DELETE /${req.params.id}:`, err);
+    logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] DELETE /:id failed");
     res.status(500).json({ error: err.message });
   }
 });

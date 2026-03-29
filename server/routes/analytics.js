@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import logger from "../utils/logger.js";
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get("/overview", requireAuth, async (req, res) => {
     const overview = await db.getAnalyticsOverview(req.user.id);
     res.json(overview);
   } catch (err) {
-    console.error("[analytics] ✖ GET /overview:", err);
+    logger.error({ err: err.message }, "[analytics] GET /overview failed");
     res.status(500).json({ error: err.message });
   }
 });
@@ -63,7 +64,7 @@ router.get("/sessions/export", requireAuth, async (req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send("\uFEFF" + csv); // UTF-8 BOM for Excel compatibility with Hebrew text
   } catch (err) {
-    console.error("[analytics] ✖ GET /sessions/export:", err);
+    logger.error({ err: err.message }, "[analytics] GET /sessions/export failed");
     res.status(500).json({ error: err.message });
   }
 });

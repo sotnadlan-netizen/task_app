@@ -284,7 +284,6 @@ export async function apiProcessAudio(
   const res = await apiFetch("/api/process-audio", { method: "POST", body: formData });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
-    console.error("[apiProcessAudio] HTTP", res.status, err);
     throw new Error(err.error || "Processing failed");
   }
   return res.json();

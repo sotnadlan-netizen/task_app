@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { parseGeminiResponse } from "../utils/parseGeminiResponse.js";
+import logger from "../utils/logger.js";
 
 const MODEL              = process.env.GEMINI_MODEL        || "gemini-2.5-flash";
 const DEBUG              = process.env.DEBUG_GEMINI        === "true";
@@ -78,10 +79,7 @@ async function withRetry(fn) {
       if (attempt < MAX_RETRIES && isRetryable(err)) {
         const jitter = Math.random() * 500;
         const delay  = BASE_DELAY_MS * Math.pow(2, attempt) + jitter;
-        console.warn(
-          `[gemini] ⚠ Transient error (attempt ${attempt + 1}/${MAX_RETRIES + 1}), ` +
-          `retrying in ${Math.round(delay)}ms — ${err.message.slice(0, 120)}`
-        );
+        logger.warn({ attempt: attempt + 1, maxAttempts: MAX_RETRIES + 1, delayMs: Math.round(delay), err: err.message.slice(0, 120) }, "[gemini] Transient error, retrying");
         await new Promise((r) => setTimeout(r, delay));
       } else {
         throw err;
@@ -143,11 +141,10 @@ export async function analyzeAudio(base64Audio, mimeType, systemPrompt) {
   });
 
   if (DEBUG) {
-    console.log("[gemini] systemInstruction (first 400 chars):", systemPrompt.slice(0, 400));
-    console.log("[gemini] audio base64 length:", base64Audio.length);
+    logger.debug({ systemPromptPreview: systemPrompt.slice(0, 400), audioB64Len: base64Audio.length }, "[gemini] request details");
   }
 
-  console.log(`[gemini] ▶ Sending to model: ${MODEL}`);
+  logger.info({ model: MODEL }, "[gemini] Sending audio to model");
 
   const t0 = Date.now();
 
@@ -164,18 +161,15 @@ export async function analyzeAudio(base64Audio, mimeType, systemPrompt) {
   const elapsed = Date.now() - t0;
   const text    = result.response.text().trim();
 
-  console.log(`[gemini] ▶ Response received in ${elapsed}ms`);
+  logger.info({ elapsedMs: elapsed }, "[gemini] Response received");
 
   const usage = result.response.usageMetadata ?? null;
   if (usage) {
-    console.log(
-      `[gemini] tokens — prompt: ${usage.promptTokenCount}, ` +
-      `output: ${usage.candidatesTokenCount}, total: ${usage.totalTokenCount}`
-    );
+    logger.info({ promptTokens: usage.promptTokenCount, outputTokens: usage.candidatesTokenCount, totalTokens: usage.totalTokenCount }, "[gemini] token usage");
   }
 
   if (DEBUG) {
-    console.log("[gemini] Full raw response:", text);
+    logger.debug({ text }, "[gemini] Full raw response");
   }
 
   const parsed = parseGeminiResponse(text);

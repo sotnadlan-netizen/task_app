@@ -164,7 +164,6 @@ export default function ProviderDashboard() {
       });
       setReviewOpen(true);
     } catch (err: unknown) {
-      console.error("[ProviderDashboard] process-audio failed:", err);
       toast.error("Processing failed", {
         description: err instanceof Error ? err.message : "Unknown error",
       });
@@ -208,8 +207,7 @@ export default function ProviderDashboard() {
 
       // Delete removed tasks
       await Promise.all(deletedIds.map((id) => apiDeleteTask(id)));
-    } catch (err) {
-      console.error("[ProviderDashboard] review apply failed:", err);
+    } catch {
       toast.error("Failed to apply some edits — check the board");
     }
 

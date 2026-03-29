@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Loader2, UserCog, User, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Loader2, UserCog, User, CheckCircle2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -180,11 +180,36 @@ export default function ClientBoard() {
                   {new Date(session.createdAt).toLocaleString("he-IL")}
                 </p>
               </div>
-              <div className="shrink-0 text-center">
-                <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
-                <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
-                  Pending
-                </p>
+              <div className="shrink-0 flex flex-col items-center gap-3">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
+                  <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
+                    Pending
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                  onClick={() => {
+                    const myTasks = tasks.filter((t) => t.assignee === "Client");
+                    const lines = [
+                      `SESSION: ${session.title || session.filename}`,
+                      `Date: ${new Date(session.createdAt).toLocaleString("en-GB")}`,
+                      ``,
+                      `SUMMARY`,
+                      session.summary,
+                      ``,
+                      `MY TASKS (${myTasks.length})`,
+                      ...myTasks.map((t) => `  [${t.completed ? "x" : " "}] ${t.title} (${t.priority})`),
+                    ].join("\n");
+                    navigator.clipboard.writeText(lines)
+                      .then(() => toast.success("Copied to clipboard"))
+                      .catch(() => toast.error("Clipboard not available"));
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy
+                </Button>
               </div>
             </CardContent>
           </Card>

@@ -78,6 +78,10 @@ vi.mock("fs", async () => {
   return { ...actual, unlinkSync: vi.fn() };
 });
 
+vi.mock("../services/EmailService.js", () => ({
+  sendNewSessionEmail: vi.fn().mockResolvedValue(undefined),
+}));
+
 // ── Build test app ────────────────────────────────────────────────────────────
 
 const { default: processRouter } = await import("./process.js");

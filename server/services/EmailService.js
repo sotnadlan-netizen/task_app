@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import logger from '../utils/logger.js';
 
 const FROM = process.env.EMAIL_FROM || 'noreply@advisorai.app';
 
@@ -16,7 +17,7 @@ function getResend() {
  */
 export async function sendNewSessionEmail(clientEmail, sessionTitle, taskCount) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[email] RESEND_API_KEY not set — skipping sendNewSessionEmail');
+    logger.warn('[email] RESEND_API_KEY not set — skipping sendNewSessionEmail');
     return;
   }
   try {
@@ -35,9 +36,9 @@ export async function sendNewSessionEmail(clientEmail, sessionTitle, taskCount) 
         </div>
       `,
     });
-    console.log(`[email] sendNewSessionEmail sent to ${clientEmail}`);
+    logger.info({ clientEmail }, '[email] sendNewSessionEmail sent');
   } catch (err) {
-    console.error('[email] sendNewSessionEmail failed:', err.message);
+    logger.error({ err: err.message }, '[email] sendNewSessionEmail failed');
   }
 }
 
@@ -51,7 +52,7 @@ export async function sendNewSessionEmail(clientEmail, sessionTitle, taskCount) 
  */
 export async function sendReminderEmail(clientEmail, sessionTitle, pendingCount) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[email] RESEND_API_KEY not set — skipping sendReminderEmail');
+    logger.warn('[email] RESEND_API_KEY not set — skipping sendReminderEmail');
     return;
   }
   try {
@@ -69,9 +70,9 @@ export async function sendReminderEmail(clientEmail, sessionTitle, pendingCount)
         </div>
       `,
     });
-    console.log(`[email] sendReminderEmail sent to ${clientEmail}`);
+    logger.info({ clientEmail }, '[email] sendReminderEmail sent');
   } catch (err) {
-    console.error('[email] sendReminderEmail failed:', err.message);
+    logger.error({ err: err.message }, '[email] sendReminderEmail failed');
   }
 }
 
@@ -85,7 +86,7 @@ export async function sendReminderEmail(clientEmail, sessionTitle, pendingCount)
  */
 export async function sendAllTasksCompleteEmail(providerEmail, clientEmail, sessionTitle) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('[email] RESEND_API_KEY not set — skipping sendAllTasksCompleteEmail');
+    logger.warn('[email] RESEND_API_KEY not set — skipping sendAllTasksCompleteEmail');
     return;
   }
   try {
@@ -103,8 +104,8 @@ export async function sendAllTasksCompleteEmail(providerEmail, clientEmail, sess
         </div>
       `,
     });
-    console.log(`[email] sendAllTasksCompleteEmail sent to ${providerEmail}`);
+    logger.info({ providerEmail }, '[email] sendAllTasksCompleteEmail sent');
   } catch (err) {
-    console.error('[email] sendAllTasksCompleteEmail failed:', err.message);
+    logger.error({ err: err.message }, '[email] sendAllTasksCompleteEmail failed');
   }
 }

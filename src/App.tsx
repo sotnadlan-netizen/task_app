@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import PageTransition from "@/components/PageTransition";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import Signup from "./pages/Signup";
@@ -20,6 +22,40 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+/** Inner component so useLocation can run inside BrowserRouter */
+function AnimatedRoutes() {
+  const location = useLocation();
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login"          element={<PageTransition><Login /></PageTransition>} />
+        <Route path="/auth/callback"  element={<PageTransition><AuthCallback /></PageTransition>} />
+        <Route path="/signup"         element={<PageTransition><Signup /></PageTransition>} />
+        <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
+        <Route path="/reset-password"  element={<PageTransition><ResetPassword /></PageTransition>} />
+
+        {/* Provider routes */}
+        <Route element={<ProtectedRoute requiredRole="provider" />}>
+          <Route path="/provider/dashboard"          element={<PageTransition><ProviderDashboard /></PageTransition>} />
+          <Route path="/provider/board/:sessionId"   element={<PageTransition><ProviderBoard /></PageTransition>} />
+          <Route path="/provider/config"             element={<PageTransition><AgentConfig /></PageTransition>} />
+          <Route path="/provider/analytics"          element={<PageTransition><ProviderAnalytics /></PageTransition>} />
+        </Route>
+
+        {/* Client routes */}
+        <Route element={<ProtectedRoute requiredRole="client" />}>
+          <Route path="/client/dashboard"          element={<PageTransition><ClientDashboard /></PageTransition>} />
+          <Route path="/client/board/:sessionId"   element={<PageTransition><ClientBoard /></PageTransition>} />
+        </Route>
+
+        <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -27,30 +63,7 @@ const App = () => (
       <Sonner richColors position="top-right" />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth/callback" element={<AuthCallback />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-
-            {/* Provider routes */}
-            <Route element={<ProtectedRoute requiredRole="provider" />}>
-              <Route path="/provider/dashboard" element={<ProviderDashboard />} />
-              <Route path="/provider/board/:sessionId" element={<ProviderBoard />} />
-              <Route path="/provider/config" element={<AgentConfig />} />
-              <Route path="/provider/analytics" element={<ProviderAnalytics />} />
-            </Route>
-
-            {/* Client routes */}
-            <Route element={<ProtectedRoute requiredRole="client" />}>
-              <Route path="/client/dashboard" element={<ClientDashboard />} />
-              <Route path="/client/board/:sessionId" element={<ClientBoard />} />
-            </Route>
-
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AnimatedRoutes />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

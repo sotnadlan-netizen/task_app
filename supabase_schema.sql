@@ -97,6 +97,12 @@ DROP POLICY IF EXISTS "sessions_provider_delete" ON sessions;
 CREATE POLICY "sessions_provider_delete" ON sessions
   FOR DELETE USING (auth.uid() = provider_id);
 
+-- GAP: providers need UPDATE access to edit session metadata (title, sentiment, follow_up_questions).
+-- Without this policy a provider can INSERT and DELETE but not UPDATE their own sessions directly.
+DROP POLICY IF EXISTS "sessions_provider_update" ON sessions;
+CREATE POLICY "sessions_provider_update" ON sessions
+  FOR UPDATE USING (auth.uid() = provider_id);
+
 -- tasks: accessible when the parent session is accessible
 DROP POLICY IF EXISTS "tasks_select" ON tasks;
 CREATE POLICY "tasks_select" ON tasks
@@ -132,6 +138,10 @@ CREATE POLICY "tasks_client_toggle" ON tasks
   );
 
 -- prompt_config: providers only
+-- NOTE (gap): client-role users have no SELECT policy on prompt_config.
+-- The backend accesses this table via the service-role key so server-side reads
+-- always work. If any future client-side direct query is added, a read-only
+-- policy for authenticated clients will be needed.
 DROP POLICY IF EXISTS "prompt_config_provider_select" ON prompt_config;
 CREATE POLICY "prompt_config_provider_select" ON prompt_config
   FOR SELECT USING (

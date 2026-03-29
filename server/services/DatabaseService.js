@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import logger from "../utils/logger.js";
 
 // ── Supabase client (lazy) ────────────────────────────────────────────────────
 // Deferred so that process.env is fully populated before createClient runs.
@@ -13,9 +14,7 @@ function getClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
   // ── Debug: confirm env visibility without leaking values ──────────────────
-  console.log(`[db] SUPABASE_URL present:              ${!!url}`);
-  console.log(`[db] SUPABASE_SERVICE_ROLE_KEY present: ${!!process.env.SUPABASE_SERVICE_ROLE_KEY}`);
-  console.log(`[db] SUPABASE_ANON_KEY present:         ${!!process.env.SUPABASE_ANON_KEY}`);
+  logger.debug({ urlPresent: !!url, serviceKeyPresent: !!process.env.SUPABASE_SERVICE_ROLE_KEY, anonKeyPresent: !!process.env.SUPABASE_ANON_KEY }, "[db] Supabase env check");
 
   if (!url) {
     throw new Error("[db] Missing SUPABASE_URL in Environment Variables");
@@ -27,10 +26,9 @@ function getClient() {
   }
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn("[db] ⚠ SUPABASE_SERVICE_ROLE_KEY not set — using anon key.");
-    console.warn("    Get it: Supabase → Settings → API → service_role (secret)");
+    logger.warn("[db] SUPABASE_SERVICE_ROLE_KEY not set — using anon key. Get it: Supabase → Settings → API → service_role (secret)");
   } else {
-    console.log("[db] ✔ Using service_role key");
+    logger.debug("[db] Using service_role key");
   }
 
   _supabase = createClient(url, key);
@@ -227,16 +225,16 @@ class DatabaseService {
       audio_url:           session.audioUrl    || null,
     };
 
-    console.log("[db] Attempting to save session with data:", JSON.stringify(payload, null, 2));
+    logger.debug({ sessionId: session.id }, "[db] Attempting to save session");
 
     const { error } = await getClient().from("sessions").insert(payload);
 
     if (error) {
-      console.error("[db] saveSession FAILED — full error:", JSON.stringify(error, null, 2));
+      logger.error({ error }, "[db] saveSession FAILED");
       throw new Error(`[db] saveSession: ${error.message} (code: ${error.code}, details: ${error.details})`);
     }
 
-    console.log("[db] Session saved successfully:", session.id);
+    logger.debug({ sessionId: session.id }, "[db] Session saved successfully");
     return session;
   }
 
@@ -315,7 +313,7 @@ class DatabaseService {
     );
 
     if (error) {
-      console.error("[db] saveTasks FAILED — full error:", JSON.stringify(error, null, 2));
+      logger.error({ error }, "[db] saveTasks FAILED");
       throw new Error(`[db] saveTasks: ${error.message} (code: ${error.code}, details: ${error.details})`);
     }
     return tasks;
@@ -536,7 +534,7 @@ class DatabaseService {
         changed_by:    changedBy,
       });
     } catch (err) {
-      console.warn("[db] logPromptHistory failed (table may not exist):", err.message);
+      logger.warn({ err: err.message }, "[db] logPromptHistory failed (table may not exist)");
     }
   }
 
@@ -578,7 +576,7 @@ class DatabaseService {
       });
     } catch (err) {
       // Non-fatal: log to console but never block the main request
-      console.warn("[db] logUsage failed (table may not exist):", err.message);
+      logger.warn({ err: err.message }, "[db] logUsage failed (table may not exist)");
     }
   }
 
@@ -598,7 +596,7 @@ class DatabaseService {
       .upload(storagePath, buffer, { upsert: true });
 
     if (error) {
-      console.warn(`[db] uploadAudioToStorage failed (bucket: ${bucket}):`, error.message);
+      logger.warn({ bucket, err: error.message }, "[db] uploadAudioToStorage failed");
       return null;
     }
 
@@ -616,7 +614,7 @@ class DatabaseService {
       .createSignedUrl(storagePath, expiresIn);
 
     if (error) {
-      console.warn("[db] getAudioSignedUrl failed:", error.message);
+      logger.warn({ err: error.message }, "[db] getAudioSignedUrl failed");
       return null;
     }
     return data?.signedUrl ?? null;
@@ -643,12 +641,12 @@ class DatabaseService {
         .lt("created_at", new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString());
 
       if (fetchErr) {
-        console.warn("[db] cleanupExpiredAudio: failed to fetch sessions:", fetchErr.message);
+        logger.warn({ err: fetchErr.message }, "[db] cleanupExpiredAudio: failed to fetch sessions");
         return;
       }
 
       if (!sessions || sessions.length === 0) {
-        console.log(`[db] cleanupExpiredAudio: no expired audio files found (maxAgeDays=${maxAgeDays})`);
+        logger.debug({ maxAgeDays }, "[db] cleanupExpiredAudio: no expired audio files found");
         return;
       }
 
@@ -673,7 +671,7 @@ class DatabaseService {
       }
 
       if (paths.length === 0) {
-        console.log("[db] cleanupExpiredAudio: no valid storage paths extracted");
+        logger.debug("[db] cleanupExpiredAudio: no valid storage paths extracted");
         return;
       }
 
@@ -684,7 +682,7 @@ class DatabaseService {
         .remove(paths);
 
       if (removeErr) {
-        console.warn("[db] cleanupExpiredAudio: storage remove error:", removeErr.message);
+        logger.warn({ err: removeErr.message }, "[db] cleanupExpiredAudio: storage remove error");
         // Still try to null out the DB records
       }
 
@@ -695,13 +693,13 @@ class DatabaseService {
         .in("id", sessionIds);
 
       if (updateErr) {
-        console.warn("[db] cleanupExpiredAudio: failed to null audio_url:", updateErr.message);
+        logger.warn({ err: updateErr.message }, "[db] cleanupExpiredAudio: failed to null audio_url");
         return;
       }
 
-      console.log(`[db] cleanupExpiredAudio: cleaned up ${paths.length} audio file(s) older than ${maxAgeDays} days`);
+      logger.info({ count: paths.length, maxAgeDays }, "[db] cleanupExpiredAudio: cleaned up audio files");
     } catch (err) {
-      console.warn("[db] cleanupExpiredAudio: unexpected error:", err.message);
+      logger.warn({ err: err.message }, "[db] cleanupExpiredAudio: unexpected error");
     }
   }
 

@@ -1,9 +1,11 @@
 import express from "express";
 import path from "path";
+import logger from "../utils/logger.js";
 import { uploadAudio } from "../middleware/uploadMiddleware.js";
 import { analyzeAudio } from "../services/GeminiService.js";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { validateBody, processAudioSchema } from "../middleware/validateBody.js";
 import { validateAudioBuffer } from "../utils/validateAudio.js";
 import { deduplicateTasks } from "../utils/deduplicateTasks.js";
 import { sendNewSessionEmail } from "../services/EmailService.js";
@@ -27,7 +29,7 @@ function resolveMimeType(originalname, mimetype) {
   return map[ext] || "audio/webm";
 }
 
-router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next) => {
+router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processAudioSchema), async (req, res, next) => {
   const audioFile = req.file;
   try {
     if (!audioFile) {
@@ -37,12 +39,12 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
     // Dual-role payload check
     const providerId = req.user?.id;
     if (!providerId) {
-      console.warn("[process] ⚠️  Missing provider_id — auth middleware did not populate req.user");
+      logger.warn("[process] Missing provider_id — auth middleware did not populate req.user");
     }
 
     let { systemPrompt, clientEmail } = req.body;
     if (!clientEmail) {
-      console.warn("[process] ⚠️  client_email not provided — session will not be assigned to a client");
+      logger.warn("[process] client_email not provided — session will not be assigned to a client");
     }
 
     if (!systemPrompt) {
@@ -50,11 +52,11 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       systemPrompt = config.systemPrompt;
     }
 
-    console.log(
-      `[process] ▶ File: ${audioFile.originalname} ` +
-      `(${(audioFile.size / 1024).toFixed(1)} KB), ` +
-      `mime: ${audioFile.mimetype}`
-    );
+    logger.info({
+      filename: audioFile.originalname,
+      sizeKb:   (audioFile.size / 1024).toFixed(1),
+      mime:     audioFile.mimetype,
+    }, "[process] Audio received");
 
     // Memory storage — buffer is already in req.file.buffer, no disk read needed
     const audioBuffer = audioFile.buffer;
@@ -122,12 +124,12 @@ router.post("/", requireAuth, uploadAudio.single("audio"), async (req, res, next
       }).catch(() => {});
     }
 
-    console.log(`[process] ✔ Session saved — ${newTasks.length} tasks extracted. Audio discarded (privacy).`);
+    logger.info({ sessionId, taskCount: newTasks.length }, "[process] Session saved — audio discarded");
     res.json({ session, tasks: newTasks });
 
   } catch (err) {
     // Full error visibility for debugging
-    console.error("[Audio Process Error]:", err);
+    logger.error({ err: { message: err.message, stack: err.stack } }, "[process] Audio processing error");
 
     const msg = err.message || "";
 
