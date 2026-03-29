@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, Search, X, ChevronLeft } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useAuth } from "@/contexts/AuthContext";
 import { apiFetchSessions, type Session } from "@/lib/storage";
-import { useCallback, useEffect } from "react";
+import { useLoadingDelay } from "@/hooks/useLoadingDelay";
 import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -263,7 +263,10 @@ export default function ProviderClients() {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const showSkeleton = useLoadingDelay(loading);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [selectedClient, setSelectedClient] = useState<ClientSummary | null>(null);
 
@@ -279,17 +282,24 @@ export default function ProviderClients() {
 
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
+  // Debounce search input — 250ms delay prevents filtering on every keystroke
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(search), 250);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search]);
+
   const clients = useMemo(() => buildClientSummaries(sessions), [sessions]);
 
   const filtered = useMemo(() =>
     clients.filter((c) => {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
+      if (debouncedSearch.trim()) {
+        const q = debouncedSearch.toLowerCase();
         if (!c.clientEmail.toLowerCase().includes(q)) return false;
       }
       return true;
-    }), [clients, statusFilter, search]);
+    }), [clients, statusFilter, debouncedSearch]);
 
   const PILLS: { key: StatusFilter; label: string }[] = [
     { key: "all",    label: "הכל" },
@@ -335,7 +345,7 @@ export default function ProviderClients() {
       </p>
 
       {/* Grid */}
-      {loading ? (
+      {showSkeleton ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <ClientCardSkeleton key={i} />)}
         </div>
