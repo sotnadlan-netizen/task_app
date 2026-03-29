@@ -158,6 +158,29 @@
   button.no-min-height {
     min-height: unset;
   }
+
+  /* Safe area support for mobile bottom tabs and notched devices */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-safe {
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Hebrew: slightly larger base size for Assistant font on mobile */
+  @media (max-width: 767px) {
+    .font-hebrew,
+    :lang(he) {
+      font-size: 1.0625rem; /* ~17px when html=16px, ~19px when html=18px */
+      line-height: 1.7;
+    }
+  }
+
+  /* Prevent nested scroll containers from hijacking outer scroll */
+  .scroll-isolated {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* Prevent horizontal scroll on mobile */
@@ -221,5 +244,63 @@ img, svg, video {
     direction: ltr;
     unicode-bidi: isolate;
     display: inline-block;
+  }
+
+  /* RTL: progress bars fill right-to-left */
+  [dir="rtl"] [role="progressbar"] > div,
+  [dir="rtl"] .progress-fill {
+    transform-origin: right;
+  }
+
+  /* Radix Progress in RTL */
+  [dir="rtl"] [data-radix-progress-indicator] {
+    left: auto;
+    right: 0;
+    transform-origin: right center;
+  }
+
+  /* Mobile tab bar — glassmorphism + safe area */
+  .mobile-tab-bar {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    background: var(--glass-bg);
+    border-top: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  /* Content area above fixed tab bar — avoid content hidden behind it */
+  .mobile-content-area {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Floating CTA in the green zone (bottom 1/3 of screen) */
+  .cta-float {
+    position: fixed;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    left: 1rem;
+    right: 1rem;
+    z-index: 20;
+  }
+
+  /* Full-width bottom tab bar variant */
+  .tab-bar-bottom {
+    display: flex;
+    width: 100%;
+    height: auto;
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    gap: 0;
+  }
+  .tab-bar-bottom [role="tab"] {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.625rem 0;
+    font-size: 0.6875rem;
+    border-radius: 0;
+    gap: 0.25rem;
+    min-height: unset;
   }
 }

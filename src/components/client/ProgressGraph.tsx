@@ -59,12 +59,12 @@ export function ProgressGraph({ totalTasks, completedTasks, sessionCount }: Prog
         </svg>
         {/* Center label */}
         <div className="absolute flex flex-col items-center justify-center">
-          <span className="text-3xl font-bold text-slate-900 leading-none">{pct}%</span>
+          <span className="text-3xl font-bold text-slate-900 leading-none"><span className="ltr-in-rtl">{pct}%</span></span>
         </div>
       </div>
 
       <p className="text-sm text-slate-500 mb-6">
-        {pct}% of monthly goals
+        <span className="ltr-in-rtl">{pct}%</span> of monthly goals
       </p>
 
       <div className="grid grid-cols-3 gap-2 w-full max-w-xs">

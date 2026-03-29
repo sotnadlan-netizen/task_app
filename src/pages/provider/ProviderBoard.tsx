@@ -17,6 +17,10 @@ import {
   Share2,
   Copy,
   Download,
+  FileText,
+  ListChecks,
+  Headphones,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -64,6 +68,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAuth } from "@/contexts/AuthContext";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { motion, AnimatePresence } from "framer-motion";
 
 const priorityConfig = {
   High:   { label: "גבוהה",   bg: "bg-rose-100",   color: "text-rose-700",   ring: "ring-1 ring-rose-200" },
@@ -347,7 +353,7 @@ function Column({
       </div>
 
       {/* Body */}
-      <div className="flex-1 space-y-3 p-5 bg-slate-50/60 min-h-[200px]">
+      <div className="flex-1 space-y-3 p-5 bg-slate-50/60 min-h-[200px] overflow-y-auto overscroll-contain">
         {/* FE-017: Inline add-task form at TOP of list */}
         {addingTask && (
           <div className="rounded-xl border border-indigo-200 bg-white p-3 shadow-sm space-y-2">
@@ -534,6 +540,8 @@ export default function ProviderBoard() {
   const navigate = useNavigate();
   const { role } = useAuth();
   const isProvider = role === "provider";
+  const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<'summary' | 'tasks' | 'audio'>('tasks');
   const [tasks, setTasks] = useState<ActionItem[]>([]);
   // Realtime: receive task changes from other sessions or AI pipeline
   useRealtimeTasks(sessionId, setTasks);
@@ -732,115 +740,92 @@ export default function ProviderBoard() {
     </div>
   );
 
-  return (
-    <Layout
-      title="Session Board"
-      subtitle={session?.filename ?? "Task checklist for this session"}
-    >
-      {/* Back + summary */}
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate("/provider/dashboard")}
-          className="mb-4 -ml-2 text-slate-500 hover:text-slate-800"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1.5" /> All Sessions
-        </Button>
+  // ── Mobile tab sub-components ───────────────────────────────────────────────
 
-        {session && (
-          <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
-            <CardContent className="px-4 md:px-5 py-4 flex flex-col sm:flex-row items-start gap-4">
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
-                  {session.sentiment && (
-                    <span className={[
-                      "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                      session.sentiment === "Positive" && "bg-emerald-100 text-emerald-700",
-                      session.sentiment === "At-Risk"  && "bg-red-100 text-red-700",
-                      session.sentiment === "Neutral"  && "bg-slate-100 text-slate-600",
-                    ].filter(Boolean).join(" ")}>
-                      {session.sentiment === "Positive" && "✓ Positive"}
-                      {session.sentiment === "Neutral"  && "Neutral"}
-                      {session.sentiment === "At-Risk"  && "⚠ At-Risk"}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed">{session.summary}</p>
-                {session.followUpQuestions && session.followUpQuestions.length > 0 && (
-                  <div className="mt-2 border-t border-indigo-100 pt-2">
-                    <p className="text-xs font-semibold text-indigo-700 mb-1">Follow-up Questions</p>
-                    <ul className="space-y-0.5">
-                      {session.followUpQuestions.map((q, i) => (
-                        <li key={i} className="text-xs text-slate-600 flex gap-1.5">
-                          <span className="text-indigo-400 shrink-0">›</span>
-                          {q}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                <div className="flex items-center gap-4 mt-1">
-                  <p className="text-xs text-slate-400">
-                    {new Date(session.createdAt).toLocaleString("he-IL")}
-                  </p>
-                  {session.clientEmail && (
-                    <p className="text-xs text-indigo-600 font-medium">
-                      Client: {session.clientEmail}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="sm:shrink-0 flex flex-row sm:flex-col items-center gap-3">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
-                  <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
-                    Pending
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                      <Share2 className="h-3.5 w-3.5" /> Share
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const text = formatSessionExport(session, tasks);
-                        navigator.clipboard.writeText(text).then(() =>
-                          toast.success("Copied to clipboard")
-                        ).catch(() => toast.error("Clipboard not available"));
-                      }}
-                      className="gap-2 text-xs"
-                    >
-                      <Copy className="h-3.5 w-3.5" /> Copy as text
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        const text = formatSessionExport(session, tasks);
-                        const slug = (session.title || session.filename).replace(/[^a-z0-9]/gi, "-").toLowerCase();
-                        downloadTextFile(text, `${slug}-summary.txt`);
-                        toast.success("Downloaded");
-                      }}
-                      className="gap-2 text-xs"
-                    >
-                      <Download className="h-3.5 w-3.5" /> Download .txt
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+  const MobileSummaryTab = () => (
+    <div className="p-4 pb-24 space-y-3">
+      {/* Main summary bento card */}
+      <div className="glass shadow-glass rounded-2xl p-4">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">AI Summary</p>
+        <p className="text-base text-foreground leading-relaxed">{session?.summary}</p>
       </div>
 
-      {/* Audio playback */}
-      <div className="mb-4">
-        <AudioPlayer sessionId={sessionId!} />
+      {/* Stats bento card */}
+      <div className="glass shadow-glass rounded-2xl p-4 flex items-center gap-6">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-primary">{totalPending}</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Pending</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-emerald-600">{tasks.filter(t => t.completed).length}</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Done</p>
+        </div>
+        <div className="ms-auto">
+          {session && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                  <Share2 className="h-3.5 w-3.5" /> Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem
+                  onClick={() => {
+                    const text = formatSessionExport(session, tasks);
+                    navigator.clipboard.writeText(text).then(() =>
+                      toast.success("Copied to clipboard")
+                    ).catch(() => toast.error("Clipboard not available"));
+                  }}
+                  className="gap-2 text-xs"
+                >
+                  <Copy className="h-3.5 w-3.5" /> Copy as text
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    const text = formatSessionExport(session, tasks);
+                    const slug = (session.title || session.filename).replace(/[^a-z0-9]/gi, "-").toLowerCase();
+                    downloadTextFile(text, `${slug}-summary.txt`);
+                    toast.success("Downloaded");
+                  }}
+                  className="gap-2 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download .txt
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
 
+      {/* Follow-up questions bento card — collapsible */}
+      {session?.followUpQuestions && session.followUpQuestions.length > 0 && (
+        <details className="glass shadow-glass rounded-2xl">
+          <summary className="px-4 py-3 text-sm font-semibold text-foreground cursor-pointer list-none flex items-center justify-between">
+            Follow-up Questions
+            <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          </summary>
+          <div className="px-4 pb-4 space-y-2">
+            {session.followUpQuestions.map((q, i) => (
+              <p key={i} className="text-sm text-muted-foreground flex gap-2">
+                <span className="text-primary shrink-0">›</span>{q}
+              </p>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {/* Client info + date */}
+      <div className="glass shadow-glass rounded-2xl px-4 py-3 flex items-center gap-3 text-sm text-muted-foreground">
+        {session?.clientEmail && <span className="text-primary font-medium">{session.clientEmail}</span>}
+        <span className="ltr-in-rtl ml-auto text-xs">
+          {session && new Date(session.createdAt).toLocaleDateString('he-IL')}
+        </span>
+      </div>
+    </div>
+  );
+
+  const MobileTasksTab = () => (
+    <div className="p-4 pb-24">
       {loading ? (
         <div className="flex items-center justify-center py-24">
           <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
@@ -862,6 +847,260 @@ export default function ProviderBoard() {
         </DndContext>
       ) : (
         boardContent
+      )}
+    </div>
+  );
+
+  const MobileAudioTab = () => (
+    <div className="p-4 pb-24">
+      {!session?.audioUrl ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <div className="rounded-full bg-muted p-5">
+            <Headphones className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
+          </div>
+          <p className="text-sm text-muted-foreground">No audio recording for this session</p>
+        </div>
+      ) : (
+        <AudioPlayer sessionId={sessionId!} />
+      )}
+    </div>
+  );
+
+  // ── Mobile sticky header ────────────────────────────────────────────────────
+
+  const mobileHeader = (
+    <div className="sticky top-0 z-20 glass border-b border-border/50 px-4 py-2.5 flex items-center gap-2 md:hidden">
+      <button
+        onClick={() => navigate('/provider/dashboard')}
+        className="p-1.5 rounded-md hover:bg-accent -ml-1 no-min-height"
+        aria-label="Back to sessions"
+      >
+        <ArrowLeft className="w-4 h-4 text-muted-foreground rtl:rotate-180" aria-hidden="true" />
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate">
+          {session?.title || session?.filename || 'Session Board'}
+        </p>
+      </div>
+      {session?.sentiment && (
+        <span className={[
+          "shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+          session.sentiment === 'Positive' && 'bg-emerald-100 text-emerald-700',
+          session.sentiment === 'At-Risk' && 'bg-red-100 text-red-700',
+          session.sentiment === 'Neutral' && 'bg-slate-100 text-slate-600',
+        ].filter(Boolean).join(' ')}>
+          {session.sentiment}
+        </span>
+      )}
+    </div>
+  );
+
+  // ── Mobile bottom tab bar ───────────────────────────────────────────────────
+
+  const mobileTabBar = (
+    <div className="fixed bottom-0 inset-x-0 z-30 md:hidden glass border-t border-border/50 flex">
+      {([
+        { id: 'summary', label: 'Summary', Icon: FileText },
+        { id: 'tasks',   label: 'Tasks',   Icon: ListChecks },
+        { id: 'audio',   label: 'Audio',   Icon: Headphones },
+      ] as const).map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          onClick={() => setActiveTab(id)}
+          className={[
+            'flex-1 flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium transition-colors no-min-height',
+            activeTab === id
+              ? 'text-primary'
+              : 'text-muted-foreground hover:text-foreground',
+          ].join(' ')}
+          aria-label={label}
+          aria-selected={activeTab === id}
+        >
+          <Icon className="w-5 h-5" aria-hidden="true" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <Layout
+      title="Session Board"
+      subtitle={session?.filename ?? "Task checklist for this session"}
+    >
+      {isMobile ? (
+        // MOBILE: full-screen tab layout
+        <div className="flex flex-col min-h-[100dvh] -mx-4 -mt-4">
+          {/* Sticky session header */}
+          {mobileHeader}
+
+          {/* Animated tab content */}
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+              >
+                {activeTab === 'summary' && <MobileSummaryTab />}
+                {activeTab === 'tasks'   && <MobileTasksTab />}
+                {activeTab === 'audio'   && <MobileAudioTab />}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Floating bulk-complete button above tab bar */}
+          {activeTab === 'tasks' && totalPending > 0 && (
+            <div className="fixed bottom-[64px] inset-x-4 z-20">
+              <button
+                onClick={async () => {
+                  const pendingIds = tasks.filter(t => !t.completed).map(t => t.id);
+                  for (const id of pendingIds) {
+                    await handleToggle(id);
+                  }
+                }}
+                className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-glass"
+              >
+                Complete All ({totalPending} tasks)
+              </button>
+            </div>
+          )}
+
+          {/* Fixed bottom tab bar */}
+          {mobileTabBar}
+        </div>
+      ) : (
+        // DESKTOP: existing layout — completely unchanged
+        <>
+          {/* Back + summary */}
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/provider/dashboard")}
+              className="mb-4 -ml-2 text-slate-500 hover:text-slate-800"
+            >
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> All Sessions
+            </Button>
+
+            {session && (
+              <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm mb-6">
+                <CardContent className="px-4 md:px-5 py-4 flex flex-col sm:flex-row items-start gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
+                      {session.sentiment && (
+                        <span className={[
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                          session.sentiment === "Positive" && "bg-emerald-100 text-emerald-700",
+                          session.sentiment === "At-Risk"  && "bg-red-100 text-red-700",
+                          session.sentiment === "Neutral"  && "bg-slate-100 text-slate-600",
+                        ].filter(Boolean).join(" ")}>
+                          {session.sentiment === "Positive" && "✓ Positive"}
+                          {session.sentiment === "Neutral"  && "Neutral"}
+                          {session.sentiment === "At-Risk"  && "⚠ At-Risk"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-700 leading-relaxed">{session.summary}</p>
+                    {session.followUpQuestions && session.followUpQuestions.length > 0 && (
+                      <div className="mt-2 border-t border-indigo-100 pt-2">
+                        <p className="text-xs font-semibold text-indigo-700 mb-1">Follow-up Questions</p>
+                        <ul className="space-y-0.5">
+                          {session.followUpQuestions.map((q, i) => (
+                            <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                              <span className="text-indigo-400 shrink-0">›</span>
+                              {q}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 mt-1">
+                      <p className="text-xs text-slate-400">
+                        {new Date(session.createdAt).toLocaleString("he-IL")}
+                      </p>
+                      {session.clientEmail && (
+                        <p className="text-xs text-indigo-600 font-medium">
+                          Client: {session.clientEmail}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="sm:shrink-0 flex flex-row sm:flex-col items-center gap-3">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
+                      <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
+                        Pending
+                      </p>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                          <Share2 className="h-3.5 w-3.5" /> Share
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const text = formatSessionExport(session, tasks);
+                            navigator.clipboard.writeText(text).then(() =>
+                              toast.success("Copied to clipboard")
+                            ).catch(() => toast.error("Clipboard not available"));
+                          }}
+                          className="gap-2 text-xs"
+                        >
+                          <Copy className="h-3.5 w-3.5" /> Copy as text
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const text = formatSessionExport(session, tasks);
+                            const slug = (session.title || session.filename).replace(/[^a-z0-9]/gi, "-").toLowerCase();
+                            downloadTextFile(text, `${slug}-summary.txt`);
+                            toast.success("Downloaded");
+                          }}
+                          className="gap-2 text-xs"
+                        >
+                          <Download className="h-3.5 w-3.5" /> Download .txt
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Audio playback */}
+          <div className="mb-4">
+            <AudioPlayer sessionId={sessionId!} />
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-24">
+              <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
+              <div className="rounded-full bg-slate-100 p-5">
+                <CheckCircle2 className="h-7 w-7 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium text-slate-500">No tasks for this session</p>
+            </div>
+          ) : isProvider ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              {boardContent}
+            </DndContext>
+          ) : (
+            boardContent
+          )}
+        </>
       )}
     </Layout>
   );
