@@ -201,7 +201,7 @@ function TaskCard({
       {/* Drag handle — only visible for provider */}
       {draggable && (
         <div
-          className="absolute top-1/2 -translate-y-1/2 left-1 hidden group-hover:flex items-center text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
+          className="absolute top-1/2 -translate-y-1/2 start-1 hidden group-hover:flex items-center text-slate-400 hover:text-slate-600 cursor-grab active:cursor-grabbing"
           onClick={(e) => e.stopPropagation()}
           role="button"
           aria-label="Drag to reorder task"
@@ -213,9 +213,9 @@ function TaskCard({
         </div>
       )}
 
-      {/* Edit / Delete icons — top-left, visible on hover */}
+      {/* Edit / Delete icons — top-start, visible on hover */}
       <div
-        className={`absolute top-2 hidden group-hover:flex gap-1 ${draggable ? "left-7" : "left-2"}`}
+        className={`absolute top-2 hidden group-hover:flex gap-1 ${draggable ? "start-7" : "start-2"}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -237,11 +237,11 @@ function TaskCard({
       </div>
 
       <span
-        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
+        className={`absolute top-4 end-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
         {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
-      <div className="flex gap-3 pr-16">
+      <div className="flex gap-3 pe-16">
         <Checkbox
           checked={item.completed}
           onClick={(e) => e.stopPropagation()}

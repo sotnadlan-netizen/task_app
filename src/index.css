@@ -167,13 +167,11 @@
     bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  /* Hebrew: slightly larger base size for Assistant font on mobile */
-  @media (max-width: 767px) {
-    .font-hebrew,
-    :lang(he) {
-      font-size: 1.0625rem; /* ~17px when html=16px, ~19px when html=18px */
-      line-height: 1.7;
-    }
+  /* Hebrew: 17px base size for Assistant font (all breakpoints) */
+  .font-hebrew,
+  :lang(he) {
+    font-size: 17px;
+    line-height: 1.7;
   }
 
   /* Prevent nested scroll containers from hijacking outer scroll */
@@ -218,7 +216,7 @@ img, svg, video {
   /* Hebrew font helper */
   .font-hebrew {
     font-family: 'Assistant', 'Inter', system-ui, sans-serif;
-    font-size: 1.125em; /* ~2px larger than surrounding English */
+    font-size: 17px;
   }
 
   /* Post-Neumorphism card */

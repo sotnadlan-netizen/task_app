@@ -39,11 +39,11 @@ function ClientTaskCard({
       onClick={() => onToggle(item.id)}
     >
       <span
-        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
+        className={`absolute top-4 end-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
         {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
-      <div className="flex gap-3 pr-16">
+      <div className="flex gap-3 pe-16">
         <Checkbox
           checked={item.completed}
           onClick={(e) => e.stopPropagation()}
@@ -73,11 +73,11 @@ function AdvisorTaskCard({ item }: { item: ActionItem }) {
   return (
     <div className="relative rounded-xl border border-slate-200 bg-white p-5 shadow-sm opacity-60 cursor-not-allowed">
       <span
-        className={`absolute top-4 right-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
+        className={`absolute top-4 end-4 inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide ${pri.bg} ${pri.color} ${pri.ring}`}
       >
         {t(`priority.${item.priority.toLowerCase()}`)}
       </span>
-      <div className="flex gap-3 pr-16">
+      <div className="flex gap-3 pe-16">
         <Checkbox
           checked={item.completed}
           disabled
@@ -255,7 +255,7 @@ export default function ClientBoard() {
             <div className="flex flex-col rounded-2xl border-2 border-emerald-200 overflow-hidden">
               <div className="flex items-center gap-2.5 px-4 py-3 bg-white dark:bg-card border-b border-slate-100 dark:border-border sticky top-[52px] z-10">
                 <span className="text-sm font-bold">My Tasks</span>
-                <span className="ml-auto text-xs text-muted-foreground">
+                <span className="ms-auto text-xs text-muted-foreground">
                   {clientTasks.filter(t => t.completed).length}/{clientTasks.length}
                 </span>
               </div>
