@@ -1,7 +1,7 @@
 # APP_MAP.md — Listen Agent Application Map
 
 > **Living Document** — Updated automatically whenever features, endpoints, or architecture change.
-> Last updated: 2026-03-30 (Provider CRM dashboard — Hebrew nav, client grid, task center, accessibility widget IS 5568/WCAG 2.1 AA)
+> Last updated: 2026-03-30 (Mobile stability — dvh viewport fix, deferred spinner hook, debounced search, viewport-fit=cover)
 
 ---
 
@@ -350,6 +350,10 @@ User clicks FAB (bottom-end) → Sheet panel opens
 - [x] Hebrew mobile font — 17px (`1.0625rem`) + `line-height: 1.7` at `< 768px`
 - [x] `.mobile-tab-bar`, `.mobile-content-area`, `.cta-float`, `.scroll-isolated` CSS utilities
 - [x] `.skip-nav`, `.a11y-*` CSS utility classes for accessibility modes
+- [x] `dvh` viewport fix — `@supports (min-height: 100dvh)` overrides `min-h-screen`/`h-screen` to `100dvh`, fixes Safari iOS content cut-off
+- [x] `viewport-fit=cover` in `index.html` viewport meta — enables notch/home indicator safe area
+- [x] `useLoadingDelay(loading, 200)` hook — deferred spinner prevents flash-of-spinner on fast loads
+- [x] Debounced search (250ms) in `/provider/clients` — reduces re-renders on rapid typing
 
 ### Developer & Ops Features
 - [x] OpenAPI documentation (`/api/docs`)
@@ -711,6 +715,7 @@ listen_agent/
 │   ├── hooks/
 │   │   ├── useRealtimeSessions.ts     # Supabase realtime for sessions
 │   │   ├── useRealtimeTasks.ts        # Supabase realtime for tasks
+│   │   ├── useLoadingDelay.ts         # Deferred spinner — shows only after 200ms
 │   │   └── use-mobile.tsx             # Responsive breakpoint hook
 │   │
 │   ├── lib/
