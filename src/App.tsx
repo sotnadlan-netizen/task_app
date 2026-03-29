@@ -15,6 +15,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ProviderDashboard from "./pages/provider/ProviderDashboard";
 import ProviderBoard from "./pages/provider/ProviderBoard";
+import ProviderClients from "./pages/provider/ProviderClients";
+import ProviderTasks from "./pages/provider/ProviderTasks";
 import AgentConfig from "./pages/AgentConfig";
 import ProviderAnalytics from "./pages/provider/ProviderAnalytics";
 import ClientDashboard from "./pages/client/ClientDashboard";
@@ -64,6 +66,8 @@ function AnimatedRoutes() {
         <Route element={<ProtectedRoute requiredRole="provider" />}>
           <Route path="/provider/dashboard"          element={<PageTransition><ProviderDashboard /></PageTransition>} />
           <Route path="/provider/board/:sessionId"   element={<PageTransition><ProviderBoard /></PageTransition>} />
+          <Route path="/provider/clients"            element={<PageTransition><ProviderClients /></PageTransition>} />
+          <Route path="/provider/tasks"              element={<PageTransition><ProviderTasks /></PageTransition>} />
           <Route path="/provider/config"             element={<PageTransition><AgentConfig /></PageTransition>} />
           <Route path="/provider/analytics"          element={<PageTransition><ProviderAnalytics /></PageTransition>} />
         </Route>

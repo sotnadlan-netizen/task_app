@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon, Users, ListTodo } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const NAV = [
-  { to: "/provider/dashboard", icon: LayoutDashboard, label: "Dashboard", sub: "Session history" },
-  { to: "/provider/analytics", icon: BarChart2, label: "Analytics", sub: "Completion metrics" },
-  { to: "/provider/config", icon: Bot, label: "Agent Config", sub: "System prompt" },
+  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית", sub: "סקירה כללית" },
+  { to: "/provider/clients",   icon: Users,           label: "לקוחות",   sub: "ניהול לקוחות" },
+  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות פתוחות", sub: "מרכז משימות" },
+  { to: "/provider/analytics", icon: BarChart2,       label: "ניתוחים",  sub: "מדדי השלמה" },
+  { to: "/provider/config",    icon: Bot,             label: "הגדרות AI", sub: "פרומפט מערכת" },
 ];
 
 function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -48,7 +50,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           "ltr:left-0 rtl:right-0 rtl:left-auto",
           "border-r rtl:border-l-0 rtl:border-r border-slate-800 dark:border-slate-700",
           "transform transition-transform duration-200 ease-in-out md:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full"
+          open ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"
         )}
       >
         {/* Logo */}
@@ -209,6 +211,36 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+const BOTTOM_NAV = [
+  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית" },
+  { to: "/provider/clients",   icon: Users,           label: "לקוחות" },
+  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות" },
+];
+
+function MobileBottomNav() {
+  const { pathname } = useLocation();
+  return (
+    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 h-14 flex items-center justify-around bg-white/95 dark:bg-slate-900/95 border-t border-slate-200 dark:border-slate-700 backdrop-blur-sm safe-area-pb">
+      {BOTTOM_NAV.map(({ to, icon: Icon, label }) => {
+        const active = pathname === to || pathname.startsWith(to + "/");
+        return (
+          <NavLink
+            key={to}
+            to={to}
+            className={cn(
+              "flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-lg transition-colors",
+              active ? "text-indigo-600" : "text-slate-400"
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            <span className="text-[10px] font-medium leading-none">{label}</span>
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
 export function Layout({ title, subtitle, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -217,8 +249,9 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 p-4 md:p-8 dark:bg-slate-900">{children}</main>
+        <main className="flex-1 p-4 pb-20 md:pb-0 md:p-8 dark:bg-slate-900">{children}</main>
       </div>
+      <MobileBottomNav />
     </div>
   );
 }
