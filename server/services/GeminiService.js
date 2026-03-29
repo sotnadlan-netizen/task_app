@@ -175,3 +175,77 @@ export async function analyzeAudio(base64Audio, mimeType, systemPrompt) {
   const parsed = parseGeminiResponse(text);
   return { ...parsed, usage };
 }
+
+/**
+ * Send a plain-text transcript to Gemini and return the parsed JSON result.
+ * Same output shape as analyzeAudio.
+ *
+ * @param {string} transcript  - Raw text of the conversation
+ * @param {string} systemPrompt
+ * @returns {{ title, summary, sentiment, followUpQuestions, tasks, usage }}
+ */
+export async function analyzeText(transcript, systemPrompt) {
+  if (!process.env.GOOGLE_API_KEY) {
+    throw new Error("GOOGLE_API_KEY is not set in .env");
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+  const responseSchema = {
+    type: "object",
+    properties: {
+      title:             { type: "string" },
+      summary:           { type: "string" },
+      sentiment:         { type: "string", enum: ["Positive", "Neutral", "At-Risk"] },
+      followUpQuestions: { type: "array", items: { type: "string" } },
+      tasks: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title:       { type: "string" },
+            description: { type: "string" },
+            assignee:    { type: "string", enum: ["Advisor", "Client"] },
+            priority:    { type: "string", enum: ["High", "Medium", "Low"] },
+          },
+          required: ["title", "description", "assignee", "priority"],
+        },
+      },
+    },
+    required: ["title", "summary", "sentiment", "followUpQuestions", "tasks"],
+  };
+
+  const model = genAI.getGenerativeModel({
+    model: MODEL,
+    systemInstruction: systemPrompt,
+    generationConfig: { responseMimeType: "application/json", responseSchema },
+  });
+
+  if (DEBUG) {
+    logger.debug({ systemPromptPreview: systemPrompt.slice(0, 400), transcriptLen: transcript.length }, "[gemini] analyzeText request");
+  }
+
+  logger.info({ model: MODEL }, "[gemini] Sending text transcript to model");
+
+  const t0 = Date.now();
+
+  const result = await withRetry(() =>
+    withTimeout(
+      model.generateContent([transcript, JSON_FORMAT_INSTRUCTION]),
+      REQUEST_TIMEOUT_MS
+    )
+  );
+
+  const elapsed = Date.now() - t0;
+  const text    = result.response.text().trim();
+
+  logger.info({ elapsedMs: elapsed }, "[gemini] analyzeText response received");
+
+  const usage = result.response.usageMetadata ?? null;
+  if (usage) {
+    logger.info({ promptTokens: usage.promptTokenCount, outputTokens: usage.candidatesTokenCount, totalTokens: usage.totalTokenCount }, "[gemini] token usage");
+  }
+
+  const parsed = parseGeminiResponse(text);
+  return { ...parsed, usage };
+}

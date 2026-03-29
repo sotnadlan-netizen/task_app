@@ -13,7 +13,8 @@ import configRouter   from "./routes/config.js";
 import mockRouter     from "./routes/mock.js";
 import profilesRouter from "./routes/profiles.js";
 import authRouter      from "./routes/auth.js";
-import analyticsRouter from "./routes/analytics.js";
+import analyticsRouter    from "./routes/analytics.js";
+import transcriptsRouter  from "./routes/transcripts.js";
 import { db }         from "./services/DatabaseService.js";
 import { sendReminderEmail } from "./services/EmailService.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -81,6 +82,7 @@ app.use("/api/mock-data",     apiLimiter,   mockRouter);
 app.use("/api/profiles",      apiLimiter,   profilesRouter);
 app.use("/api/auth",          apiLimiter,   authRouter);
 app.use("/api/analytics",     apiLimiter,   analyticsRouter);
+app.use("/api/transcripts",   apiLimiter,   transcriptsRouter);
 
 app.get("/",          (_req, res) => res.json({ status: "API is running successfully" }));
 app.get("/api/health", (_req, res) => res.json({ ok: true }));

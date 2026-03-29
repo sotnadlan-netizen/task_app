@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" width="180" height="180">
+  <!-- Background: Sage Green rounded square (iOS icon style) -->
+  <rect width="180" height="180" rx="40" fill="#A7C080"/>
+  <!-- Mic body -->
+  <rect x="72" y="36" width="36" height="60" rx="18" fill="white"/>
+  <!-- Mic arc -->
+  <path d="M52 90 C52 118 128 118 128 90" stroke="white" stroke-width="7" stroke-linecap="round" fill="none"/>
+  <!-- Stand line -->
+  <line x1="90" y1="118" x2="90" y2="140" stroke="white" stroke-width="7" stroke-linecap="round"/>
+  <!-- Base line -->
+  <line x1="68" y1="140" x2="112" y2="140" stroke="white" stroke-width="7" stroke-linecap="round"/>
+</svg>

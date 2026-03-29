@@ -1,0 +1,29 @@
+{
+  "name": "Advisor AI",
+  "short_name": "Advisor AI",
+  "description": "AI-powered mortgage advisor platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#A7C080",
+  "background_color": "#F8F5F0",
+  "lang": "he",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["finance", "productivity"]
+}
