@@ -93,6 +93,22 @@ function rowToTask(row: any): ActionItem {
 
 const SESSION_COLS = "*, tasks(id, completed)";
 
+// ─── Auth context helper ──────────────────────────────────────────────────────
+// Returns the current user's id, email, and resolved role.
+// Used to add explicit .eq() tenant filters on top of RLS (defense-in-depth).
+async function getCurrentUserContext(): Promise<{
+  userId: string;
+  userEmail: string;
+  role: "provider" | "client";
+} | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return null;
+  const u = session.user;
+  const r = u.user_metadata?.role;
+  const role: "provider" | "client" = r === "client" ? "client" : "provider";
+  return { userId: u.id, userEmail: u.email ?? "", role };
+}
+
 // ─── Sessions API — direct Supabase (bypasses Render cold starts) ─────────────
 
 export interface SessionsPage {
@@ -101,10 +117,15 @@ export interface SessionsPage {
 }
 
 export async function apiFetchSessions(): Promise<Session[]> {
-  const { data, error } = await supabase
-    .from("sessions")
-    .select(SESSION_COLS)
-    .order("created_at", { ascending: false });
+  const ctx = await getCurrentUserContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query: any = supabase.from("sessions").select(SESSION_COLS).order("created_at", { ascending: false });
+  if (ctx?.role === "provider") {
+    query = query.eq("provider_id", ctx.userId);
+  } else if (ctx?.role === "client") {
+    query = query.eq("client_email", ctx.userEmail);
+  }
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []).map(rowToSession);
 }
@@ -113,12 +134,18 @@ export async function apiFetchSessionsPaginated(
   limit = 20,
   cursor?: string | null,
 ): Promise<SessionsPage> {
+  const ctx = await getCurrentUserContext();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = supabase
     .from("sessions")
     .select(SESSION_COLS)
     .order("created_at", { ascending: false })
     .limit(limit + 1);
+  if (ctx?.role === "provider") {
+    query = query.eq("provider_id", ctx.userId);
+  } else if (ctx?.role === "client") {
+    query = query.eq("client_email", ctx.userEmail);
+  }
   if (cursor) query = query.lt("created_at", cursor);
   const { data, error } = await query;
   if (error) throw new Error(error.message);
@@ -230,9 +257,15 @@ export interface AnalyticsOverview {
 }
 
 export async function apiFetchAnalyticsOverview(): Promise<AnalyticsOverview> {
-  const { data: sessions, error: sessErr } = await supabase
-    .from("sessions")
-    .select("id, created_at");
+  const ctx = await getCurrentUserContext();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let sessQuery: any = supabase.from("sessions").select("id, created_at");
+  if (ctx?.role === "provider") {
+    sessQuery = sessQuery.eq("provider_id", ctx.userId);
+  } else if (ctx?.role === "client") {
+    sessQuery = sessQuery.eq("client_email", ctx.userEmail);
+  }
+  const { data: sessions, error: sessErr } = await sessQuery;
   if (sessErr) throw new Error(sessErr.message);
 
   const allSessions = sessions ?? [];

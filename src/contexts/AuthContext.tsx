@@ -66,7 +66,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function signOut() {
+    // Clear all persisted state before signing out to prevent cross-tenant leaks
+    localStorage.clear();
+    sessionStorage.clear();
     await supabase.auth.signOut();
+    // Hard reload obliterates React state, React Query cache, and all in-memory data
+    window.location.href = "/login";
   }
 
   async function signInWithGoogle() {
