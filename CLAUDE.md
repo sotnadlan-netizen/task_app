@@ -199,7 +199,19 @@ npx @claude-flow/cli@latest doctor --fix
 
 ## APP_MAP.md Maintenance
 
-CRITICAL SYSTEM RULE: You are responsible for maintaining the accuracy of `APP_MAP.md`. Whenever you successfully implement a new feature, modify existing business logic, add an API endpoint, or change the architecture, you MUST independently update `APP_MAP.md` to reflect these changes before concluding your task and exiting the session. Never leave the documentation out of sync with the codebase.
+CRITICAL SYSTEM RULE: You are responsible for maintaining the accuracy of `APP_MAP.md`. **Every feature change — no matter how small — MUST be reflected in `APP_MAP.md` before the task is considered complete.** This is a non-negotiable, always-enforced rule. There are no exceptions.
+
+Specifically, you MUST update `APP_MAP.md` whenever you:
+- Add, remove, or rename any page, route, or component
+- Add or change any feature listed in Section 4 (Feature Inventory)
+- Add, modify, or remove any API endpoint (Section 5)
+- Change the database schema (Section 6)
+- Add a new dependency or change the tech stack (Section 2)
+- Change the folder structure (Section 7)
+
+You MUST also update the `Last updated:` date at the top of `APP_MAP.md` to today's date with a short description of what changed.
+
+Never leave the documentation out of sync with the codebase. If you complete code changes without updating `APP_MAP.md`, the task is **incomplete**.
 
 SUPABASE SCHEMA RULE: Whenever the user provides a new or updated Supabase SQL migration script, you MUST:
 1. Replace the "Canonical SQL — Full Migration Script" block in `APP_MAP.md` section 6 with the new SQL in full.

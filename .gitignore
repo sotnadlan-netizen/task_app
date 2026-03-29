@@ -27,4 +27,4 @@ TASKS.md
 coverage/
 playwright-report/
 test-results/
-APP_MAP.md
+# APP_MAP.md is intentionally tracked (living architecture doc)
