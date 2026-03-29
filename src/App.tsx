@@ -22,6 +22,7 @@ import ProviderAnalytics from "./pages/provider/ProviderAnalytics";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientBoard from "./pages/client/ClientBoard";
 import NotFound from "./pages/NotFound";
+import { AccessibilityWidget } from "@/components/AccessibilityWidget";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +89,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AppBootstrap />
+      <AccessibilityWidget />
       <Toaster />
       <Sonner richColors position="top-right" />
       <BrowserRouter>

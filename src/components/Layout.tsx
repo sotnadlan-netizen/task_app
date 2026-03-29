@@ -246,10 +246,16 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+      {/* Skip navigation — visible on first Tab press (IS 5568 / WCAG 2.4.1) */}
+      <a href="#main-content" className="skip-nav">
+        דלג לתוכן הראשי
+      </a>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
-        <main className="flex-1 p-4 pb-20 md:pb-0 md:p-8 dark:bg-slate-900">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 p-4 pb-20 md:pb-0 md:p-8 dark:bg-slate-900">
+          {children}
+        </main>
       </div>
       <MobileBottomNav />
     </div>
