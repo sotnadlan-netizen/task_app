@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -7,6 +7,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
@@ -25,11 +31,16 @@ import {
   Search,
   CalendarDays,
   Music,
+  MessageSquare,
+  Send,
+  CalendarPlus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -59,8 +70,12 @@ import {
   apiDeleteSession,
   apiUpdateTaskDetails,
   apiDeleteTask,
+  apiChatHistory,
+  apiAddCalendarEvent,
   type ActionItem,
   type Session,
+  type NextMeetingSuggestion,
+  type ChatHistoryResponse,
 } from "@/lib/storage";
 import { TaskReviewDialog, type AiTask } from "@/components/provider/TaskReviewDialog";
 import { toast } from "sonner";
@@ -112,7 +127,7 @@ function SkeletonRow() {
 
 export default function ProviderDashboard() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, providerToken } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   // Realtime: push DB changes straight into local state (no polling)
   useRealtimeSessions(setSessions, user?.id ?? null);
@@ -126,6 +141,18 @@ export default function ProviderDashboard() {
   const [dateTo, setDateTo] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Calendar suggestion (cleared once dismissed or added)
+  const [calendarSuggestion, setCalendarSuggestion] = useState<(NextMeetingSuggestion & { clientEmail?: string }) | null>(null);
+  const [addingToCalendar, setAddingToCalendar] = useState(false);
+
+  // RAG Chat panel
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatQuery, setChatQuery] = useState("");
+  const [chatClientFilter, setChatClientFilter] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<{ role: "user" | "ai"; text: string; citations?: ChatHistoryResponse["citations"] }[]>([]);
+  const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Command palette state
   const [cmdOpen, setCmdOpen] = useState(false);
@@ -166,7 +193,10 @@ export default function ProviderDashboard() {
     try {
       const { systemPrompt } = await apiFetchConfig();
       setProcessingStage("analyzing");
-      const { session, tasks } = await apiProcessAudio(blob, systemPrompt, "recording.webm", clientEmail);
+      const { session, tasks, nextMeetingSuggestion } = await apiProcessAudio(blob, systemPrompt, "recording.webm", clientEmail);
+      if (nextMeetingSuggestion) {
+        setCalendarSuggestion({ ...nextMeetingSuggestion, clientEmail: clientEmail || undefined });
+      }
       toast.success(`${tasks.length} tasks extracted — review before sending`, {
         description: session.filename,
       });
@@ -266,6 +296,55 @@ export default function ProviderDashboard() {
     }
   }
 
+  async function handleChatSend() {
+    const q = chatQuery.trim();
+    if (!q || chatLoading) return;
+    setChatHistory((h) => [...h, { role: "user", text: q }]);
+    setChatQuery("");
+    setChatLoading(true);
+    try {
+      const resp = await apiChatHistory(q, chatClientFilter || undefined);
+      setChatHistory((h) => [...h, { role: "ai", text: resp.answer, citations: resp.citations }]);
+      setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    } catch (err) {
+      toast.error("Chat failed", { description: err instanceof Error ? err.message : "Unknown error" });
+      setChatHistory((h) => h.slice(0, -1)); // remove optimistic user message
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  async function handleAddCalendar() {
+    if (!calendarSuggestion) return;
+    if (!providerToken) {
+      toast.error("Sign in with Google to add calendar events", { description: "Click 'Sign in with Google' and accept the calendar permission." });
+      return;
+    }
+    setAddingToCalendar(true);
+    try {
+      const { htmlLink } = await apiAddCalendarEvent(providerToken, {
+        title:       calendarSuggestion.title,
+        date:        calendarSuggestion.date,
+        time:        calendarSuggestion.time,
+        clientEmail: calendarSuggestion.clientEmail,
+      });
+      toast.success("נוסף ללוח השנה", {
+        description: calendarSuggestion.title,
+        action: { label: "פתח", onClick: () => window.open(htmlLink, "_blank") },
+      });
+      setCalendarSuggestion(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg === "CALENDAR_TOKEN_EXPIRED") {
+        toast.error("פג תוקף ההרשאה ל-Google Calendar", { description: "יש להתחבר מחדש עם Google כדי לחדש את ההרשאות." });
+      } else {
+        toast.error("שגיאה בהוספה ללוח השנה", { description: msg });
+      }
+    } finally {
+      setAddingToCalendar(false);
+    }
+  }
+
   const filteredSessions = sessions.filter((s) => {
     // FE-011: Search filter by client email (case-insensitive)
     if (search.trim()) {
@@ -337,11 +416,51 @@ export default function ProviderDashboard() {
         </div>
       )}
 
-      {/* ⌘K hint */}
-      <div className="flex items-center justify-end mb-2">
+      {/* ── Calendar Suggestion Banner ─────────────────────────────────────────── */}
+      {calendarSuggestion && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800 px-4 py-3">
+          <CalendarPlus className="h-5 w-5 text-indigo-600 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">AI הציע פגישת מעקב</p>
+            <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-0.5 truncate">
+              <span dir="ltr" className="inline">{calendarSuggestion.date}</span>
+              {calendarSuggestion.time && <> &middot; <span dir="ltr" className="inline">{calendarSuggestion.time}</span></>}
+              {" — "}{calendarSuggestion.title}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={handleAddCalendar}
+            disabled={addingToCalendar}
+            className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 shrink-0"
+          >
+            {addingToCalendar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
+            הוסף ללוח השנה
+          </Button>
+          <button
+            onClick={() => setCalendarSuggestion(null)}
+            className="p-1 rounded hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-400 no-min-height"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ⌘K hint + Chat button */}
+      <div className="flex items-center justify-between mb-2">
         <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground font-mono ml-2">
           ⌘K
         </kbd>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setChatOpen(true)}
+          className="gap-2 h-8 text-xs"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          שוחח עם היסטוריית לקוח
+        </Button>
       </div>
 
       {/* Stats */}
@@ -655,6 +774,93 @@ export default function ProviderDashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* ── RAG Chat History Panel ──────────────────────────────────────────────── */}
+      <Sheet open={chatOpen} onOpenChange={setChatOpen}>
+        <SheetContent side="left" className="w-full sm:w-[440px] flex flex-col p-0 gap-0">
+          <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0">
+            <SheetTitle className="flex items-center gap-2 text-base">
+              <MessageSquare className="h-4 w-4 text-indigo-500" />
+              שוחח עם היסטוריית הלקוחות
+            </SheetTitle>
+            {/* Client filter */}
+            <Input
+              value={chatClientFilter}
+              onChange={(e) => setChatClientFilter(e.target.value)}
+              placeholder="סנן לפי אימייל לקוח (אופציונלי)"
+              className="h-8 text-xs mt-2"
+              dir="ltr"
+            />
+          </SheetHeader>
+
+          {/* Message thread */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {chatHistory.length === 0 && (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
+                <Sparkles className="h-8 w-8 text-indigo-300" />
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">שאל שאלה על ההיסטוריה</p>
+                <p className="text-xs text-slate-400 max-w-[240px]">לדוגמה: "מה דיברנו על ריבית בחודש שעבר?" או "מה הסנטימנט של לקוח X?"</p>
+              </div>
+            )}
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div className={`rounded-2xl px-3 py-2 text-sm max-w-[88%] whitespace-pre-wrap leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-indigo-600 text-white rounded-tr-sm"
+                    : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-tl-sm"
+                }`}>
+                  {msg.text}
+                </div>
+                {msg.citations && msg.citations.length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-1 max-w-[88%]">
+                    {msg.citations.map((c) => (
+                      <button
+                        key={c.sessionId}
+                        onClick={() => { setChatOpen(false); navigate(`/provider/board/${c.sessionId}`); }}
+                        className="text-[10px] px-2 py-0.5 rounded-full border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/40 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 transition-colors no-min-height"
+                        title={`Similarity: ${c.similarity}%`}
+                      >
+                        {c.title || "Session"} · {c.similarity}%
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+            {chatLoading && (
+              <div className="flex items-start gap-2">
+                <div className="rounded-2xl rounded-tl-sm px-3 py-2 bg-slate-100 dark:bg-slate-800">
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                </div>
+              </div>
+            )}
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Input bar */}
+          <div className="shrink-0 border-t border-border px-3 py-3 flex gap-2">
+            <Textarea
+              value={chatQuery}
+              onChange={(e) => setChatQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); }
+              }}
+              placeholder="שאל שאלה על היסטוריית הלקוחות..."
+              rows={2}
+              className="flex-1 resize-none text-sm min-h-0"
+            />
+            <Button
+              size="icon"
+              onClick={handleChatSend}
+              disabled={!chatQuery.trim() || chatLoading}
+              className="h-10 w-10 shrink-0 bg-indigo-600 hover:bg-indigo-700 self-end"
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </Layout>
   );
 }

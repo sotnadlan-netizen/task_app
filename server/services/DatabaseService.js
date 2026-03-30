@@ -223,6 +223,8 @@ class DatabaseService {
       provider_id:         session.providerId  || null,
       client_email:        session.clientEmail || null,
       audio_url:           session.audioUrl    || null,
+      // pgvector embedding — included only when present to avoid overwriting existing values
+      ...(session.embedding ? { embedding: session.embedding } : {}),
     };
 
     logger.debug({ sessionId: session.id }, "[db] Attempting to save session");

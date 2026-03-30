@@ -26,7 +26,12 @@ Required format:
       "assignee": "Advisor",
       "priority": "High"
     }
-  ]
+  ],
+  "next_meeting_suggestion": {
+    "title": "Follow-up meeting title",
+    "date": "YYYY-MM-DD",
+    "time": "HH:MM"
+  }
 }
 Field descriptions:
 - "title": a concise 4–6 word Hebrew headline summarizing the session topic
@@ -34,6 +39,7 @@ Field descriptions:
 - "sentiment": overall emotional tone of the client in the session
 - "followUpQuestions": 2–4 clarifying questions the advisor should ask in the next session to fill any information gaps
 - "tasks": list of action items extracted from the session
+- "next_meeting_suggestion": ONLY include if the conversation explicitly mentions a next meeting date/time. Set to null otherwise.
 Valid assignee values: "Advisor" | "Client"
 Valid priority values: "High" | "Medium" | "Low"
 Valid sentiment values: "Positive" | "Neutral" | "At-Risk"
@@ -126,6 +132,15 @@ export async function analyzeAudio(base64Audio, mimeType, systemPrompt) {
           },
           required: ["title", "description", "assignee", "priority"],
         },
+      },
+      next_meeting_suggestion: {
+        type: "object",
+        properties: {
+          title: { type: "string" },
+          date:  { type: "string" },
+          time:  { type: "string" },
+        },
+        nullable: true,
       },
     },
     required: ["title", "summary", "sentiment", "followUpQuestions", "tasks"],
@@ -248,4 +263,60 @@ export async function analyzeText(transcript, systemPrompt) {
 
   const parsed = parseGeminiResponse(text);
   return { ...parsed, usage };
+}
+
+/**
+ * Generate a text embedding vector using Google's text-embedding-004 model.
+ * Returns a float[] suitable for pgvector storage, or null on failure.
+ *
+ * @param {string} text
+ * @returns {Promise<number[] | null>}
+ */
+export async function generateEmbedding(text) {
+  if (!process.env.GOOGLE_API_KEY || !text?.trim()) return null;
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+    const model  = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const result = await model.embedContent(text.slice(0, 8000));
+    return result.embedding.values;
+  } catch (err) {
+    logger.warn({ err: err.message }, "[gemini] generateEmbedding failed — session saved without embedding");
+    return null;
+  }
+}
+
+/**
+ * Generate a RAG answer from retrieved context + user query.
+ *
+ * @param {string} query       - The user's question
+ * @param {string} context     - Retrieved session context from pgvector search
+ * @param {string} clientEmail - Optional client filter (for framing)
+ * @returns {Promise<string>}
+ */
+export async function generateRAGAnswer(query, context, clientEmail) {
+  if (!process.env.GOOGLE_API_KEY) throw new Error("GOOGLE_API_KEY is not set in .env");
+
+  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+  const model  = genAI.getGenerativeModel({ model: MODEL });
+
+  const scope = clientEmail ? `for client ${clientEmail}` : "across all clients";
+
+  const prompt = `You are a helpful AI assistant for a mortgage advisor.
+The advisor is asking a question ${scope}.
+Answer ONLY based on the session history provided below. If the information is not in the context, say so clearly.
+Answer in the same language the question was asked in (Hebrew or English).
+
+--- SESSION HISTORY ---
+${context || "No relevant sessions found."}
+--- END CONTEXT ---
+
+QUESTION: ${query}`;
+
+  const t0 = Date.now();
+  const result = await withRetry(() =>
+    withTimeout(model.generateContent(prompt), REQUEST_TIMEOUT_MS)
+  );
+  logger.info({ elapsedMs: Date.now() - t0 }, "[gemini] generateRAGAnswer response received");
+
+  return result.response.text().trim();
 }

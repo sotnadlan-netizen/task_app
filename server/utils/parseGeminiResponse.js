@@ -41,13 +41,25 @@ export function parseGeminiResponse(text) {
 
   const VALID_SENTIMENTS = ["Positive", "Neutral", "At-Risk"];
 
+  // Validate optional next_meeting_suggestion
+  let nextMeetingSuggestion = null;
+  const nms = parsed.next_meeting_suggestion;
+  if (nms && typeof nms === "object" && typeof nms.title === "string") {
+    nextMeetingSuggestion = {
+      title: nms.title.trim(),
+      date:  typeof nms.date  === "string" ? nms.date.trim()  : "",
+      time:  typeof nms.time  === "string" ? nms.time.trim()  : "",
+    };
+  }
+
   return {
-    title:              typeof parsed.title === "string" ? parsed.title.trim() : "",
-    summary:            typeof parsed.summary === "string" ? parsed.summary : "",
-    sentiment:          VALID_SENTIMENTS.includes(parsed.sentiment) ? parsed.sentiment : "Neutral",
-    followUpQuestions:  Array.isArray(parsed.followUpQuestions)
-                          ? parsed.followUpQuestions.filter((q) => typeof q === "string")
-                          : [],
-    tasks:              Array.isArray(parsed.tasks) ? parsed.tasks : [],
+    title:                  typeof parsed.title === "string" ? parsed.title.trim() : "",
+    summary:                typeof parsed.summary === "string" ? parsed.summary : "",
+    sentiment:              VALID_SENTIMENTS.includes(parsed.sentiment) ? parsed.sentiment : "Neutral",
+    followUpQuestions:      Array.isArray(parsed.followUpQuestions)
+                              ? parsed.followUpQuestions.filter((q) => typeof q === "string")
+                              : [],
+    tasks:                  Array.isArray(parsed.tasks) ? parsed.tasks : [],
+    nextMeetingSuggestion,
   };
 }

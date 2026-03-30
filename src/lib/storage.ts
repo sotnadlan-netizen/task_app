@@ -16,6 +16,12 @@ export interface ActionItem {
 
 export type SessionSentiment = "Positive" | "Neutral" | "At-Risk";
 
+export interface NextMeetingSuggestion {
+  title: string;
+  date: string;   // YYYY-MM-DD or natural language from AI
+  time: string;   // HH:MM or natural language
+}
+
 export interface Session {
   id: string;
   createdAt: string;
@@ -29,6 +35,18 @@ export interface Session {
   providerId?: string;
   clientEmail?: string;
   audioUrl?: string | null;
+}
+
+export interface ChatHistoryResponse {
+  answer: string;
+  citations: {
+    sessionId: string;
+    title: string;
+    clientEmail: string | null;
+    createdAt: string;
+    similarity: number;
+  }[];
+  matchCount: number;
 }
 
 export interface PromptConfig {
@@ -304,7 +322,7 @@ export async function apiProcessAudio(
   systemPrompt: string,
   filename?: string,
   clientEmail?: string,
-): Promise<{ session: Session; tasks: ActionItem[] }> {
+): Promise<{ session: Session; tasks: ActionItem[]; nextMeetingSuggestion: NextMeetingSuggestion | null }> {
   const formData = new FormData();
   const file =
     audioFile instanceof File
@@ -340,4 +358,84 @@ export async function apiSaveConfig(config: PromptConfig): Promise<PromptConfig>
     .upsert({ id: 1, system_prompt: config.systemPrompt });
   if (error) throw new Error(error.message);
   return config;
+}
+
+// ─── RAG Chat History API ──────────────────────────────────────────────────────
+
+export async function apiChatHistory(
+  query: string,
+  clientEmail?: string,
+  matchCount = 5,
+): Promise<ChatHistoryResponse> {
+  const res = await apiFetch("/api/chat-history", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query, clientEmail: clientEmail || "", matchCount }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Unknown error" }));
+    throw new Error(err.error || "Chat history request failed");
+  }
+  return res.json();
+}
+
+// ─── Google Calendar API ───────────────────────────────────────────────────────
+
+export interface CalendarEventPayload {
+  title: string;
+  date: string;   // YYYY-MM-DD
+  time: string;   // HH:MM (24h)
+  clientEmail?: string;
+  durationMinutes?: number;
+}
+
+/**
+ * Insert a Google Calendar event directly from the frontend using the
+ * provider_token obtained from Supabase's OAuth session.
+ *
+ * NOTE: provider_token is short-lived (~1h). On 401, the user must re-login
+ * with Google to obtain a fresh token.
+ */
+export async function apiAddCalendarEvent(
+  providerToken: string,
+  event: CalendarEventPayload,
+): Promise<{ htmlLink: string }> {
+  const startDateTime = `${event.date}T${event.time || "10:00"}:00`;
+  const duration      = event.durationMinutes ?? 60;
+
+  // Compute end time
+  const start = new Date(startDateTime);
+  const end   = new Date(start.getTime() + duration * 60_000);
+  const endDateTime = end.toISOString().slice(0, 19); // trim milliseconds and Z
+
+  const body = {
+    summary:     event.title,
+    description: event.clientEmail ? `פגישת מעקב עם לקוח: ${event.clientEmail}` : "פגישת מעקב",
+    start: { dateTime: `${startDateTime}`, timeZone: "Asia/Jerusalem" },
+    end:   { dateTime: `${endDateTime}`,   timeZone: "Asia/Jerusalem" },
+    ...(event.clientEmail ? {
+      attendees: [{ email: event.clientEmail }],
+    } : {}),
+  };
+
+  const res = await fetch(
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${providerToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 401) throw new Error("CALENDAR_TOKEN_EXPIRED");
+    throw new Error(err?.error?.message || `Google Calendar API error (${res.status})`);
+  }
+
+  const data = await res.json();
+  return { htmlLink: data.htmlLink };
 }

@@ -6,6 +6,8 @@ interface AuthContextValue {
   user: User | null;
   role: "provider" | "client" | null;
   loading: boolean;
+  /** Google OAuth provider_token — present only after a Google sign-in, never stored in localStorage */
+  providerToken: string | null;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
 }
@@ -14,6 +16,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   role: null,
   loading: true,
+  providerToken: null,
   signOut: async () => {},
   signInWithGoogle: async () => {},
 });
@@ -37,9 +40,11 @@ async function ensureProfile(user: User) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<"provider" | "client" | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser]               = useState<User | null>(null);
+  const [role, setRole]               = useState<"provider" | "client" | null>(null);
+  const [loading, setLoading]         = useState(true);
+  // provider_token is kept in memory only — never written to localStorage for security
+  const [providerToken, setProviderToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Initial session (handles page refresh and OAuth code exchange)
@@ -47,6 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const u = session?.user ?? null;
       setUser(u);
       setRole(resolveRole(u));
+      // provider_token is available immediately after OAuth login
+      setProviderToken(session?.provider_token ?? null);
       setLoading(false);
     });
 
@@ -54,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const u = session?.user ?? null;
       setUser(u);
       setRole(resolveRole(u));
+      setProviderToken(session?.provider_token ?? null);
       setLoading(false);
 
       // First-time OAuth login: ensure profiles row exists
@@ -77,12 +85,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signInWithGoogle() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        // Request calendar.events scope so provider_token can create Google Calendar events
+        scopes: "https://www.googleapis.com/auth/calendar.events",
+      },
     });
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, role, loading, providerToken, signOut, signInWithGoogle }}>
       {children}
     </AuthContext.Provider>
   );

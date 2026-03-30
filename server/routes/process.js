@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import logger from "../utils/logger.js";
 import { uploadAudio } from "../middleware/uploadMiddleware.js";
-import { analyzeAudio } from "../services/GeminiService.js";
+import { analyzeAudio, generateEmbedding } from "../services/GeminiService.js";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody, processAudioSchema } from "../middleware/validateBody.js";
@@ -74,8 +74,15 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
     const sessionId = crypto.randomUUID();
 
     // Privacy-first: audio is NOT stored — process directly and discard
-    const { title, summary, sentiment, followUpQuestions, tasks: rawTasks, usage } =
+    const { title, summary, sentiment, followUpQuestions, tasks: rawTasks, usage, nextMeetingSuggestion } =
       await analyzeAudio(base64Audio, mimeType, systemPrompt);
+
+    // RAG: generate embedding for this session (best-effort — never blocks save)
+    const embeddingText = [
+      summary || "",
+      ...(rawTasks || []).map((t) => `${t.title}: ${t.description}`),
+    ].join("\n").slice(0, 8000);
+    const embedding = await generateEmbedding(embeddingText);
 
     const session = {
       id:                sessionId,
@@ -88,6 +95,7 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       providerId:        providerId || null,
       clientEmail:       clientEmail || null,
       audioUrl:          null, // audio is never persisted
+      embedding,             // pgvector float[] — null if embedding failed
     };
     await db.saveSession(session);
 
@@ -124,8 +132,8 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       }).catch(() => {});
     }
 
-    logger.info({ sessionId, taskCount: newTasks.length }, "[process] Session saved — audio discarded");
-    res.json({ session, tasks: newTasks });
+    logger.info({ sessionId, taskCount: newTasks.length, hasEmbedding: !!embedding }, "[process] Session saved — audio discarded");
+    res.json({ session, tasks: newTasks, nextMeetingSuggestion: nextMeetingSuggestion ?? null });
 
   } catch (err) {
     // Full error visibility for debugging
