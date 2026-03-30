@@ -276,7 +276,7 @@ export async function generateEmbedding(text) {
   if (!process.env.GOOGLE_API_KEY || !text?.trim()) return null;
   try {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model  = genAI.getGenerativeModel({ model: "text-embedding-004" });
+    const model  = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
     const result = await model.embedContent(text.slice(0, 8000));
     return result.embedding.values;
   } catch (err) {

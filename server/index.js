@@ -24,6 +24,10 @@ import { apiLimiter, audioLimiter } from "./middleware/rateLimitMiddleware.js";
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
+// ── Proxy trust (Render / reverse-proxy deployments) ─────────────────────────
+// Required for express-rate-limit to read X-Forwarded-For correctly (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR)
+app.set('trust proxy', 1);
+
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 
