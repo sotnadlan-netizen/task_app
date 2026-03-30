@@ -18,7 +18,6 @@ import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
 import { useNavigate } from "react-router-dom";
 import {
   Mic,
-  Database,
   Loader2,
   ChevronRight,
   CheckCircle2,
@@ -65,7 +64,6 @@ import { ClientPulseGrid } from "@/components/provider/ClientPulseGrid";
 import {
   apiFetchSessions,
   apiProcessAudio,
-  apiLoadMockData,
   apiFetchConfig,
   apiDeleteSession,
   apiUpdateTaskDetails,
@@ -135,7 +133,6 @@ export default function ProviderDashboard() {
   const [recordOpen, setRecordOpen] = useState(false);
   const [processingStage, setProcessingStage] = useState<null | "uploading" | "analyzing">(null);
   const processing = processingStage !== null;
-  const [loadingMock, setLoadingMock] = useState(false);
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -266,19 +263,6 @@ export default function ProviderDashboard() {
     setReviewOpen(false);
     setReviewData(null);
     navigate(`/provider/board/${sessionId}`);
-  }
-
-  async function handleLoadMock() {
-    setLoadingMock(true);
-    try {
-      const { sessions: s, tasks: t } = await apiLoadMockData();
-      toast.success(`Demo data loaded`, { description: `${s} sessions · ${t} tasks` });
-      loadSessions();
-    } catch {
-      toast.error("Failed to load demo data");
-    } finally {
-      setLoadingMock(false);
-    }
   }
 
   async function handleDeleteConfirmed() {
@@ -493,15 +477,6 @@ export default function ProviderDashboard() {
         >
           <Mic className="h-4 w-4" />
           Record Meeting
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleLoadMock}
-          disabled={loadingMock}
-          className="h-10 border-slate-200 text-slate-600 gap-2"
-        >
-          {loadingMock ? <Loader2 className="h-4 w-4 animate-spin" /> : <Database className="h-4 w-4" />}
-          Load Demo Data
         </Button>
       </div>
 

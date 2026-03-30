@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
+import { Drawer } from "vaul";
 import {
   ArrowLeft,
   Loader2,
@@ -21,6 +22,7 @@ import {
   ListChecks,
   Headphones,
   ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -541,7 +543,8 @@ export default function ProviderBoard() {
   const { role } = useAuth();
   const isProvider = role === "provider";
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<'summary' | 'tasks' | 'audio'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'audio'>('tasks');
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const [tasks, setTasks] = useState<ActionItem[]>([]);
   // Realtime: receive task changes from other sessions or AI pipeline
   useRealtimeTasks(sessionId, setTasks);
@@ -895,15 +898,23 @@ export default function ProviderBoard() {
     </div>
   );
 
-  // ── Mobile bottom tab bar ───────────────────────────────────────────────────
+  // ── Mobile bottom tab bar (Tasks + Audio only; Summary lives in vaul Drawer) ──
 
   const mobileTabBar = (
-    <div className="fixed bottom-0 inset-x-0 z-30 md:hidden glass border-t border-border/50 flex">
+    <div className="fixed bottom-0 inset-x-0 z-30 md:hidden glass border-t border-border/50 flex pb-[env(safe-area-inset-bottom)]">
+      {/* Summary handle — opens vaul Drawer */}
+      <button
+        onClick={() => setSummaryOpen(true)}
+        className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors no-min-height"
+        aria-label="פתח סיכום AI"
+      >
+        <FileText className="w-5 h-5" aria-hidden="true" />
+        Summary
+      </button>
       {([
-        { id: 'summary', label: 'Summary', Icon: FileText },
-        { id: 'tasks',   label: 'Tasks',   Icon: ListChecks },
-        { id: 'audio',   label: 'Audio',   Icon: Headphones },
-      ] as const).map(({ id, label, Icon }) => (
+        { id: 'tasks' as const, label: 'Tasks',   Icon: ListChecks },
+        { id: 'audio' as const, label: 'Audio',   Icon: Headphones },
+      ]).map(({ id, label, Icon }) => (
         <button
           key={id}
           onClick={() => setActiveTab(id)}
@@ -934,7 +945,7 @@ export default function ProviderBoard() {
           {/* Sticky session header */}
           {mobileHeader}
 
-          {/* Animated tab content */}
+          {/* Tab content — Tasks and Audio only; Summary is in vaul Drawer below */}
           <div className="flex-1 overflow-y-auto overscroll-contain">
             <AnimatePresence mode="wait">
               <motion.div
@@ -944,12 +955,41 @@ export default function ProviderBoard() {
                 exit={{ opacity: 0, x: -16 }}
                 transition={{ duration: 0.18, ease: 'easeOut' }}
               >
-                {activeTab === 'summary' && <MobileSummaryTab />}
-                {activeTab === 'tasks'   && <MobileTasksTab />}
-                {activeTab === 'audio'   && <MobileAudioTab />}
+                {activeTab === 'tasks' && <MobileTasksTab />}
+                {activeTab === 'audio' && <MobileAudioTab />}
               </motion.div>
             </AnimatePresence>
           </div>
+
+          {/* ── Vaul Bottom Sheet — AI Summary ─────────────────────────────── */}
+          <Drawer.Root open={summaryOpen} onOpenChange={setSummaryOpen}>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+              <Drawer.Content
+                className="fixed bottom-0 inset-x-0 z-50 flex flex-col rounded-t-[20px] bg-background border-t border-border max-h-[85dvh] focus:outline-none"
+                aria-label="AI Summary"
+              >
+                {/* Drag handle */}
+                <div className="flex justify-center pt-3 pb-1 shrink-0">
+                  <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
+                </div>
+                <div className="flex items-center justify-between px-4 pb-3 shrink-0">
+                  <Drawer.Title className="text-sm font-bold text-foreground">AI Summary</Drawer.Title>
+                  <button
+                    onClick={() => setSummaryOpen(false)}
+                    className="p-1.5 rounded-md hover:bg-accent no-min-height"
+                    aria-label="סגור סיכום"
+                  >
+                    <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+                  </button>
+                </div>
+                {/* Scrollable summary content */}
+                <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                  <MobileSummaryTab />
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
 
           {/* Floating bulk-complete button above tab bar */}
           {activeTab === 'tasks' && totalPending > 0 && (

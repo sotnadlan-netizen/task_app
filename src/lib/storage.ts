@@ -176,12 +176,6 @@ export async function apiFetchSessionsPaginated(
   };
 }
 
-/** POST /api/mock-data — kept on backend (needs service_role for bulk seed) */
-export async function apiLoadMockData(): Promise<{ sessions: number; tasks: number }> {
-  const res = await apiFetch("/api/mock-data", { method: "POST" });
-  if (!res.ok) throw new Error("Failed to load mock data");
-  return res.json();
-}
 
 export async function apiDeleteSession(id: string): Promise<void> {
   const { error } = await supabase.from("sessions").delete().eq("id", id);

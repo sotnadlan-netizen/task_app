@@ -110,9 +110,24 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
       setElapsed(0);
       timerRef.current = setInterval(() => setElapsed((t) => t + 1), 1000);
       drawWaveform();
-    } catch (_err) {
+    } catch (err: unknown) {
       setPhase("idle");
-      setError("Microphone access denied. Please allow mic permissions and try again.");
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isDenied =
+        err instanceof DOMException &&
+        (err.name === "NotAllowedError" || err.name === "PermissionDeniedError");
+
+      if (isDenied && isIOS) {
+        setError(
+          "Microphone access is blocked. On iPhone: go to Settings → Safari → Microphone and set it to Allow, then reload the page."
+        );
+      } else if (isDenied) {
+        setError(
+          "Microphone access was denied. Click the lock icon in your browser's address bar and allow Microphone access, then try again."
+        );
+      } else {
+        setError("Could not access the microphone. Please ensure no other app is using it and try again.");
+      }
     }
   }
 

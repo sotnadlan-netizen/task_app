@@ -215,7 +215,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 
 function Navbar({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8 dark:border-slate-700 dark:bg-slate-900/90">
+    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8 dark:border-slate-700 dark:bg-slate-900/90 pt-[env(safe-area-inset-top)] min-h-[calc(4rem+env(safe-area-inset-top))]">
       <button
         onClick={onMenuClick}
         className="md:hidden p-2 rounded-md hover:bg-slate-100"
@@ -272,7 +272,7 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="flex min-h-[100dvh] bg-slate-50 dark:bg-slate-900">
       {/* Skip navigation — visible on first Tab press (IS 5568 / WCAG 2.4.1) */}
       <a href="#main-content" className="skip-nav">
         דלג לתוכן הראשי

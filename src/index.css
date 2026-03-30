@@ -66,10 +66,10 @@
   }
 
   .dark {
-    --background: oklch(0.13 0.015 255);         /* Deep graphite */
-    --foreground: oklch(0.93 0.008 90);           /* Cream text */
+    --background: oklch(0.08 0.004 255);         /* True deep charcoal — ~#121212 */
+    --foreground: oklch(0.97 0.004 90);           /* Crisp white #F7F7F7 */
 
-    --card: oklch(0.18 0.015 255);
+    --card: oklch(0.13 0.010 255);
     --card-foreground: oklch(0.93 0.008 90);
 
     --popover: oklch(0.18 0.015 255);
