@@ -1,4 +1,5 @@
-import { useEffect, useLayoutEffect } from "react";
+import { Component, useLayoutEffect } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
@@ -23,6 +24,46 @@ import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientBoard from "./pages/client/ClientBoard";
 import NotFound from "./pages/NotFound";
 import { AccessibilityWidget } from "@/components/AccessibilityWidget";
+import { Sentry } from "@/lib/sentry";
+
+// ── React Error Boundary — catches render/lifecycle errors ────────────────────
+class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    Sentry.captureException(error);
+    console.error("[ErrorBoundary]", error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 p-8 bg-background text-foreground text-center">
+          <p className="text-xl font-bold">משהו השתבש</p>
+          <p className="text-sm text-muted-foreground max-w-xs">
+            {this.state.error instanceof Error
+              ? this.state.error.message
+              : "אירעה שגיאה בלתי צפויה."}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+          >
+            רענן את הדף
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const queryClient = new QueryClient();
 
@@ -98,19 +139,23 @@ function AnimatedRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AppBootstrap />
-      <AccessibilityWidget />
-      <Toaster />
-      <Sonner richColors position="top-right" />
-      <BrowserRouter>
-        <AuthProvider>
-          <AnimatedRoutes />
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AppBootstrap />
+        <AccessibilityWidget />
+        <Toaster />
+        <Sonner richColors position="top-right" />
+        <BrowserRouter>
+          <AuthProvider>
+            <ErrorBoundary>
+              <AnimatedRoutes />
+            </ErrorBoundary>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

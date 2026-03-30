@@ -9,11 +9,11 @@
     /* ── Warm Minimalism — OKLCH Palette ── */
 
     /* Backgrounds */
-    --background: oklch(0.985 0.008 90);        /* Cream off-white */
-    --foreground: oklch(0.15 0.015 255);         /* Deep graphite navy */
+    --background: #FDF8F3;                        /* Warm off-white (spec) */
+    --foreground: #1C1C1C;                        /* Deep charcoal (spec) */
 
     --card: oklch(0.995 0.003 90);               /* Near-white card */
-    --card-foreground: oklch(0.15 0.015 255);
+    --card-foreground: #1C1C1C;
 
     --popover: oklch(0.995 0.003 90);
     --popover-foreground: oklch(0.15 0.015 255);

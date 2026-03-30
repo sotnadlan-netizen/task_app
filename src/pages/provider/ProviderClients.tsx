@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Clock, AlertCircle, Search, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
@@ -97,7 +97,7 @@ function ClientCardSkeleton() {
   );
 }
 
-function ClientCard({ client, onClick }: { client: ClientSummary; onClick: () => void }) {
+const ClientCard = memo(function ClientCard({ client, onClick }: { client: ClientSummary; onClick: () => void }) {
   const isAtRisk = client.status === "red";
   const pending  = client.totalTasks - client.completedTasks;
   const days     = daysAgo(client.lastSessionAt);
@@ -177,7 +177,7 @@ function ClientCard({ client, onClick }: { client: ClientSummary; onClick: () =>
       </div>
     </motion.button>
   );
-}
+});
 
 function SentimentIcon({ rate }: { rate: number }) {
   if (rate >= 80) return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />;

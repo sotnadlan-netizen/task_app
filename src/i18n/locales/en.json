@@ -1,4 +1,19 @@
 {
+  "nav": {
+    "home": "Home",
+    "home.sub": "Overview",
+    "clients": "Clients",
+    "clients.sub": "Manage clients",
+    "tasks": "Tasks",
+    "tasks.sub": "Task Center",
+    "analytics": "Analytics",
+    "analytics.sub": "Completion metrics",
+    "config": "AI Settings",
+    "config.sub": "System prompt",
+    "settings": "Settings",
+    "mainNav": "Main navigation",
+    "signOut": "Sign Out"
+  },
   "priority": {
     "high": "High",
     "medium": "Medium",
@@ -15,13 +30,103 @@
     "promptPlaceholder": "Enter AI agent instructions..."
   },
   "dashboard": {
-    "privacyNotice": "🔐 Recording was processed and permanently deleted for privacy"
+    "privacyNotice": "🔐 Recording was processed and permanently deleted for privacy",
+    "recentSessions": "Recent Sessions",
+    "noSessions": "No sessions yet",
+    "recordMeeting": "Record Meeting",
+    "totalSessions": "Total Sessions",
+    "activeSessions": "Active Sessions",
+    "totalTasks": "Total Tasks",
+    "completedTasks": "Completed Tasks"
   },
-  "nav": {
-    "home": "Home",
-    "clients": "Clients",
+  "board": {
+    "aiSummary": "AI Summary",
+    "pending": "Pending",
+    "done": "Done",
     "tasks": "Tasks",
-    "analytics": "Analytics",
-    "settings": "Settings"
+    "audio": "Recording",
+    "summary": "Summary",
+    "share": "Share",
+    "copyText": "Copy as text",
+    "downloadTxt": "Download .txt",
+    "noTasks": "No tasks for this session",
+    "noAudio": "No recording for this session",
+    "followUpQuestions": "Follow-up Questions",
+    "backToSessions": "Back to Sessions",
+    "completeAll": "Complete All ({{count}} tasks)",
+    "taskCreated": "Task created",
+    "taskDeleted": "Task deleted",
+    "addTask": "Add Task",
+    "editTask": "Edit Task",
+    "taskTitle": "Task Title",
+    "taskDescription": "Description (optional)",
+    "allDone": "All tasks completed!"
+  },
+  "tasks": {
+    "title": "Open Tasks",
+    "subtitle": "Task Center — all sessions with pending actions",
+    "noPending": "No open tasks",
+    "daysOld": "{{count}} days ago",
+    "open": "Open",
+    "done": "Done",
+    "urgent": "Urgent",
+    "pendingCount": "{{done}}/{{total}} completed"
+  },
+  "clients": {
+    "title": "My Clients",
+    "subtitle": "Client Relationship Management",
+    "noClients": "No clients found",
+    "sessions": "{{count}} sessions",
+    "pendingTasks": "{{count}} pending tasks",
+    "atRisk": "At Risk",
+    "neutral": "Neutral",
+    "healthy": "Healthy",
+    "lastSession": "Last session {{count}} days ago",
+    "sentimentTrend": "Sentiment Trend",
+    "warningDecline": "⚠️ Note: Decline in client satisfaction",
+    "searchPlaceholder": "Search by email...",
+    "all": "All",
+    "noSessions": "No sessions yet"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "back": "Back",
+    "close": "Close",
+    "confirm": "Confirm",
+    "error": "Error",
+    "retry": "Retry",
+    "reload": "Reload page",
+    "somethingWentWrong": "Something went wrong"
+  },
+  "record": {
+    "title": "Record Meeting",
+    "clientEmail": "Client Email",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "requesting": "Requesting microphone access...",
+    "recording": "Recording — speak naturally.",
+    "stopping": "Processing recording...",
+    "privacyNote": "Privacy protected · Processed in memory. Not saved to disk.",
+    "tooShort": "Recording too short. Record at least 2 seconds.",
+    "idle": "Enter the client's email, then start recording."
+  },
+  "accessibility": {
+    "openWidget": "Open accessibility menu",
+    "title": "Accessibility Settings",
+    "reset": "Reset all",
+    "fontSize": "Text size",
+    "highContrast": "High contrast",
+    "grayscale": "Grayscale",
+    "stopAnimations": "Stop animations",
+    "bigCursor": "Large cursor",
+    "readableFont": "Readable font",
+    "highlightLinks": "Highlight links",
+    "focusRing": "Focus ring"
   }
 }

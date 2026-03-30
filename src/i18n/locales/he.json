@@ -1,10 +1,18 @@
 {
   "nav": {
     "home": "דף הבית",
+    "home.sub": "סקירה כללית",
     "clients": "לקוחות",
+    "clients.sub": "ניהול לקוחות",
     "tasks": "משימות",
+    "tasks.sub": "מרכז משימות",
     "analytics": "ניתוחים",
-    "settings": "הגדרות"
+    "analytics.sub": "מדדי השלמה",
+    "config": "הגדרות AI",
+    "config.sub": "פרומפט מערכת",
+    "settings": "הגדרות",
+    "mainNav": "ניווט ראשי",
+    "signOut": "התנתקות"
   },
   "priority": {
     "high": "גבוהה",
@@ -22,6 +30,103 @@
     "promptPlaceholder": "הזן הוראות לסוכן ה-AI..."
   },
   "dashboard": {
-    "privacyNotice": "🔐 השיחה עובדה ונמחקה לצמיתות מטעמי פרטיות"
+    "privacyNotice": "🔐 השיחה עובדה ונמחקה לצמיתות מטעמי פרטיות",
+    "recentSessions": "פגישות אחרונות",
+    "noSessions": "אין פגישות עדיין",
+    "recordMeeting": "הקלט פגישה",
+    "totalSessions": "סך הפגישות",
+    "activeSessions": "פגישות פעילות",
+    "totalTasks": "סך המשימות",
+    "completedTasks": "משימות שהושלמו"
+  },
+  "board": {
+    "aiSummary": "סיכום AI",
+    "pending": "ממתינות",
+    "done": "הושלמו",
+    "tasks": "משימות",
+    "audio": "הקלטה",
+    "summary": "סיכום",
+    "share": "שתף",
+    "copyText": "העתק כטקסט",
+    "downloadTxt": "הורד .txt",
+    "noTasks": "אין משימות לפגישה זו",
+    "noAudio": "אין הקלטה לפגישה זו",
+    "followUpQuestions": "שאלות המשך",
+    "backToSessions": "חזרה לפגישות",
+    "completeAll": "השלם הכל ({{count}} משימות)",
+    "taskCreated": "משימה נוצרה",
+    "taskDeleted": "משימה נמחקה",
+    "addTask": "הוסף משימה",
+    "editTask": "ערוך משימה",
+    "taskTitle": "כותרת המשימה",
+    "taskDescription": "תיאור (אופציונלי)",
+    "allDone": "כל המשימות הושלמו!"
+  },
+  "tasks": {
+    "title": "משימות פתוחות",
+    "subtitle": "מרכז משימות — כל הפגישות עם פעולות ממתינות",
+    "noPending": "אין משימות פתוחות",
+    "daysOld": "לפני {{count}} ימים",
+    "open": "פתוח",
+    "done": "הושלם",
+    "urgent": "דחוף",
+    "pendingCount": "{{done}}/{{total}} הושלמו"
+  },
+  "clients": {
+    "title": "הלקוחות שלי",
+    "subtitle": "ניהול קשרי לקוחות",
+    "noClients": "לא נמצאו לקוחות",
+    "sessions": "{{count}} פגישות",
+    "pendingTasks": "{{count}} משימות פתוחות",
+    "atRisk": "בסיכון",
+    "neutral": "ניטרלי",
+    "healthy": "תקין",
+    "lastSession": "פגישה אחרונה לפני {{count}} ימים",
+    "sentimentTrend": "מגמת סנטימנט",
+    "warningDecline": "⚠️ שים לב: ירידה בשביעות רצון הלקוח",
+    "searchPlaceholder": "חיפוש לפי אימייל...",
+    "all": "הכל",
+    "noSessions": "אין פגישות עדיין"
+  },
+  "common": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "search": "חיפוש",
+    "loading": "טוען...",
+    "noResults": "לא נמצאו תוצאות",
+    "back": "חזרה",
+    "close": "סגור",
+    "confirm": "אשר",
+    "error": "שגיאה",
+    "retry": "נסה שוב",
+    "reload": "רענן את הדף",
+    "somethingWentWrong": "משהו השתבש"
+  },
+  "record": {
+    "title": "הקלט פגישה",
+    "clientEmail": "אימייל הלקוח",
+    "startRecording": "התחל הקלטה",
+    "stopRecording": "עצור הקלטה",
+    "requesting": "מבקש גישה למיקרופון...",
+    "recording": "מקליט — דבר באופן טבעי.",
+    "stopping": "מעבד הקלטה...",
+    "privacyNote": "מוגן פרטיות · עובד בזיכרון. לא נשמר לדיסק.",
+    "tooShort": "הקלטה קצרה מדי. הקלט לפחות 2 שניות.",
+    "idle": "הזן את האימייל של הלקוח, ואז התחל להקליט."
+  },
+  "accessibility": {
+    "openWidget": "פתח תפריט נגישות",
+    "title": "הגדרות נגישות",
+    "reset": "אפס הכל",
+    "fontSize": "גודל טקסט",
+    "highContrast": "ניגודיות גבוהה",
+    "grayscale": "גווני אפור",
+    "stopAnimations": "עצור אנימציות",
+    "bigCursor": "סמן גדול",
+    "readableFont": "גופן קריא",
+    "highlightLinks": "הדגש קישורים",
+    "focusRing": "טבעת פוקוס"
   }
 }

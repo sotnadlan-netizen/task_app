@@ -1,11 +1,26 @@
 {
+  "nav": {
+    "home": "Главная",
+    "home.sub": "Обзор",
+    "clients": "Клиенты",
+    "clients.sub": "Управление клиентами",
+    "tasks": "Задачи",
+    "tasks.sub": "Центр задач",
+    "analytics": "Аналитика",
+    "analytics.sub": "Показатели выполнения",
+    "config": "Настройки AI",
+    "config.sub": "Системный промпт",
+    "settings": "Настройки",
+    "mainNav": "Основная навигация",
+    "signOut": "Выйти"
+  },
   "priority": {
     "high": "Высокий",
     "medium": "Средний",
     "low": "Низкий",
-    "highLabel": "Высокий",
-    "mediumLabel": "Средний",
-    "lowLabel": "Низкий"
+    "highLabel": "High — Высокий",
+    "mediumLabel": "Medium — Средний",
+    "lowLabel": "Low — Низкий"
   },
   "signup": {
     "providerRole": "Советник / Поставщик",
@@ -15,13 +30,103 @@
     "promptPlaceholder": "Введите инструкции для AI агента..."
   },
   "dashboard": {
-    "privacyNotice": "🔐 Запись обработана и безвозвратно удалена из соображений конфиденциальности"
+    "privacyNotice": "🔐 Запись обработана и безвозвратно удалена из соображений конфиденциальности",
+    "recentSessions": "Недавние сессии",
+    "noSessions": "Сессий пока нет",
+    "recordMeeting": "Записать встречу",
+    "totalSessions": "Всего сессий",
+    "activeSessions": "Активные сессии",
+    "totalTasks": "Всего задач",
+    "completedTasks": "Выполненные задачи"
   },
-  "nav": {
-    "home": "Главная",
-    "clients": "Клиенты",
+  "board": {
+    "aiSummary": "Сводка AI",
+    "pending": "Ожидают",
+    "done": "Выполнено",
     "tasks": "Задачи",
-    "analytics": "Аналитика",
-    "settings": "Настройки"
+    "audio": "Запись",
+    "summary": "Сводка",
+    "share": "Поделиться",
+    "copyText": "Копировать текст",
+    "downloadTxt": "Скачать .txt",
+    "noTasks": "Нет задач для этой сессии",
+    "noAudio": "Нет записи для этой сессии",
+    "followUpQuestions": "Вопросы для уточнения",
+    "backToSessions": "Назад к сессиям",
+    "completeAll": "Завершить все ({{count}} задач)",
+    "taskCreated": "Задача создана",
+    "taskDeleted": "Задача удалена",
+    "addTask": "Добавить задачу",
+    "editTask": "Редактировать задачу",
+    "taskTitle": "Название задачи",
+    "taskDescription": "Описание (необязательно)",
+    "allDone": "Все задачи выполнены!"
+  },
+  "tasks": {
+    "title": "Открытые задачи",
+    "subtitle": "Центр задач — все сессии с ожидающими действиями",
+    "noPending": "Нет открытых задач",
+    "daysOld": "{{count}} дней назад",
+    "open": "Открыто",
+    "done": "Выполнено",
+    "urgent": "Срочно",
+    "pendingCount": "{{done}}/{{total}} выполнено"
+  },
+  "clients": {
+    "title": "Мои клиенты",
+    "subtitle": "Управление отношениями с клиентами",
+    "noClients": "Клиенты не найдены",
+    "sessions": "{{count}} сессий",
+    "pendingTasks": "{{count}} открытых задач",
+    "atRisk": "Под угрозой",
+    "neutral": "Нейтрально",
+    "healthy": "Хорошо",
+    "lastSession": "Последняя сессия {{count}} дней назад",
+    "sentimentTrend": "Тренд настроений",
+    "warningDecline": "⚠️ Внимание: снижение удовлетворённости клиента",
+    "searchPlaceholder": "Поиск по email...",
+    "all": "Все",
+    "noSessions": "Сессий пока нет"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "search": "Поиск",
+    "loading": "Загрузка...",
+    "noResults": "Результаты не найдены",
+    "back": "Назад",
+    "close": "Закрыть",
+    "confirm": "Подтвердить",
+    "error": "Ошибка",
+    "retry": "Повторить",
+    "reload": "Обновить страницу",
+    "somethingWentWrong": "Что-то пошло не так"
+  },
+  "record": {
+    "title": "Записать встречу",
+    "clientEmail": "Email клиента",
+    "startRecording": "Начать запись",
+    "stopRecording": "Остановить запись",
+    "requesting": "Запрос доступа к микрофону...",
+    "recording": "Запись — говорите естественно.",
+    "stopping": "Обработка записи...",
+    "privacyNote": "Защита конфиденциальности · Обрабатывается в памяти. Не сохраняется на диск.",
+    "tooShort": "Запись слишком короткая. Записывайте не менее 2 секунд.",
+    "idle": "Введите email клиента, затем начните запись."
+  },
+  "accessibility": {
+    "openWidget": "Открыть меню доступности",
+    "title": "Настройки доступности",
+    "reset": "Сбросить всё",
+    "fontSize": "Размер текста",
+    "highContrast": "Высокий контраст",
+    "grayscale": "Оттенки серого",
+    "stopAnimations": "Остановить анимации",
+    "bigCursor": "Большой курсор",
+    "readableFont": "Читаемый шрифт",
+    "highlightLinks": "Выделить ссылки",
+    "focusRing": "Кольцо фокуса"
   }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Bot, Mic, ChevronRight, LogOut, BarChart2, Menu, Sun, Moon, Users, ListTodo, Settings, Contrast } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,12 +17,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const NAV = [
-  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית",        sub: "סקירה כללית" },
-  { to: "/provider/clients",   icon: Users,           label: "לקוחות",          sub: "ניהול לקוחות" },
-  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות פתוחות",   sub: "מרכז משימות" },
-  { to: "/provider/analytics", icon: BarChart2,       label: "ניתוחים",         sub: "מדדי השלמה" },
-  { to: "/provider/config",    icon: Bot,             label: "הגדרות AI",        sub: "פרומפט מערכת" },
+// i18n key pairs — resolved inside Sidebar with useTranslation()
+const NAV_ITEMS = [
+  { to: "/provider/dashboard", icon: LayoutDashboard, labelKey: "nav.home",      subKey: "nav.home.sub" },
+  { to: "/provider/clients",   icon: Users,           labelKey: "nav.clients",   subKey: "nav.clients.sub" },
+  { to: "/provider/tasks",     icon: ListTodo,        labelKey: "nav.tasks",     subKey: "nav.tasks.sub" },
+  { to: "/provider/analytics", icon: BarChart2,       labelKey: "nav.analytics", subKey: "nav.analytics.sub" },
+  { to: "/provider/config",    icon: Bot,             labelKey: "nav.config",    subKey: "nav.config.sub" },
 ];
 
 // Language cycle: he (RTL) → en (LTR) → ru (LTR)
@@ -50,6 +52,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { pathname } = useLocation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   async function handleConfirmedSignOut() {
@@ -76,8 +79,8 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           open ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"
         )}
       >
-        {/* Logo */}
-        <div className="flex h-16 items-center gap-3 px-5 border-b border-slate-800">
+        {/* Logo — safe-area aware for notched iPhones */}
+        <div className="flex items-center gap-3 px-5 border-b border-slate-800 pt-[env(safe-area-inset-top)] min-h-[calc(4rem+env(safe-area-inset-top))]">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-900/50">
             <Mic className="h-4 w-4 text-white" />
           </div>
@@ -92,7 +95,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
             Navigation
           </p>
-          {NAV.map(({ to, icon: Icon, label, sub }) => {
+          {NAV_ITEMS.map(({ to, icon: Icon, labelKey, subKey }) => {
             const active =
               pathname === to || (to === "/provider/dashboard" && pathname.startsWith("/provider/board"));
             return (
@@ -109,14 +112,14 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium leading-none">{label}</p>
+                  <p className="text-sm font-medium leading-none">{t(labelKey)}</p>
                   <p
                     className={cn(
                       "text-[11px] mt-0.5 leading-none",
                       active ? "text-indigo-200" : "text-slate-600"
                     )}
                   >
-                    {sub}
+                    {t(subKey)}
                   </p>
                 </div>
                 {active && <ChevronRight className="h-3.5 w-3.5 text-indigo-300 rtl:rotate-180" />}
@@ -237,30 +240,35 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const BOTTOM_NAV = [
-  { to: "/provider/dashboard", icon: LayoutDashboard, label: "דף הבית" },
-  { to: "/provider/clients",   icon: Users,           label: "לקוחות" },
-  { to: "/provider/tasks",     icon: ListTodo,        label: "משימות" },
-  { to: "/provider/config",    icon: Settings,        label: "הגדרות" },
+const BOTTOM_NAV_ITEMS = [
+  { to: "/provider/dashboard", icon: LayoutDashboard, labelKey: "nav.home" },
+  { to: "/provider/clients",   icon: Users,           labelKey: "nav.clients" },
+  { to: "/provider/tasks",     icon: ListTodo,        labelKey: "nav.tasks" },
+  { to: "/provider/config",    icon: Settings,        labelKey: "nav.settings" },
 ];
 
 function MobileBottomNav() {
   const { pathname } = useLocation();
+  const { t } = useTranslation();
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around mobile-tab-bar">
-      {BOTTOM_NAV.map(({ to, icon: Icon, label }) => {
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 z-50 flex items-center justify-around mobile-tab-bar"
+      aria-label={t("nav.mainNav")}
+    >
+      {BOTTOM_NAV_ITEMS.map(({ to, icon: Icon, labelKey }) => {
         const active = pathname === to || pathname.startsWith(to + "/");
         return (
           <NavLink
             key={to}
             to={to}
+            aria-label={t(labelKey)}
             className={cn(
               "flex flex-col items-center gap-0.5 flex-1 py-2 transition-colors no-min-height",
               active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"
             )}
           >
-            <Icon className="h-5 w-5" />
-            <span className="text-[10px] font-medium leading-none">{label}</span>
+            <Icon className="h-5 w-5" aria-hidden="true" />
+            <span className="text-[10px] font-medium leading-none">{t(labelKey)}</span>
           </NavLink>
         );
       })}
@@ -272,7 +280,7 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-[100dvh] bg-slate-50 dark:bg-slate-900">
+    <div className="flex min-h-[100dvh] bg-background dark:bg-background">
       {/* Skip navigation — visible on first Tab press (IS 5568 / WCAG 2.4.1) */}
       <a href="#main-content" className="skip-nav">
         דלג לתוכן הראשי
