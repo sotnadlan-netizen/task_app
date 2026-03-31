@@ -48,9 +48,11 @@ jobs:
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    # Only run E2E when a Vercel preview URL is available (set via repo/env secret)
-    if: ${{ vars.E2E_BASE_URL != '' || secrets.E2E_BASE_URL != '' }}
     needs: ci
+    # Map secrets to env vars so they can be safely evaluated in step-level conditionals
+    env:
+      E2E_BASE_URL_SECRET: ${{ secrets.E2E_BASE_URL }}
+      E2E_BASE_URL_VAR: ${{ vars.E2E_BASE_URL }}
 
     steps:
       - name: Checkout
@@ -66,9 +68,11 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
+        if: env.E2E_BASE_URL_SECRET != '' || env.E2E_BASE_URL_VAR != ''
         run: npx playwright install chromium --with-deps
 
       - name: Run E2E tests
+        if: env.E2E_BASE_URL_SECRET != '' || env.E2E_BASE_URL_VAR != ''
         run: npx playwright test
         env:
           E2E_BASE_URL: ${{ vars.E2E_BASE_URL || secrets.E2E_BASE_URL }}
