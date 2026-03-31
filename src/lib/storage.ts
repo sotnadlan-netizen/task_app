@@ -433,3 +433,13 @@ export async function apiAddCalendarEvent(
   const data = await res.json();
   return { htmlLink: data.htmlLink };
 }
+
+// ─── Assign an unassigned session to a client email ──────────────────────────
+
+export async function apiAssignSession(sessionId: string, clientEmail: string): Promise<void> {
+  const { error } = await supabase
+    .from("sessions")
+    .update({ client_email: clientEmail })
+    .eq("id", sessionId);
+  if (error) throw new Error(error.message);
+}

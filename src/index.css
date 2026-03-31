@@ -66,8 +66,8 @@
   }
 
   .dark {
-    --background: oklch(0.08 0.004 255);         /* True deep charcoal — ~#121212 */
-    --foreground: oklch(0.97 0.004 90);           /* Crisp white #F7F7F7 */
+    --background: #000000;                        /* True black — OLED perfect */
+    --foreground: #ffffff;                        /* Pure white */
 
     --card: oklch(0.13 0.010 255);
     --card-foreground: oklch(0.93 0.008 90);
@@ -172,6 +172,26 @@
   :lang(he) {
     font-size: 17px;
     line-height: 1.7;
+  }
+
+  /* Hebrew legibility boost in dark mode — OLED crispness */
+  .dark .font-hebrew,
+  .dark :lang(he) {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+  }
+
+  /* iOS auto-zoom fix — all inputs must be ≥ 16px */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="date"],
+  input[type="number"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: max(16px, 1em);
   }
 
   /* Prevent nested scroll containers from hijacking outer scroll */

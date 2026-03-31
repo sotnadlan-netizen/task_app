@@ -210,7 +210,7 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
       className={cn(
         "border transition-all",
         borderColor, bgColor,
-        isAtRisk && "ring-2 ring-red-400/60 animate-pulse shadow-red-100",
+        isAtRisk && "ring-2 ring-red-400/50",
         "shadow-sm"
       )}
     >

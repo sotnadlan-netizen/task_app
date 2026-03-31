@@ -155,7 +155,8 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
     streamRef.current?.getTracks().forEach((t) => t.stop());
   }
 
-  const canStart = isValidEmail(clientEmail);
+  // Allow starting with empty email — session can be assigned to client later
+  const canStart = clientEmail === "" || isValidEmail(clientEmail);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -165,7 +166,7 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
           <DialogHeader>
             <DialogTitle className="text-white text-lg font-bold">Record Meeting</DialogTitle>
             <DialogDescription className="text-slate-400 text-sm mt-1">
-              {phase === "idle" && "Enter the client's email, then start recording."}
+              {phase === "idle" && "Enter the client's email (optional), then start recording."}
               {phase === "requesting" && "Requesting microphone access..."}
               {phase === "recording" && "Recording in progress — speak naturally."}
               {phase === "stopping" && "Processing recording..."}
@@ -219,14 +220,14 @@ export function RecordDialog({ open, onClose, onRecordingComplete }: Props) {
           {phase === "idle" && (
             <div>
               <label htmlFor="record-client-email" className="text-xs font-medium text-slate-700 mb-1 block">
-                Client Email
+                Client Email <span className="text-slate-400 font-normal">(optional)</span>
               </label>
               <Input
                 id="record-client-email"
                 type="email"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
-                placeholder="client@example.com"
+                placeholder="client@example.com — or leave blank to assign later"
                 autoFocus
               />
             </div>

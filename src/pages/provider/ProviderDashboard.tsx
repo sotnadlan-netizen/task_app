@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -34,6 +34,9 @@ import {
   Send,
   CalendarPlus,
   X,
+  LayoutDashboard,
+  Users,
+  BarChart2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,13 +73,32 @@ import {
   apiDeleteTask,
   apiChatHistory,
   apiAddCalendarEvent,
+  apiAssignSession,
   type ActionItem,
   type Session,
   type NextMeetingSuggestion,
   type ChatHistoryResponse,
 } from "@/lib/storage";
 import { TaskReviewDialog, type AiTask } from "@/components/provider/TaskReviewDialog";
+import { AssignClientDialog } from "@/components/provider/AssignClientDialog";
 import { toast } from "sonner";
+import i18n from "@/i18n";
+
+// Language cycle helper (mirrors Layout.tsx)
+const LANGS = [
+  { code: "he", dir: "rtl" as const },
+  { code: "en", dir: "ltr" as const },
+  { code: "ru", dir: "ltr" as const },
+];
+function cycleLang() {
+  const current = localStorage.getItem("lng") ?? "he";
+  const idx = LANGS.findIndex((l) => l.code === current);
+  const next = LANGS[(idx + 1) % LANGS.length];
+  localStorage.setItem("lng", next.code);
+  document.documentElement.setAttribute("lang", next.code);
+  document.documentElement.setAttribute("dir", next.dir);
+  i18n.changeLanguage(next.code);
+}
 
 function StatusBadge({ taskCount, completedCount }: { taskCount: number; completedCount: number }) {
   if (taskCount === 0)
@@ -154,6 +176,11 @@ export default function ProviderDashboard() {
   // Command palette state
   const [cmdOpen, setCmdOpen] = useState(false);
 
+  // Unassigned session (recorded without client email)
+  const [unassignedSessionId, setUnassignedSessionId] = useState<string | null>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -212,6 +239,10 @@ export default function ProviderDashboard() {
         originalTasks: tasks,
       });
       setReviewOpen(true);
+      // If no client email was provided — flag for post-assignment
+      if (!clientEmail) {
+        setUnassignedSessionId(session.id);
+      }
     } catch (err: unknown) {
       toast.error("Processing failed", {
         description: err instanceof Error ? err.message : "Unknown error",
@@ -298,6 +329,24 @@ export default function ProviderDashboard() {
     }
   }
 
+  async function handleAssign(email: string) {
+    if (!unassignedSessionId) return;
+    setAssigning(true);
+    try {
+      await apiAssignSession(unassignedSessionId, email);
+      setSessions((prev) =>
+        prev.map((s) => s.id === unassignedSessionId ? { ...s, clientEmail: email } : s)
+      );
+      toast.success(`Session assigned to ${email}`);
+      setUnassignedSessionId(null);
+      setAssignOpen(false);
+    } catch {
+      toast.error("Failed to assign session");
+    } finally {
+      setAssigning(false);
+    }
+  }
+
   async function handleAddCalendar() {
     if (!calendarSuggestion) return;
     if (!providerToken) {
@@ -357,6 +406,11 @@ export default function ProviderDashboard() {
   const activeSessions = sessions.filter(
     (s) => (s.taskCount ?? 0) > 0 && (s.completedCount ?? 0) < (s.taskCount ?? 0)
   ).length;
+
+  const uniqueClients = useMemo(
+    () => Array.from(new Set(sessions.map((s) => s.clientEmail).filter(Boolean))) as string[],
+    [sessions]
+  );
 
   const stats = [
     { label: "Total Sessions", value: sessions.length, icon: Layers, color: "text-indigo-600", bg: "bg-indigo-50" },
@@ -431,6 +485,59 @@ export default function ProviderDashboard() {
         </div>
       )}
 
+      {/* ── Hero Quick Record Button ─────────────────────────────────────────── */}
+      <div className="flex flex-col items-center justify-center py-8 mb-6">
+        <div className="relative flex items-center justify-center">
+          {/* Slow pulse rings — not animate-pulse, using custom keyframes */}
+          <span
+            className="absolute rounded-full ring-2 ring-indigo-500/25 animate-ping pointer-events-none"
+            style={{ width: 96, height: 96, animationDuration: "3s" }}
+            aria-hidden="true"
+          />
+          <span
+            className="absolute rounded-full ring-1 ring-indigo-400/15 animate-ping pointer-events-none"
+            style={{ width: 120, height: 120, animationDuration: "3s", animationDelay: "0.6s" }}
+            aria-hidden="true"
+          />
+          <button
+            onClick={() => setRecordOpen(true)}
+            className="relative z-10 h-20 w-20 rounded-full bg-indigo-600 hover:bg-indigo-700 active:scale-95 transition-all duration-150 shadow-2xl shadow-indigo-500/40 flex items-center justify-center focus-visible:ring-4 focus-visible:ring-indigo-400 no-min-height"
+            aria-label="Record meeting"
+          >
+            <Mic className="h-8 w-8 text-white" aria-hidden="true" />
+          </button>
+        </div>
+        <p className="text-sm font-semibold text-foreground mt-5">Record Meeting</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Enter client email or assign after analysis</p>
+      </div>
+
+      {/* ── Unassigned Session Banner ─────────────────────────────────────────── */}
+      {unassignedSessionId && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3">
+          <Mic className="h-5 w-5 text-amber-600 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">פגישה לא משויכת</p>
+            <p className="text-xs text-amber-600 dark:text-amber-300 mt-0.5">
+              לא נבחר לקוח — ניתן לשייך לאחר העיבוד
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => setAssignOpen(true)}
+            className="h-8 bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 shrink-0"
+          >
+            שייך ללקוח
+          </Button>
+          <button
+            onClick={() => setUnassignedSessionId(null)}
+            className="p-1 rounded hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-400 no-min-height"
+            aria-label="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* ⌘K hint + Chat button */}
       <div className="flex items-center justify-between mb-2">
         <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground font-mono ml-2">
@@ -468,17 +575,6 @@ export default function ProviderDashboard() {
 
       {/* Client Pulse Grid */}
       <ClientPulseGrid sessions={sessions} />
-
-      {/* Actions */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <Button
-          onClick={() => setRecordOpen(true)}
-          className="h-10 bg-indigo-600 hover:bg-indigo-700 gap-2 shadow-sm shadow-indigo-200"
-        >
-          <Mic className="h-4 w-4" />
-          Record Meeting
-        </Button>
-      </div>
 
       {/* Sessions table */}
       <Card className="border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
@@ -695,6 +791,14 @@ export default function ProviderDashboard() {
         onRecordingComplete={handleRecordingComplete}
       />
 
+      <AssignClientDialog
+        open={assignOpen}
+        onOpenChange={setAssignOpen}
+        sessions={sessions}
+        onAssign={handleAssign}
+        loading={assigning}
+      />
+
       {/* Task Review & Approval Dialog */}
       {reviewData && (
         <TaskReviewDialog
@@ -710,19 +814,72 @@ export default function ProviderDashboard() {
         />
       )}
 
-      {/* Command palette */}
+      {/* Command palette — fully wired */}
       <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
-        <CommandInput placeholder="Search sessions, clients, actions..." />
+        <CommandInput placeholder="חיפוש לקוחות, פגישות, פעולות..." />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup heading="Quick Actions">
-            <CommandItem onSelect={() => setCmdOpen(false)}>Start new recording</CommandItem>
-            <CommandItem onSelect={() => setCmdOpen(false)}>Review pending tasks</CommandItem>
+          <CommandEmpty>לא נמצאו תוצאות</CommandEmpty>
+
+          <CommandGroup heading="פעולות מהירות">
+            <CommandItem onSelect={() => { setRecordOpen(true); setCmdOpen(false); }}>
+              <Mic className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              הקלט פגישה חדשה
+            </CommandItem>
+            <CommandItem onSelect={() => { navigate("/provider/tasks"); setCmdOpen(false); }}>
+              <ListTodo className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              משימות פתוחות
+            </CommandItem>
+            <CommandItem onSelect={() => { setChatOpen(true); setCmdOpen(false); }}>
+              <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              שוחח עם היסטוריית לקוח
+            </CommandItem>
           </CommandGroup>
-          <CommandGroup heading="Navigate">
-            <CommandItem onSelect={() => setCmdOpen(false)}>Dashboard</CommandItem>
-            <CommandItem onSelect={() => setCmdOpen(false)}>Analytics</CommandItem>
-            <CommandItem onSelect={() => setCmdOpen(false)}>Board</CommandItem>
+
+          <CommandGroup heading="ניווט">
+            <CommandItem onSelect={() => { navigate("/provider/dashboard"); setCmdOpen(false); }}>
+              <LayoutDashboard className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              Dashboard
+            </CommandItem>
+            <CommandItem onSelect={() => { navigate("/provider/clients"); setCmdOpen(false); }}>
+              <Users className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              Clients
+            </CommandItem>
+            <CommandItem onSelect={() => { navigate("/provider/analytics"); setCmdOpen(false); }}>
+              <BarChart2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
+              Analytics
+            </CommandItem>
+          </CommandGroup>
+
+          {uniqueClients.length > 0 && (
+            <CommandGroup heading="לקוחות">
+              {uniqueClients.map((email) => (
+                <CommandItem
+                  key={email}
+                  onSelect={() => {
+                    navigate(`/provider/clients?q=${encodeURIComponent(email)}`);
+                    setCmdOpen(false);
+                  }}
+                >
+                  <Users className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0 text-muted-foreground" />
+                  {email}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+
+          <CommandGroup heading="הגדרות">
+            <CommandItem
+              onSelect={() => {
+                const isDark = document.documentElement.classList.toggle("dark");
+                localStorage.setItem("theme", isDark ? "dark" : "light");
+                setCmdOpen(false);
+              }}
+            >
+              🎨 החלף ל-{document.documentElement.classList.contains("dark") ? "מצב בהיר" : "מצב כהה"}
+            </CommandItem>
+            <CommandItem onSelect={() => { cycleLang(); setCmdOpen(false); }}>
+              🌐 החלף שפה (עב / EN / РУ)
+            </CommandItem>
           </CommandGroup>
         </CommandList>
       </CommandDialog>
