@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +37,7 @@ function isOverdue(p: ClientPulse): boolean {
 
 function TrafficDot({ status }: { status: ClientPulse["status"] }) {
   const colors = { green: "bg-emerald-500", yellow: "bg-amber-400", red: "bg-red-500" };
-  return <span className={`inline-block h-3 w-3 rounded-full shrink-0 ${colors[status]}`} aria-label={status} />;
+  return <span className={`inline-block h-2 w-2 rounded-full shrink-0 ${colors[status]}`} aria-label={status} />;
 }
 
 function SentimentIcon({ completionRate }: { completionRate: number }) {
@@ -150,8 +149,8 @@ export function ClientPulseGrid({ sessions }: Props) {
         </div>
       </div>
 
-      {/* Client Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Client Cards Grid — compact: more columns, less whitespace */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2.5">
         {filtered.map((client) => (
           <ClientPulseCard
             key={client.clientEmail}
@@ -194,17 +193,6 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
 
   const statusLabel = { green: "חיובי", yellow: "ניטרלי", red: "בסיכון" }[client.status];
 
-  const sparkData = useMemo(() => {
-    const last5 = [...sessions]
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-      .slice(-5);
-    return last5.map((s) => {
-      const total = s.taskCount ?? 0;
-      const done  = s.completedCount ?? 0;
-      return { v: total > 0 ? done / total : 0 };
-    });
-  }, [sessions]);
-
   return (
     <Card
       className={cn(
@@ -214,45 +202,29 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
         "shadow-sm"
       )}
     >
-      <CardContent className="p-4 flex flex-col gap-3">
+      <CardContent className="p-2.5 flex flex-col gap-2">
         {/* Header */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <TrafficDot status={client.status} />
-          <span className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate flex-1" title={client.clientEmail}>
+          <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200 truncate flex-1" title={client.clientEmail}>
             {client.clientEmail}
           </span>
-          <Badge className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 border-0", badgeClass)}>
+          <Badge className={cn("text-[9px] px-1 py-0 rounded-full font-semibold shrink-0 border-0 leading-4", badgeClass)}>
             {statusLabel}
           </Badge>
         </div>
 
-        {/* Pending tasks — Hebrew label */}
-        <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-          <span dir="ltr" className="inline-block text-indigo-600 font-bold">{pending}</span>
-          {" "}משימות פתוחות
-        </p>
-
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
-          <span className="text-slate-400">פגישות</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">{client.sessionCount}</span>
-
-          <span className="text-slate-400">משימות</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end" dir="ltr">
-            {client.completedTasks}<span className="font-normal text-slate-400">/{client.totalTasks}</span>
-          </span>
-
-          <span className="text-slate-400">השלמה</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">{client.completionRate}%</span>
-
-          <span className="text-slate-400">פגישה אחרונה</span>
-          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">
-            {new Date(client.lastSessionDate).toLocaleDateString("he-IL", { day: "2-digit", month: "short" })}
-          </span>
+        {/* Pending count + completion % in one line */}
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+            <span dir="ltr" className="inline-block text-indigo-500 dark:text-indigo-400 font-bold">{pending}</span>
+            {" "}פתוחות
+          </p>
+          <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{client.completionRate}%</span>
         </div>
 
         {/* Progress bar */}
-        <div className="h-1.5 rounded-full bg-slate-200 overflow-hidden">
+        <div className="h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
           <div
             className={cn(
               "h-full rounded-full transition-all",
@@ -262,20 +234,26 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
           />
         </div>
 
-        {/* Sentiment sparkline */}
-        <div className="pt-2 border-t border-border/40">
-          <p className="text-[11px] text-muted-foreground mb-1">מגמת סנטימנט</p>
-          <ResponsiveContainer width="100%" height={36}>
-            <LineChart data={sparkData.length >= 2 ? sparkData : [{ v: 0.5 }, { v: 0.5 }, { v: 0.5 }, { v: 0.5 }, { v: 0.5 }]}>
-              <Line type="monotone" dataKey="v" stroke="oklch(0.65 0.10 145)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+        {/* Stats — 2-column micro grid */}
+        <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+          <span className="text-slate-400 dark:text-slate-500">פגישות</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">{client.sessionCount}</span>
+
+          <span className="text-slate-400 dark:text-slate-500">משימות</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end" dir="ltr">
+            {client.completedTasks}<span className="font-normal text-slate-400 dark:text-slate-500">/{client.totalTasks}</span>
+          </span>
+
+          <span className="text-slate-400 dark:text-slate-500">אחרון</span>
+          <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">
+            {new Date(client.lastSessionDate).toLocaleDateString("he-IL", { day: "2-digit", month: "short" })}
+          </span>
         </div>
 
         {/* Expand / collapse sessions */}
         <button
           onClick={onToggle}
-          className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-700 transition-colors self-start"
+          className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors self-start no-min-height"
         >
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           {expanded ? "הסתר פגישות" : `הצג ${sessions.length} פגישות`}
@@ -312,7 +290,7 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-100 border border-red-200 self-start"
+            className="h-6 px-2 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-100 border border-red-200 self-start no-min-height"
             onClick={() => toast.success(`תזכורת נשלחה ל-${client.clientEmail}`)}
           >
             שלח תזכורת

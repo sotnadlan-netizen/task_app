@@ -111,6 +111,28 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════
+   Dark Mode — Slate contrast correction
+   Hardcoded Tailwind slate-* utilities are designed for light
+   backgrounds. On #000000 true black they render near-invisible.
+   These rules live OUTSIDE @layer so they beat Tailwind utilities.
+   Mapping: dark slate-900 → slate-50 brightness, dark slate-500 → slate-400
+   ═══════════════════════════════════════════════════════ */
+.dark .text-slate-900  { color: #f8fafc; }   /* → slate-50  */
+.dark .text-slate-800  { color: #f1f5f9; }   /* → slate-100 */
+.dark .text-slate-700  { color: #e2e8f0; }   /* → slate-200 */
+.dark .text-slate-600  { color: #cbd5e1; }   /* → slate-300 */
+.dark .text-slate-500  { color: #94a3b8; }   /* → slate-400 */
+
+.dark .bg-white        { background-color: oklch(0.13 0.012 255); }
+.dark .bg-slate-50     { background-color: oklch(0.14 0.012 255); }
+.dark .bg-slate-100    { background-color: oklch(0.17 0.015 255); }
+.dark .bg-slate-900    { background-color: #000000; }
+
+.dark .border-slate-100 { border-color: oklch(0.22 0.015 255); }
+.dark .border-slate-200 { border-color: oklch(0.26 0.018 255); }
+/* ─────────────────────────────────────────────────────── */
+
 @layer base {
   * {
     @apply border-border;
