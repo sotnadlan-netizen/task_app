@@ -63,7 +63,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Layout } from "@/components/Layout";
 import { RecordDialog } from "@/components/features/RecordDialog";
-import { ClientPulseGrid } from "@/components/provider/ClientPulseGrid";
 import {
   apiFetchSessions,
   apiProcessAudio,
@@ -82,6 +81,7 @@ import {
 import { TaskReviewDialog, type AiTask } from "@/components/provider/TaskReviewDialog";
 import { AssignClientDialog } from "@/components/provider/AssignClientDialog";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 
 // Language cycle helper (mirrors Layout.tsx)
@@ -101,21 +101,22 @@ function cycleLang() {
 }
 
 function StatusBadge({ taskCount, completedCount }: { taskCount: number; completedCount: number }) {
+  const { t } = useTranslation();
   if (taskCount === 0)
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-500">
-        No tasks
+        {t("dashboard.statusNoTasks")}
       </span>
     );
   if (completedCount === taskCount)
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700">
-        <CheckCircle2 className="h-3 w-3" /> Complete
+        <CheckCircle2 className="h-3 w-3" /> {t("dashboard.statusComplete")}
       </span>
     );
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2.5 py-0.5 text-[11px] font-medium text-indigo-700">
-      <Clock className="h-3 w-3" /> Active
+      <Clock className="h-3 w-3" /> {t("dashboard.statusActive")}
     </span>
   );
 }
@@ -146,6 +147,7 @@ function SkeletonRow() {
 }
 
 export default function ProviderDashboard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, providerToken } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -244,9 +246,16 @@ export default function ProviderDashboard() {
         setUnassignedSessionId(session.id);
       }
     } catch (err: unknown) {
-      toast.error("Processing failed", {
-        description: err instanceof Error ? err.message : "Unknown error",
-      });
+      const code = (err as Error & { code?: string })?.code;
+      if (code === "MODEL_CONFIG_ERROR") {
+        toast.error("AI processing unavailable", {
+          description: "The AI service is temporarily unavailable due to a configuration error. Please contact support.",
+        });
+      } else {
+        toast.error("Processing failed", {
+          description: err instanceof Error ? err.message : "Unknown error",
+        });
+      }
     } finally {
       setProcessingStage(null);
     }
@@ -361,17 +370,17 @@ export default function ProviderDashboard() {
         time:        calendarSuggestion.time,
         clientEmail: calendarSuggestion.clientEmail,
       });
-      toast.success("נוסף ללוח השנה", {
+      toast.success(t("dashboard.addToCalendar"), {
         description: calendarSuggestion.title,
-        action: { label: "פתח", onClick: () => window.open(htmlLink, "_blank") },
+        action: { label: t("dashboard.open"), onClick: () => window.open(htmlLink, "_blank") },
       });
       setCalendarSuggestion(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg === "CALENDAR_TOKEN_EXPIRED") {
-        toast.error("פג תוקף ההרשאה ל-Google Calendar", { description: "יש להתחבר מחדש עם Google כדי לחדש את ההרשאות." });
+        toast.error(t("common.error"), { description: "Google Calendar authorization expired. Please sign in again." });
       } else {
-        toast.error("שגיאה בהוספה ללוח השנה", { description: msg });
+        toast.error(t("common.error"), { description: msg });
       }
     } finally {
       setAddingToCalendar(false);
@@ -413,14 +422,14 @@ export default function ProviderDashboard() {
   );
 
   const stats = [
-    { label: "Total Sessions", value: sessions.length, icon: Layers, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Active Sessions", value: activeSessions, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Total Tasks", value: totalTasks, icon: ListTodo, color: "text-slate-600", bg: "bg-slate-100" },
-    { label: "Completed Tasks", value: totalCompleted, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: t("dashboard.totalSessions"), value: sessions.length, icon: Layers, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: t("dashboard.activeSessions"), value: activeSessions, icon: Clock, color: "text-amber-600", bg: "bg-amber-50" },
+    { label: t("dashboard.totalTasks"), value: totalTasks, icon: ListTodo, color: "text-slate-600", bg: "bg-slate-100" },
+    { label: t("dashboard.completedTasks"), value: totalCompleted, icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50" },
   ];
 
   return (
-    <Layout title="Dashboard" subtitle="Recent advisory sessions and extracted insights">
+    <Layout title={t("nav.home")} subtitle={t("dashboard.subtitle")}>
       {/* Processing overlay */}
       {processing && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm">
@@ -433,12 +442,12 @@ export default function ProviderDashboard() {
             </div>
             <div>
               <p className="text-base font-bold text-slate-900">
-                {processingStage === "uploading" ? "Uploading recording..." : "AI Agent is listening"}
+                {processingStage === "uploading" ? t("dashboard.uploading") : t("dashboard.analyzing")}
               </p>
               <p className="text-sm text-slate-500 mt-1">
                 {processingStage === "uploading"
-                  ? "Sending audio to the server..."
-                  : "Extracting insights and action items..."}
+                  ? t("dashboard.uploadingDesc")
+                  : t("dashboard.analyzingDesc")}
               </p>
             </div>
             <div className="flex gap-1">
@@ -459,7 +468,7 @@ export default function ProviderDashboard() {
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-950/30 dark:border-indigo-800 px-4 py-3">
           <CalendarPlus className="h-5 w-5 text-indigo-600 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">AI הציע פגישת מעקב</p>
+            <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">{t("dashboard.calendarSuggestion")}</p>
             <p className="text-xs text-indigo-600 dark:text-indigo-300 mt-0.5 truncate">
               <span dir="ltr" className="inline">{calendarSuggestion.date}</span>
               {calendarSuggestion.time && <> &middot; <span dir="ltr" className="inline">{calendarSuggestion.time}</span></>}
@@ -473,7 +482,7 @@ export default function ProviderDashboard() {
             className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white text-xs gap-1.5 shrink-0"
           >
             {addingToCalendar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CalendarPlus className="h-3.5 w-3.5" />}
-            הוסף ללוח השנה
+            {t("dashboard.addToCalendar")}
           </Button>
           <button
             onClick={() => setCalendarSuggestion(null)}
@@ -507,8 +516,8 @@ export default function ProviderDashboard() {
             <Mic className="h-8 w-8 text-white" aria-hidden="true" />
           </button>
         </div>
-        <p className="text-sm font-semibold text-foreground mt-5">Record Meeting</p>
-        <p className="text-xs text-muted-foreground mt-0.5">Enter client email or assign after analysis</p>
+        <p className="text-sm font-semibold text-foreground mt-5">{t("dashboard.recordMeeting")}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t("dashboard.recordSubtitle")}</p>
       </div>
 
       {/* ── Unassigned Session Banner ─────────────────────────────────────────── */}
@@ -516,9 +525,9 @@ export default function ProviderDashboard() {
         <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-3">
           <Mic className="h-5 w-5 text-amber-600 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">פגישה לא משויכת</p>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">{t("dashboard.unassignedSession")}</p>
             <p className="text-xs text-amber-600 dark:text-amber-300 mt-0.5">
-              לא נבחר לקוח — ניתן לשייך לאחר העיבוד
+              {t("dashboard.unassignedDesc")}
             </p>
           </div>
           <Button
@@ -526,7 +535,7 @@ export default function ProviderDashboard() {
             onClick={() => setAssignOpen(true)}
             className="h-8 bg-amber-600 hover:bg-amber-700 text-white text-xs gap-1.5 shrink-0"
           >
-            שייך ללקוח
+            {t("dashboard.assignToClient")}
           </Button>
           <button
             onClick={() => setUnassignedSessionId(null)}
@@ -550,7 +559,7 @@ export default function ProviderDashboard() {
           className="gap-2 h-8 text-xs"
         >
           <MessageSquare className="h-3.5 w-3.5" />
-          שוחח עם היסטוריית לקוח
+          {t("dashboard.chatHistory")}
         </Button>
       </div>
 
@@ -573,14 +582,11 @@ export default function ProviderDashboard() {
         ))}
       </div>
 
-      {/* Client Pulse Grid */}
-      <ClientPulseGrid sessions={sessions} />
-
       {/* Sessions table */}
       <Card className="border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
         <div className="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-800">Recent Sessions</p>
+            <p className="text-sm font-semibold text-slate-800">{t("dashboard.recentSessions")}</p>
             <p className="text-xs text-slate-400">
               {filteredSessions.length} of {sessions.length}
             </p>
@@ -592,8 +598,8 @@ export default function ProviderDashboard() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by client email…"
-                aria-label="Search sessions by client email"
+                placeholder={t("dashboard.searchByEmail")}
+                aria-label={t("dashboard.searchByEmail")}
                 className="pl-9 h-9 border-slate-200 text-xs w-full"
               />
             </div>
@@ -623,19 +629,19 @@ export default function ProviderDashboard() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-5">
-                  Session
+                  {t("dashboard.colSession")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Client
+                  {t("dashboard.colClient")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Date
+                  {t("dashboard.colDate")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Tasks
+                  {t("dashboard.colTasks")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Status
+                  {t("dashboard.colStatus")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pr-5" />
               </TableRow>
@@ -654,7 +660,7 @@ export default function ProviderDashboard() {
               <div className="rounded-full bg-slate-100 p-4">
                 <Mic className="h-6 w-6 text-slate-400" />
               </div>
-              <p className="text-sm font-medium text-slate-500">No sessions match your filters</p>
+              <p className="text-sm font-medium text-slate-500">{t("dashboard.noSessionsFilter")}</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -672,9 +678,9 @@ export default function ProviderDashboard() {
                 <circle cx="66" cy="40" r="1.5" fill="#C7D2FE" />
               </svg>
               <div className="text-center">
-                <p className="text-sm font-semibold text-slate-700">No sessions yet</p>
+                <p className="text-sm font-semibold text-slate-700">{t("dashboard.noSessionsFirstTime")}</p>
                 <p className="text-xs text-slate-400 mt-1 max-w-xs">
-                  Record your first advisory session using the microphone above. The AI will extract a summary and action items automatically.
+                  {t("dashboard.noSessionsFirstTimeDesc")}
                 </p>
               </div>
             </div>
@@ -684,19 +690,19 @@ export default function ProviderDashboard() {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pl-5">
-                  Session
+                  {t("dashboard.colSession")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Client
+                  {t("dashboard.colClient")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Date
+                  {t("dashboard.colDate")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Tasks
+                  {t("dashboard.colTasks")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Status
+                  {t("dashboard.colStatus")}
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide pr-5" />
               </TableRow>
@@ -715,11 +721,11 @@ export default function ProviderDashboard() {
                       </p>
                       {s.audioUrl ? (
                         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-medium text-indigo-700 whitespace-nowrap shrink-0">
-                          <Music className="h-3 w-3" /> Audio
+                          <Music className="h-3 w-3" /> {t("dashboard.audioBadge")}
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full bg-green-50 border border-green-200 px-2 py-0.5 text-[10px] font-medium text-green-700 whitespace-nowrap shrink-0">
-                          <ShieldCheck className="h-3 w-3" /> Audio Deleted
+                          <ShieldCheck className="h-3 w-3" /> {t("dashboard.audioDeletedBadge")}
                         </span>
                       )}
                     </div>
@@ -731,17 +737,16 @@ export default function ProviderDashboard() {
                     {s.clientEmail ?? <span className="text-slate-300 italic">—</span>}
                   </TableCell>
                   <TableCell className="text-xs text-slate-500 whitespace-nowrap">
-                    {new Date(s.createdAt).toLocaleDateString("he-IL", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {new Date(s.createdAt).toLocaleDateString(
+                      i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US",
+                      { day: "2-digit", month: "short", year: "numeric" }
+                    )}
                     <br />
                     <span className="text-slate-400">
-                      {new Date(s.createdAt).toLocaleTimeString("he-IL", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {new Date(s.createdAt).toLocaleTimeString(
+                        i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US",
+                        { hour: "2-digit", minute: "2-digit" }
+                      )}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -765,7 +770,7 @@ export default function ProviderDashboard() {
                         className="h-8 px-3 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
                         onClick={() => navigate(`/provider/board/${s.id}`)}
                       >
-                        View Board <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                        {t("dashboard.viewBoard")} <ChevronRight className="h-3.5 w-3.5 ml-1" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -816,42 +821,42 @@ export default function ProviderDashboard() {
 
       {/* Command palette — fully wired */}
       <CommandDialog open={cmdOpen} onOpenChange={setCmdOpen}>
-        <CommandInput placeholder="חיפוש לקוחות, פגישות, פעולות..." />
+        <CommandInput placeholder={t("dashboard.cmdSearch")} />
         <CommandList>
-          <CommandEmpty>לא נמצאו תוצאות</CommandEmpty>
+          <CommandEmpty>{t("common.noResults")}</CommandEmpty>
 
-          <CommandGroup heading="פעולות מהירות">
+          <CommandGroup heading={t("dashboard.cmdQuickActions")}>
             <CommandItem onSelect={() => { setRecordOpen(true); setCmdOpen(false); }}>
               <Mic className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              הקלט פגישה חדשה
+              {t("dashboard.cmdRecordNew")}
             </CommandItem>
             <CommandItem onSelect={() => { navigate("/provider/tasks"); setCmdOpen(false); }}>
               <ListTodo className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              משימות פתוחות
+              {t("dashboard.cmdOpenTasks")}
             </CommandItem>
             <CommandItem onSelect={() => { setChatOpen(true); setCmdOpen(false); }}>
               <MessageSquare className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              שוחח עם היסטוריית לקוח
+              {t("dashboard.chatHistory")}
             </CommandItem>
           </CommandGroup>
 
-          <CommandGroup heading="ניווט">
+          <CommandGroup heading={t("dashboard.cmdNavigate")}>
             <CommandItem onSelect={() => { navigate("/provider/dashboard"); setCmdOpen(false); }}>
               <LayoutDashboard className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              Dashboard
+              {t("nav.home")}
             </CommandItem>
             <CommandItem onSelect={() => { navigate("/provider/clients"); setCmdOpen(false); }}>
               <Users className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              Clients
+              {t("nav.clients")}
             </CommandItem>
             <CommandItem onSelect={() => { navigate("/provider/analytics"); setCmdOpen(false); }}>
               <BarChart2 className="h-4 w-4 ltr:mr-2 rtl:ml-2 shrink-0" />
-              Analytics
+              {t("nav.analytics")}
             </CommandItem>
           </CommandGroup>
 
           {uniqueClients.length > 0 && (
-            <CommandGroup heading="לקוחות">
+            <CommandGroup heading={t("nav.clients")}>
               {uniqueClients.map((email) => (
                 <CommandItem
                   key={email}
@@ -867,7 +872,7 @@ export default function ProviderDashboard() {
             </CommandGroup>
           )}
 
-          <CommandGroup heading="הגדרות">
+          <CommandGroup heading={t("dashboard.cmdSettings")}>
             <CommandItem
               onSelect={() => {
                 const isDark = document.documentElement.classList.toggle("dark");
@@ -875,10 +880,10 @@ export default function ProviderDashboard() {
                 setCmdOpen(false);
               }}
             >
-              🎨 החלף ל-{document.documentElement.classList.contains("dark") ? "מצב בהיר" : "מצב כהה"}
+              🎨 {document.documentElement.classList.contains("dark") ? t("accessibility.grayscale") : t("accessibility.grayscale")}
             </CommandItem>
             <CommandItem onSelect={() => { cycleLang(); setCmdOpen(false); }}>
-              🌐 החלף שפה (עב / EN / РУ)
+              🌐 {t("dashboard.cmdToggleLang")}
             </CommandItem>
           </CommandGroup>
         </CommandList>
@@ -888,20 +893,20 @@ export default function ProviderDashboard() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete session?</AlertDialogTitle>
+            <AlertDialogTitle>{t("dashboard.deleteSessionTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the session{" "}
-              <strong>{deleteTarget?.filename}</strong> and all its tasks. This action cannot be undone.
+              {t("dashboard.deleteSessionDesc")}{" "}
+              <strong>{deleteTarget?.filename}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirmed}
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -913,13 +918,13 @@ export default function ProviderDashboard() {
           <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0">
             <SheetTitle className="flex items-center gap-2 text-base">
               <MessageSquare className="h-4 w-4 text-indigo-500" />
-              שוחח עם היסטוריית הלקוחות
+              {t("dashboard.chatTitle")}
             </SheetTitle>
             {/* Client filter */}
             <Input
               value={chatClientFilter}
               onChange={(e) => setChatClientFilter(e.target.value)}
-              placeholder="סנן לפי אימייל לקוח (אופציונלי)"
+              placeholder={t("dashboard.chatFilterPlaceholder")}
               className="h-8 text-xs mt-2"
               dir="ltr"
             />
@@ -930,8 +935,8 @@ export default function ProviderDashboard() {
             {chatHistory.length === 0 && (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
                 <Sparkles className="h-8 w-8 text-indigo-300" />
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">שאל שאלה על ההיסטוריה</p>
-                <p className="text-xs text-slate-400 max-w-[240px]">לדוגמה: "מה דיברנו על ריבית בחודש שעבר?" או "מה הסנטימנט של לקוח X?"</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{t("dashboard.chatEmptyTitle")}</p>
+                <p className="text-xs text-slate-400 max-w-[240px]">{t("dashboard.chatEmptyDesc")}</p>
               </div>
             )}
             {chatHistory.map((msg, i) => (
@@ -977,7 +982,7 @@ export default function ProviderDashboard() {
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); }
               }}
-              placeholder="שאל שאלה על היסטוריית הלקוחות..."
+              placeholder={t("dashboard.chatEmptyTitle")}
               rows={2}
               className="flex-1 resize-none text-sm min-h-0"
             />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { Download, Loader2, TrendingUp, CheckCircle2, Layers, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ async function downloadCsvExport() {
 }
 
 export default function ProviderAnalytics() {
+  const { t } = useTranslation();
   const [data, setData]       = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -52,15 +54,15 @@ export default function ProviderAnalytics() {
 
   const stats = data
     ? [
-        { label: "Total Sessions",   value: data.totalSessions,   icon: Layers,       color: "text-indigo-600", bg: "bg-indigo-50" },
-        { label: "Total Tasks",      value: data.totalTasks,      icon: ListTodo,      color: "text-slate-600",  bg: "bg-slate-100" },
-        { label: "Completed Tasks",  value: data.completedTasks,  icon: CheckCircle2,  color: "text-emerald-600", bg: "bg-emerald-50" },
-        { label: "Completion Rate",  value: `${data.completionRate}%`, icon: TrendingUp, color: "text-amber-600", bg: "bg-amber-50" },
+        { label: t("dashboard.totalSessions"),  value: data.totalSessions,        icon: Layers,      color: "text-indigo-600",  bg: "bg-indigo-50" },
+        { label: t("dashboard.totalTasks"),     value: data.totalTasks,           icon: ListTodo,    color: "text-slate-600",   bg: "bg-slate-100" },
+        { label: t("dashboard.completedTasks"), value: data.completedTasks,       icon: CheckCircle2,color: "text-emerald-600", bg: "bg-emerald-50" },
+        { label: t("analytics.completionRate"), value: `${data.completionRate}%`, icon: TrendingUp,  color: "text-amber-600",   bg: "bg-amber-50" },
       ]
     : [];
 
   return (
-    <Layout title="Analytics" subtitle="Session frequency and task completion metrics">
+    <Layout title={t("nav.analytics")} subtitle={t("analytics.subtitle")}>
       <div className="flex justify-end mb-6">
         <Button
           onClick={handleExport}
@@ -68,7 +70,7 @@ export default function ProviderAnalytics() {
           className="h-10 bg-indigo-600 hover:bg-indigo-700 gap-2"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-          Export CSV
+          {t("analytics.exportCsv")}
         </Button>
       </div>
 
@@ -99,8 +101,8 @@ export default function ProviderAnalytics() {
 
           {/* Talk-Time Distribution */}
           <div className="glass shadow-glass rounded-2xl p-5 mt-4">
-            <h3 className="text-base font-semibold text-foreground mb-1">Talk-Time Distribution</h3>
-            <p className="text-sm text-muted-foreground mb-4">Advisor vs. Client speaking ratio per session</p>
+            <h3 className="text-base font-semibold text-foreground mb-1">{t("analytics.talkTime")}</h3>
+            <p className="text-sm text-muted-foreground mb-4">{t("analytics.talkTimeDesc")}</p>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={[
                 { session: 'S1', advisor: 65, client: 35 },
@@ -113,8 +115,8 @@ export default function ProviderAnalytics() {
                 <YAxis unit="%" tick={{ fontSize: 12 }} />
                 <Tooltip formatter={(v: number) => `${v}%`} />
                 <Legend />
-                <Bar dataKey="advisor" name="Advisor" fill="oklch(0.65 0.10 145)" radius={[4,4,0,0]} />
-                <Bar dataKey="client" name="Client" fill="oklch(0.55 0.08 255)" radius={[4,4,0,0]} />
+                <Bar dataKey="advisor" name={t("analytics.advisor")} fill="oklch(0.65 0.10 145)" radius={[4,4,0,0]} />
+                <Bar dataKey="client" name={t("analytics.client")} fill="oklch(0.55 0.08 255)" radius={[4,4,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -122,11 +124,11 @@ export default function ProviderAnalytics() {
           {/* Sessions per Month chart */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-semibold text-slate-800">Sessions by Month</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-800">{t("analytics.sessionsByMonth")}</CardTitle>
             </CardHeader>
             <CardContent>
               {data.sessionsByMonth.length === 0 ? (
-                <p className="text-sm text-slate-400 text-center py-12">No session data yet</p>
+                <p className="text-sm text-slate-400 text-center py-12">{t("analytics.noSessionData")}</p>
               ) : (
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={data.sessionsByMonth} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -147,7 +149,7 @@ export default function ProviderAnalytics() {
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
                       cursor={{ fill: "#f1f5f9" }}
                     />
-                    <Bar dataKey="count" name="Sessions" fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="count" name={t("dashboard.recentSessions")} fill="#6366f1" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -157,7 +159,7 @@ export default function ProviderAnalytics() {
           {/* Task completion rate bar */}
           <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-4">
-              <CardTitle className="text-sm font-semibold text-slate-800">Overall Task Completion</CardTitle>
+              <CardTitle className="text-sm font-semibold text-slate-800">{t("analytics.overallCompletion")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
@@ -172,7 +174,7 @@ export default function ProviderAnalytics() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-2">
-                {data.completedTasks} of {data.totalTasks} tasks completed across all sessions
+                {t("analytics.tasksCompletedDesc", { completed: data.completedTasks, total: data.totalTasks })}
               </p>
             </CardContent>
           </Card>

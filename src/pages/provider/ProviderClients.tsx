@@ -1,13 +1,13 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Clock, AlertCircle, Search, X, ChevronLeft, ChevronRight as ChevronRightIcon } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { LineChart, Line, ResponsiveContainer } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { Layout } from "@/components/Layout";
 import { cn } from "@/lib/utils";
 import { useRealtimeSessions } from "@/hooks/useRealtimeSessions";
@@ -98,13 +98,14 @@ function ClientCardSkeleton() {
 }
 
 const ClientCard = memo(function ClientCard({ client, onClick }: { client: ClientSummary; onClick: () => void }) {
+  const { t } = useTranslation();
   const isAtRisk = client.status === "red";
   const pending  = client.totalTasks - client.completedTasks;
   const days     = daysAgo(client.lastSessionAt);
 
   const borderColor = { green: "border-emerald-200", yellow: "border-amber-200", red: "border-red-300" }[client.status];
   const badgeClass  = { green: "bg-emerald-100 text-emerald-700", yellow: "bg-amber-100 text-amber-700", red: "bg-red-100 text-red-700" }[client.status];
-  const statusLabel = { green: "תקין", yellow: "פעיל", red: "בסיכון" }[client.status];
+  const statusLabel = { green: t("clients.healthy"), yellow: t("clients.neutral"), red: t("clients.atRisk") }[client.status];
   const avatarBg    = { green: "bg-emerald-100 text-emerald-700", yellow: "bg-amber-100 text-amber-700", red: "bg-red-100 text-red-700" }[client.status];
 
   const sparkData = client.sentimentTrend.map((v) => ({ v }));
@@ -131,19 +132,17 @@ const ClientCard = memo(function ClientCard({ client, onClick }: { client: Clien
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{client.clientEmail}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              {client.sessionCount} פגישות · לפני{" "}
-              <span dir="ltr" className="inline">{days}</span> ימים
+              {t("clients.sessions", { count: client.sessionCount })} · {t("tasks.daysOld", { count: days })}
             </p>
           </div>
-          <Badge className={cn("text-[10px] px-1.5 py-0.5 rounded-full border-0 shrink-0", badgeClass, isAtRisk && "animate-pulse")}>
+          <Badge className={cn("text-[10px] px-1.5 py-0.5 rounded-full border-0 shrink-0", badgeClass)}>
             {statusLabel}
           </Badge>
         </div>
 
         {/* Pending tasks */}
         <p className="text-xs text-slate-600 dark:text-slate-300">
-          <span dir="ltr" className="inline font-bold text-indigo-600 text-sm">{pending}</span>
-          {" "}משימות פתוחות
+          {t("clients.pendingTasks", { count: pending })}
         </p>
 
         {/* Progress bar */}
@@ -161,7 +160,7 @@ const ClientCard = memo(function ClientCard({ client, onClick }: { client: Clien
         {/* Sparkline */}
         {sparkData.length >= 2 && (
           <div>
-            <p className="text-[10px] text-muted-foreground mb-1">מגמת סנטימנט</p>
+            <p className="text-[10px] text-muted-foreground mb-1">{t("clients.sentimentTrend")}</p>
             <ResponsiveContainer width="100%" height={28}>
               <LineChart data={sparkData}>
                 <Line type="monotone" dataKey="v" stroke="oklch(0.65 0.10 145)" strokeWidth={1.5} dot={false} />
@@ -172,98 +171,17 @@ const ClientCard = memo(function ClientCard({ client, onClick }: { client: Clien
 
         {/* Declining trend warning */}
         {sparkData.length >= 2 && sparkData[sparkData.length - 1].v < sparkData[0].v && (
-          <p className="text-[10px] text-amber-600 font-medium">⚠️ שים לב: ירידה בשביעות רצון הלקוח</p>
+          <p className="text-[10px] text-amber-600 font-medium">{t("clients.warningDecline")}</p>
         )}
       </div>
     </motion.button>
   );
 });
 
-function SentimentIcon({ rate }: { rate: number }) {
-  if (rate >= 80) return <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />;
-  if (rate >= 30) return <Clock className="h-4 w-4 shrink-0 text-amber-400" />;
-  return <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />;
-}
-
-function ClientDetailPanel({ client, sessions, onClose }: { client: ClientSummary; sessions: Session[]; onClose: () => void }) {
-  const navigate = useNavigate();
-  const clientSessions = useMemo(
-    () => sessions
-      .filter((s) => (s.clientEmail ?? "(no email)") === client.clientEmail)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [sessions, client.clientEmail]
-  );
-
-  return (
-    <motion.div
-      key="detail"
-      initial={{ opacity: 0, x: 40 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 40 }}
-      transition={{ type: "spring", stiffness: 380, damping: 30 }}
-      className="fixed inset-y-0 end-0 z-50 w-full max-w-sm bg-white dark:bg-slate-900 shadow-2xl flex flex-col border-s border-slate-200 dark:border-slate-700"
-    >
-      {/* Panel header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
-        <Button variant="ghost" size="icon" onClick={onClose} className="h-9 w-9 rtl:rotate-180">
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-slate-800 dark:text-slate-100 truncate">{client.clientEmail}</p>
-          <p className="text-[11px] text-slate-400">{clientSessions.length} פגישות</p>
-        </div>
-      </div>
-
-      {/* Session timeline — independent scroll container */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-2">
-        {clientSessions.map((s) => {
-          const total = s.taskCount ?? 0;
-          const done  = s.completedCount ?? 0;
-          const rate  = total > 0 ? Math.round((done / total) * 100) : 0;
-          return (
-            <button
-              key={s.id}
-              onClick={() => { onClose(); navigate(`/provider/board/${s.id}`); }}
-              className="w-full text-start flex items-start gap-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 p-3 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors group"
-            >
-              <SentimentIcon rate={rate} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
-                  {s.title ?? s.filename}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  {new Date(s.createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "short", year: "numeric" })}
-                </p>
-                {/* RTL mini progress bar */}
-                <div className="mt-2 space-y-0.5">
-                  <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span>משימות</span>
-                    <span dir="ltr">{done}/{total}</span>
-                  </div>
-                  <div className="h-1 rounded-full bg-slate-200 overflow-hidden" dir="rtl">
-                    <div
-                      className={cn("h-full rounded-full", rate >= 80 ? "bg-emerald-500" : rate >= 30 ? "bg-amber-400" : "bg-red-400")}
-                      style={{ width: `${rate}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-              <ChevronRightIcon className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 shrink-0 mt-1 rtl:rotate-180 transition-colors" />
-            </button>
-          );
-        })}
-
-        {clientSessions.length === 0 && (
-          <p className="text-center text-sm text-slate-400 py-10">אין פגישות עדיין</p>
-        )}
-      </div>
-    </motion.div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProviderClients() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -272,7 +190,6 @@ export default function ProviderClients() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedClient, setSelectedClient] = useState<ClientSummary | null>(null);
 
   useRealtimeSessions(setSessions, user?.id ?? null);
 
@@ -306,14 +223,14 @@ export default function ProviderClients() {
     }), [clients, statusFilter, debouncedSearch]);
 
   const PILLS: { key: StatusFilter; label: string }[] = [
-    { key: "all",    label: "הכל" },
-    { key: "red",    label: "בסיכון" },
-    { key: "yellow", label: "ניטרלי" },
-    { key: "green",  label: "חיובי" },
+    { key: "all",    label: t("clients.all") },
+    { key: "red",    label: t("clients.atRisk") },
+    { key: "yellow", label: t("clients.neutral") },
+    { key: "green",  label: t("clients.healthy") },
   ];
 
   return (
-    <Layout title="הלקוחות שלי" subtitle="ניהול קשרי לקוחות">
+    <Layout title={t("clients.title")} subtitle={t("clients.subtitle")}>
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
@@ -321,7 +238,7 @@ export default function ProviderClients() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="חיפוש לפי אימייל..."
+            placeholder={t("clients.searchPlaceholder")}
             className="ps-9 h-10 text-sm border-slate-200"
           />
         </div>
@@ -345,7 +262,9 @@ export default function ProviderClients() {
 
       {/* Count */}
       <p className="text-xs text-slate-400 mb-4">
-        {filtered.length} לקוחות{clients.length !== filtered.length ? ` מתוך ${clients.length}` : ""}
+        {clients.length !== filtered.length
+          ? t("clients.clientCountFiltered", { shown: filtered.length, total: clients.length })
+          : t("clients.clientCount", { count: filtered.length })}
       </p>
 
       {/* Grid */}
@@ -355,10 +274,10 @@ export default function ProviderClients() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3 text-center">
-          <p className="text-sm font-medium text-slate-500">לא נמצאו לקוחות</p>
+          <p className="text-sm font-medium text-slate-500">{t("clients.noClients")}</p>
           {search && (
             <button onClick={() => setSearch("")} className="text-xs text-indigo-600 hover:underline flex items-center gap-1">
-              <X className="h-3 w-3" /> נקה חיפוש
+              <X className="h-3 w-3" /> {t("clients.clearSearch")}
             </button>
           )}
         </div>
@@ -372,34 +291,13 @@ export default function ProviderClients() {
               <ClientCard
                 key={client.clientEmail}
                 client={client}
-                onClick={() => setSelectedClient(client)}
+                onClick={() => navigate(`/provider/clients/${encodeURIComponent(client.clientEmail)}`)}
               />
             ))}
           </AnimatePresence>
         </motion.div>
       )}
 
-      {/* Detail panel overlay */}
-      <AnimatePresence>
-        {selectedClient && (
-          <>
-            {/* Backdrop */}
-            <motion.div
-              key="backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedClient(null)}
-              className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-            />
-            <ClientDetailPanel
-              client={selectedClient}
-              sessions={sessions}
-              onClose={() => setSelectedClient(null)}
-            />
-          </>
-        )}
-      </AnimatePresence>
     </Layout>
   );
 }

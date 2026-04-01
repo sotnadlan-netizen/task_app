@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useNavigate, useParams } from "react-router-dom";
 import { Drawer } from "vaul";
@@ -339,7 +340,7 @@ function Column({
         <span
           className={`ml-auto rounded-full px-2 py-0.5 text-[11px] font-semibold ${accentBadge}`}
         >
-          {pending.length} pending
+          {t("board.pendingBadge", { count: pending.length })}
         </span>
         {/* FE-017: "+" button in column header */}
         <Button
@@ -362,7 +363,7 @@ function Column({
             <Input
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="Task title *"
+              placeholder={t("board.taskTitlePlaceholder")}
               className="h-8 text-sm"
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -390,7 +391,7 @@ function Column({
                 onClick={handleAdd}
                 disabled={!newTitle.trim()}
               >
-                Add
+                {t("board.addBtn")}
               </Button>
               <Button
                 size="sm"
@@ -405,14 +406,14 @@ function Column({
         )}
 
         {items.length === 0 ? (
-          <p className="text-xs text-slate-400 text-center py-8">No tasks assigned</p>
+          <p className="text-xs text-slate-400 text-center py-8">{t("board.noTasksAssigned")}</p>
         ) : allDone ? (
           <>
             {/* FE-021: All Done celebration banner */}
             <div className="animate-in fade-in-0 zoom-in-95 duration-500 flex flex-col items-center justify-center py-6 gap-2">
               <span className="text-4xl">🎉</span>
-              <p className="text-base font-bold text-emerald-700">All Done!</p>
-              <p className="text-xs text-slate-500">Every task is complete.</p>
+              <p className="text-base font-bold text-emerald-700">{t("board.allDone")}</p>
+              <p className="text-xs text-slate-500">{t("board.everyTaskComplete")}</p>
             </div>
             {/* Completed tasks at 50% opacity */}
             <SortableContext
@@ -477,7 +478,7 @@ function Column({
 
       {/* Footer */}
       <div className="px-5 py-3 bg-white border-t border-slate-100 text-xs text-slate-400">
-        {done.length}/{items.length} completed
+        {t("board.completedFraction", { done: done.length, total: items.length })}
       </div>
     </div>
   );
@@ -538,6 +539,7 @@ function downloadTextFile(content: string, filename: string) {
 // ── ProviderBoard ──────────────────────────────────────────────────────────────
 
 export default function ProviderBoard() {
+  const { t } = useTranslation();
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { role } = useAuth();
@@ -715,7 +717,7 @@ export default function ProviderBoard() {
   const boardContent = (
     <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
       <Column
-        title="Advisor Tasks"
+        title={t("board.advisorTasks")}
         icon={UserCog}
         accentBorder="border-indigo-200"
         accentBadge="bg-indigo-100 text-indigo-700"
@@ -728,7 +730,7 @@ export default function ProviderBoard() {
         draggable={isProvider}
       />
       <Column
-        title="Client Tasks"
+        title={t("board.clientTasks")}
         icon={User}
         accentBorder="border-emerald-200"
         accentBadge="bg-emerald-100 text-emerald-700"
@@ -749,7 +751,7 @@ export default function ProviderBoard() {
     <div className="p-4 pb-24 space-y-3">
       {/* Main summary bento card */}
       <div className="glass shadow-glass rounded-2xl p-4">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">AI Summary</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{t("board.aiSummary")}</p>
         <p className="text-base text-foreground leading-relaxed">{session?.summary}</p>
       </div>
 
@@ -757,18 +759,18 @@ export default function ProviderBoard() {
       <div className="glass shadow-glass rounded-2xl p-4 flex items-center gap-6">
         <div className="text-center">
           <p className="text-2xl font-bold text-primary">{totalPending}</p>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Pending</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">{t("board.pending")}</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-emerald-600">{tasks.filter(t => t.completed).length}</p>
-          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">Done</p>
+          <p className="text-2xl font-bold text-emerald-600">{tasks.filter(task => task.completed).length}</p>
+          <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-semibold">{t("board.done")}</p>
         </div>
         <div className="ms-auto">
           {session && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                  <Share2 className="h-3.5 w-3.5" /> Share
+                  <Share2 className="h-3.5 w-3.5" /> {t("board.share")}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
@@ -781,7 +783,7 @@ export default function ProviderBoard() {
                   }}
                   className="gap-2 text-xs"
                 >
-                  <Copy className="h-3.5 w-3.5" /> Copy as text
+                  <Copy className="h-3.5 w-3.5" /> {t("board.copyText")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => {
@@ -792,7 +794,7 @@ export default function ProviderBoard() {
                   }}
                   className="gap-2 text-xs"
                 >
-                  <Download className="h-3.5 w-3.5" /> Download .txt
+                  <Download className="h-3.5 w-3.5" /> {t("board.downloadTxt")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -804,7 +806,7 @@ export default function ProviderBoard() {
       {session?.followUpQuestions && session.followUpQuestions.length > 0 && (
         <details className="glass shadow-glass rounded-2xl">
           <summary className="px-4 py-3 text-sm font-semibold text-foreground cursor-pointer list-none flex items-center justify-between">
-            Follow-up Questions
+            {t("board.followUpQuestions")}
             <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
           </summary>
           <div className="px-4 pb-4 space-y-2">
@@ -821,7 +823,9 @@ export default function ProviderBoard() {
       <div className="glass shadow-glass rounded-2xl px-4 py-3 flex items-center gap-3 text-sm text-muted-foreground">
         {session?.clientEmail && <span className="text-primary font-medium">{session.clientEmail}</span>}
         <span className="ltr-in-rtl ml-auto text-xs">
-          {session && new Date(session.createdAt).toLocaleDateString('he-IL')}
+          {session && new Date(session.createdAt).toLocaleDateString(
+            i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US"
+          )}
         </span>
       </div>
     </div>
@@ -838,7 +842,7 @@ export default function ProviderBoard() {
           <div className="rounded-full bg-slate-100 p-5">
             <CheckCircle2 className="h-7 w-7 text-slate-400" />
           </div>
-          <p className="text-sm font-medium text-slate-500">No tasks for this session</p>
+          <p className="text-sm font-medium text-slate-500">{t("board.noTasks")}</p>
         </div>
       ) : isProvider ? (
         <DndContext
@@ -861,7 +865,7 @@ export default function ProviderBoard() {
           <div className="rounded-full bg-muted p-5">
             <Headphones className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
           </div>
-          <p className="text-sm text-muted-foreground">No audio recording for this session</p>
+          <p className="text-sm text-muted-foreground">{t("board.noAudio")}</p>
         </div>
       ) : (
         <AudioPlayer sessionId={sessionId!} />
@@ -906,14 +910,14 @@ export default function ProviderBoard() {
       <button
         onClick={() => setSummaryOpen(true)}
         className="flex-1 flex flex-col items-center justify-center gap-1 py-3 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors no-min-height"
-        aria-label="פתח סיכום AI"
+        aria-label={t("board.aiSummary")}
       >
         <FileText className="w-5 h-5" aria-hidden="true" />
-        Summary
+        {t("board.aiSummary")}
       </button>
       {([
-        { id: 'tasks' as const, label: 'Tasks',   Icon: ListChecks },
-        { id: 'audio' as const, label: 'Audio',   Icon: Headphones },
+        { id: 'tasks' as const, label: t("board.tasks"),  Icon: ListChecks },
+        { id: 'audio' as const, label: t("board.audio"),  Icon: Headphones },
       ]).map(({ id, label, Icon }) => (
         <button
           key={id}
@@ -936,8 +940,8 @@ export default function ProviderBoard() {
 
   return (
     <Layout
-      title="Session Board"
-      subtitle={session?.filename ?? "Task checklist for this session"}
+      title={t("board.tasks")}
+      subtitle={session?.filename ?? t("board.pendingBadge", { count: 0 })}
     >
       {isMobile ? (
         // MOBILE: full-screen tab layout
@@ -974,11 +978,11 @@ export default function ProviderBoard() {
                   <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
                 </div>
                 <div className="flex items-center justify-between px-4 pb-3 shrink-0">
-                  <Drawer.Title className="text-sm font-bold text-foreground">AI Summary</Drawer.Title>
+                  <Drawer.Title className="text-sm font-bold text-foreground">{t("board.aiSummary")}</Drawer.Title>
                   <button
                     onClick={() => setSummaryOpen(false)}
                     className="p-1.5 rounded-md hover:bg-accent no-min-height"
-                    aria-label="סגור סיכום"
+                    aria-label={t("common.close")}
                   >
                     <ChevronDown className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
                   </button>
@@ -1003,7 +1007,7 @@ export default function ProviderBoard() {
                 }}
                 className="w-full py-3 rounded-2xl bg-primary text-primary-foreground font-semibold text-sm shadow-glass"
               >
-                Complete All ({totalPending} tasks)
+                {t("board.completeAll", { count: totalPending })}
               </button>
             </div>
           )}
@@ -1022,7 +1026,7 @@ export default function ProviderBoard() {
               onClick={() => navigate("/provider/dashboard")}
               className="mb-4 -ml-2 text-slate-500 hover:text-slate-800"
             >
-              <ArrowLeft className="h-4 w-4 mr-1.5" /> All Sessions
+              <ArrowLeft className="h-4 w-4 mr-1.5" /> {t("board.backToSessions")}
             </Button>
 
             {session && (
@@ -1030,7 +1034,7 @@ export default function ProviderBoard() {
                 <CardContent className="px-4 md:px-5 py-4 flex flex-col sm:flex-row items-start gap-4">
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm font-semibold text-indigo-900">Session Summary</p>
+                      <p className="text-sm font-semibold text-indigo-900">{t("board.summary")}</p>
                       {session.sentiment && (
                         <span className={[
                           "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
@@ -1047,7 +1051,7 @@ export default function ProviderBoard() {
                     <p className="text-sm text-slate-700 leading-relaxed">{session.summary}</p>
                     {session.followUpQuestions && session.followUpQuestions.length > 0 && (
                       <div className="mt-2 border-t border-indigo-100 pt-2">
-                        <p className="text-xs font-semibold text-indigo-700 mb-1">Follow-up Questions</p>
+                        <p className="text-xs font-semibold text-indigo-700 mb-1">{t("board.followUpQuestions")}</p>
                         <ul className="space-y-0.5">
                           {session.followUpQuestions.map((q, i) => (
                             <li key={i} className="text-xs text-slate-600 flex gap-1.5">
@@ -1060,7 +1064,9 @@ export default function ProviderBoard() {
                     )}
                     <div className="flex items-center gap-4 mt-1">
                       <p className="text-xs text-slate-400">
-                        {new Date(session.createdAt).toLocaleString("he-IL")}
+                        {new Date(session.createdAt).toLocaleString(
+                          i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US"
+                        )}
                       </p>
                       {session.clientEmail && (
                         <p className="text-xs text-indigo-600 font-medium">
@@ -1073,13 +1079,13 @@ export default function ProviderBoard() {
                     <div className="text-center">
                       <p className="text-2xl font-bold text-indigo-700">{totalPending}</p>
                       <p className="text-[10px] text-indigo-500 uppercase tracking-wide font-semibold">
-                        Pending
+                        {t("board.pending")}
                       </p>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                          <Share2 className="h-3.5 w-3.5" /> Share
+                          <Share2 className="h-3.5 w-3.5" /> {t("board.share")}
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44">
@@ -1092,7 +1098,7 @@ export default function ProviderBoard() {
                           }}
                           className="gap-2 text-xs"
                         >
-                          <Copy className="h-3.5 w-3.5" /> Copy as text
+                          <Copy className="h-3.5 w-3.5" /> {t("board.copyText")}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
@@ -1103,7 +1109,7 @@ export default function ProviderBoard() {
                           }}
                           className="gap-2 text-xs"
                         >
-                          <Download className="h-3.5 w-3.5" /> Download .txt
+                          <Download className="h-3.5 w-3.5" /> {t("board.downloadTxt")}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -1127,7 +1133,7 @@ export default function ProviderBoard() {
               <div className="rounded-full bg-slate-100 p-5">
                 <CheckCircle2 className="h-7 w-7 text-slate-400" />
               </div>
-              <p className="text-sm font-medium text-slate-500">No tasks for this session</p>
+              <p className="text-sm font-medium text-slate-500">{t("board.noTasks")}</p>
             </div>
           ) : isProvider ? (
             <DndContext

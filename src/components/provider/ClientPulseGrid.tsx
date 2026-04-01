@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -53,6 +55,7 @@ interface Props {
 }
 
 export function ClientPulseGrid({ sessions }: Props) {
+  const { t } = useTranslation();
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>("all");
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -102,10 +105,10 @@ export function ClientPulseGrid({ sessions }: Props) {
   if (pulseData.length === 0) return null;
 
   const FILTER_PILLS: { key: SentimentFilter; label: string }[] = [
-    { key: "all",    label: "הכל" },
-    { key: "red",    label: "בסיכון" },
-    { key: "yellow", label: "ניטרלי" },
-    { key: "green",  label: "חיובי" },
+    { key: "all",    label: t("clients.all") },
+    { key: "red",    label: t("clients.atRisk") },
+    { key: "yellow", label: t("clients.neutral") },
+    { key: "green",  label: t("clients.healthy") },
   ];
 
   return (
@@ -113,8 +116,8 @@ export function ClientPulseGrid({ sessions }: Props) {
       {/* Header + Filter Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
         <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-          Client Pulse
-          <span className="ms-2 text-xs font-normal text-slate-400">{filtered.length} לקוחות</span>
+          {t("clients.clientPulse")}
+          <span className="ms-2 text-xs font-normal text-slate-400">{t("clients.clientCount", { count: filtered.length })}</span>
         </p>
 
         <div className="flex items-center gap-2 flex-wrap">
@@ -144,7 +147,7 @@ export function ClientPulseGrid({ sessions }: Props) {
                 : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-amber-300"
             )}
           >
-            עם פיגורים
+            {t("clients.overdue")}
           </button>
         </div>
       </div>
@@ -191,7 +194,8 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
     red:    "bg-red-100 text-red-700",
   }[client.status];
 
-  const statusLabel = { green: "חיובי", yellow: "ניטרלי", red: "בסיכון" }[client.status];
+  const { t } = useTranslation();
+  const statusLabel = { green: t("clients.healthy"), yellow: t("clients.neutral"), red: t("clients.atRisk") }[client.status];
 
   return (
     <Card
@@ -217,8 +221,7 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
         {/* Pending count + completion % in one line */}
         <div className="flex items-center justify-between">
           <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">
-            <span dir="ltr" className="inline-block text-indigo-500 dark:text-indigo-400 font-bold">{pending}</span>
-            {" "}פתוחות
+            {t("clients.pendingTasks", { count: pending })}
           </p>
           <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{client.completionRate}%</span>
         </div>
@@ -236,17 +239,17 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
 
         {/* Stats — 2-column micro grid */}
         <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
-          <span className="text-slate-400 dark:text-slate-500">פגישות</span>
+          <span className="text-slate-400 dark:text-slate-500">{t("dashboard.recentSessions")}</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">{client.sessionCount}</span>
 
-          <span className="text-slate-400 dark:text-slate-500">משימות</span>
+          <span className="text-slate-400 dark:text-slate-500">{t("board.tasks")}</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-end" dir="ltr">
             {client.completedTasks}<span className="font-normal text-slate-400 dark:text-slate-500">/{client.totalTasks}</span>
           </span>
 
-          <span className="text-slate-400 dark:text-slate-500">אחרון</span>
+          <span className="text-slate-400 dark:text-slate-500">{t("clients.lastSessionLabel")}</span>
           <span className="font-semibold text-slate-800 dark:text-slate-200 text-end">
-            {new Date(client.lastSessionDate).toLocaleDateString("he-IL", { day: "2-digit", month: "short" })}
+            {new Date(client.lastSessionDate).toLocaleDateString(i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US", { day: "2-digit", month: "short" })}
           </span>
         </div>
 
@@ -256,7 +259,7 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
           className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors self-start no-min-height"
         >
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          {expanded ? "הסתר פגישות" : `הצג ${sessions.length} פגישות`}
+          {expanded ? t("clients.hideSessions") : t("clients.showSessions", { count: sessions.length })}
         </button>
 
         {/* Expandable session list */}
@@ -272,7 +275,7 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
                   <li key={s.id} className="flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
                     <SentimentIcon completionRate={rate} />
                     <span className="flex-1 truncate" title={s.title ?? s.filename}>
-                      {new Date(s.createdAt).toLocaleDateString("he-IL", { day: "2-digit", month: "short" })}
+                      {new Date(s.createdAt).toLocaleDateString(i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US", { day: "2-digit", month: "short" })}
                       {" — "}
                       <span className="text-slate-700 dark:text-slate-300">{s.title ?? s.filename}</span>
                     </span>
@@ -291,9 +294,9 @@ function ClientPulseCard({ client, sessions, expanded, onToggle }: CardProps) {
             variant="ghost"
             size="sm"
             className="h-6 px-2 text-[10px] text-red-600 hover:text-red-700 hover:bg-red-100 border border-red-200 self-start no-min-height"
-            onClick={() => toast.success(`תזכורת נשלחה ל-${client.clientEmail}`)}
+            onClick={() => toast.success(t("clients.reminderSent", { email: client.clientEmail }))}
           >
-            שלח תזכורת
+            {t("clients.sendReminder")}
           </Button>
         )}
       </CardContent>

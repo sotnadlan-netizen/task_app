@@ -93,7 +93,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
           <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
-            Navigation
+            {t("nav.navigation")}
           </p>
           {NAV_ITEMS.map(({ to, icon: Icon, labelKey, subKey }) => {
             const active =
@@ -158,56 +158,26 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
             className="w-full justify-start gap-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 h-8 px-2"
           >
             <LogOut className="h-3.5 w-3.5" />
-            Sign Out
+            {t("nav.signOut")}
           </Button>
-          <div className="flex items-center gap-1 pt-1">
-            {/* Dark mode toggle */}
-            <button
-              onClick={() => {
-                const isDark = document.documentElement.classList.toggle('dark');
-                localStorage.setItem('theme', isDark ? 'dark' : 'light');
-              }}
-              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
-              aria-label="Toggle dark mode"
-            >
-              <Sun className="h-3.5 w-3.5 hidden dark:block" />
-              <Moon className="h-3.5 w-3.5 block dark:hidden" />
-            </button>
-            {/* High-contrast toggle */}
-            <button
-              onClick={toggleHighContrast}
-              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors"
-              aria-label="Toggle high contrast"
-            >
-              <Contrast className="h-3.5 w-3.5" />
-            </button>
-            {/* Language cycle: he → en → ru */}
-            <button
-              onClick={cycleLang}
-              className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors text-xs font-bold min-w-[32px] text-center"
-              aria-label="Switch language"
-            >
-              {LANGS.find((l) => l.code === (localStorage.getItem('lng') ?? 'he'))?.label ?? 'עב'}
-            </button>
-          </div>
         </div>
       </aside>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogTitle>{t("nav.signOut")}?</AlertDialogTitle>
             <AlertDialogDescription>
               You'll be redirected to the login page. Any unsaved changes will be lost.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmedSignOut}
               className="bg-red-600 hover:bg-red-700"
             >
-              Sign Out
+              {t("nav.signOut")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -217,18 +187,77 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
 }
 
 function Navbar({ title, subtitle, onMenuClick }: { title: string; subtitle?: string; onMenuClick: () => void }) {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email;
+  const avatarUrl = user?.user_metadata?.avatar_url;
+
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8 dark:border-slate-700 dark:bg-slate-900/90 pt-[env(safe-area-inset-top)] min-h-[calc(4rem+env(safe-area-inset-top))]">
+    <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-4 md:px-8 dark:border-slate-700 dark:bg-slate-900/90 pt-[env(safe-area-inset-top)] min-h-[calc(4rem+env(safe-area-inset-top))]">
       <button
         onClick={onMenuClick}
-        className="md:hidden p-2 rounded-md hover:bg-slate-100"
+        className="md:hidden p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
         aria-label="Open menu"
       >
-        <Menu className="h-5 w-5 text-slate-600" />
+        <Menu className="h-5 w-5 text-slate-600 dark:text-slate-400" />
       </button>
-      <div>
+      <div className="flex-1 min-w-0">
         <h1 className="text-base font-bold text-slate-900 leading-none dark:text-slate-100">{title}</h1>
         {subtitle && <p className="text-xs text-slate-500 mt-0.5 dark:text-slate-400">{subtitle}</p>}
+      </div>
+
+      {/* Right-side controls — mirrors ClientLayout */}
+      <div className="flex items-center gap-1">
+        {/* User avatar + name (desktop) */}
+        <div className="hidden md:flex items-center gap-2 me-1">
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={`${displayName || "User"} avatar`}
+              className="h-7 w-7 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
+            />
+          ) : (
+            <div className="h-7 w-7 rounded-full bg-indigo-600/20 dark:bg-indigo-900/40 flex items-center justify-center">
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                {user?.email?.[0]?.toUpperCase() ?? "A"}
+              </span>
+            </div>
+          )}
+          <span className="text-xs font-medium text-slate-700 dark:text-slate-300 max-w-[120px] truncate hidden lg:block">
+            {displayName}
+          </span>
+        </div>
+
+        {/* Dark mode toggle */}
+        <button
+          onClick={() => {
+            const isDark = document.documentElement.classList.toggle("dark");
+            localStorage.setItem("theme", isDark ? "dark" : "light");
+          }}
+          className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+          aria-label="Toggle dark mode"
+        >
+          <Sun className="h-4 w-4 hidden dark:block" />
+          <Moon className="h-4 w-4 block dark:hidden" />
+        </button>
+
+        {/* High contrast toggle */}
+        <button
+          onClick={toggleHighContrast}
+          className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+          aria-label="Toggle high contrast"
+        >
+          <Contrast className="h-4 w-4" />
+        </button>
+
+        {/* Language cycle: he → en → ru */}
+        <button
+          onClick={cycleLang}
+          className="p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition-colors text-xs font-bold min-w-[32px] text-center"
+          aria-label={t("nav.settings")}
+        >
+          {LANGS.find((l) => l.code === (localStorage.getItem("lng") ?? "he"))?.label ?? "עב"}
+        </button>
       </div>
     </header>
   );
@@ -277,13 +306,14 @@ function MobileBottomNav() {
 }
 
 export function Layout({ title, subtitle, children }: LayoutProps) {
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-[100dvh] bg-background dark:bg-background">
       {/* Skip navigation — visible on first Tab press (IS 5568 / WCAG 2.4.1) */}
       <a href="#main-content" className="skip-nav">
-        דלג לתוכן הראשי
+        {t("nav.skipToContent")}
       </a>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">

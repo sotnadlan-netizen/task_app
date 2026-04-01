@@ -69,6 +69,24 @@ npm run lint
 - Always sanitize file paths to prevent directory traversal
 - Run `npx @claude-flow/cli@latest security scan` after security-related changes
 
+## [STRICT UI RULE - MULTILINGUAL]
+
+- Every single new visible UI component, button, or text string added to this application **MUST** support 3 languages: English, Hebrew, and Russian (or Arabic as a future option).
+- You **MUST NEVER** hardcode strings in components.
+- Always use `react-i18next` translation keys: `t('namespace.key')`.
+- After adding any new translation key, **immediately** update all three locale files: `src/i18n/locales/en.json`, `src/i18n/locales/he.json`, `src/i18n/locales/ru.json`.
+- The language cycle order is: `he (RTL) → en (LTR) → ru (LTR)` — enforced by `cycleLang()` in `Layout.tsx`.
+- **NEVER** create a new language toggle that bypasses `cycleLang()`. All language switches must go through `i18n.changeLanguage()` and update both `localStorage('lng')` and `document.documentElement` lang/dir attributes.
+
+## [STRICT RULE: Privacy-First & Ephemeral Storage]
+
+- **NEVER** save uploaded audio files to the server's disk, even temporarily
+- Local disk storage for client audio data is **strictly prohibited** in all environments
+- All audio processing (upload, transcription, AI summarization) MUST be handled entirely **in-memory** using `multer.memoryStorage()` or direct streams
+- The temporary server disk (e.g., on Render) MUST remain free of all client audio data at all times
+- Any new audio upload route or middleware MUST use `multer({ storage: multer.memoryStorage() })` — never `multer.diskStorage()`
+- Pass audio as `Buffer` or `Stream` directly to downstream AI/transcription APIs; do not write to `fs` or `/tmp`
+
 ## Concurrency: 1 MESSAGE = ALL RELATED OPERATIONS
 
 - All operations MUST be concurrent/parallel in a single message
