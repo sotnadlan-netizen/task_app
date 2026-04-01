@@ -182,6 +182,7 @@ const ClientCard = memo(function ClientCard({ client, onClick }: { client: Clien
 
 export default function ProviderClients() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);

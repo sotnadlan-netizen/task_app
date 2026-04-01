@@ -506,7 +506,7 @@ class DatabaseService {
       .from("profiles")
       .select("custom_prompt")
       .eq("id", providerId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
     return data.custom_prompt || null;
@@ -532,7 +532,7 @@ class DatabaseService {
       .from("prompt_config")
       .select("system_prompt")
       .eq("id", 1)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       await getClient()
