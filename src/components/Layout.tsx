@@ -75,8 +75,12 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
           "fixed inset-y-0 z-50 flex w-60 flex-col glass-sidebar",
           "ltr:left-0 rtl:right-0 rtl:left-auto",
           "border-r rtl:border-l-0 rtl:border-r border-slate-800 dark:border-slate-700",
-          "transform transition-transform duration-200 ease-in-out md:translate-x-0",
-          open ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"
+          // md:translate-x-0 always shows sidebar on desktop.
+          // max-md: variants apply ONLY below md so they never compete with md:translate-x-0.
+          // Previously ltr:-translate-x-full had higher CSS specificity (attribute selector)
+          // and overrode md:translate-x-0 on desktop — this fixes that.
+          "transition-transform duration-200 ease-in-out md:translate-x-0",
+          !open && "max-md:ltr:-translate-x-full max-md:rtl:translate-x-full"
         )}
       >
         {/* Logo — safe-area aware for notched iPhones */}
@@ -316,7 +320,7 @@ export function Layout({ title, subtitle, children }: LayoutProps) {
         {t("nav.skipToContent")}
       </a>
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex flex-1 flex-col md:ltr:pl-60 md:rtl:pr-60">
+      <div className="flex flex-1 flex-col md:ps-60">
         <Navbar title={title} subtitle={subtitle} onMenuClick={() => setSidebarOpen(o => !o)} />
         <main id="main-content" tabIndex={-1} className="flex-1 p-4 md:p-8 mobile-content-area md:pb-8 dark:bg-slate-900">
           {children}
