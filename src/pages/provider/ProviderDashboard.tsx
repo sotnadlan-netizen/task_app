@@ -563,12 +563,12 @@ export default function ProviderDashboard() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         {stats.map(({ label, value, icon: Icon, color, bg }) => (
-          <Card key={label} className="glass shadow-glass border-slate-200">
+          <Card key={label} className="glass shadow-glass border-slate-200 cursor-pointer hover:shadow-md active:scale-[0.98] transition-all" onClick={() => navigate(label === t("dashboard.totalTasks") || label === t("dashboard.completedTasks") ? "/provider/tasks" : "/provider/dashboard")}>
             <CardContent className="p-4 md:p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-wide">{label}</p>
-                  <p className="text-2xl md:text-3xl font-bold text-slate-900 mt-1">{value}</p>
+                  <p className="text-[10px] md:text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</p>
+                  <p className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 mt-1">{value}</p>
                 </div>
                 <div className={`rounded-lg ${bg} p-2 md:p-2.5`}>
                   <Icon className={`h-4 w-4 ${color}`} />
@@ -580,7 +580,7 @@ export default function ProviderDashboard() {
       </div>
 
       {/* Sessions table */}
-      <Card className="border-slate-200 shadow-sm overflow-hidden overflow-x-auto">
+      <Card className="border-slate-200 shadow-sm">
         <div className="px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold text-slate-800">{t("dashboard.recentSessions")}</p>
@@ -620,8 +620,45 @@ export default function ProviderDashboard() {
             </div>
           </div>
         </div>
+        {/* Mobile card list — hidden on md+, avoids 6-col table on small screens */}
+        {!loading && filteredSessions.length > 0 && (
+          <div className="md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {filteredSessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => navigate(`/provider/board/${s.id}`)}
+                className="w-full text-start px-4 py-3.5 flex items-start gap-3 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
+                    {s.title || s.filename}
+                  </p>
+                  {s.clientEmail && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate mt-0.5">{s.clientEmail}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-400">
+                      {new Date(s.createdAt).toLocaleDateString(
+                        i18n.language === "he" ? "he-IL" : i18n.language === "ru" ? "ru-RU" : "en-US",
+                        { day: "2-digit", month: "short" }
+                      )}
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                      {s.completedCount ?? 0}/{s.taskCount ?? 0} {t("board.tasks")}
+                    </span>
+                    <StatusBadge taskCount={s.taskCount ?? 0} completedCount={s.completedCount ?? 0} />
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-slate-300 shrink-0 mt-1 rtl:rotate-180" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Desktop table — hidden on mobile */}
         {/* FE-037: Skeleton loading rows */}
         {loading ? (
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -651,6 +688,7 @@ export default function ProviderDashboard() {
               <SkeletonRow />
             </TableBody>
           </Table>
+          </div>
         ) : filteredSessions.length === 0 ? (
           search || dateFrom || dateTo ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
@@ -683,6 +721,7 @@ export default function ProviderDashboard() {
             </div>
           )
         ) : (
+          <div className="hidden md:block overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -708,12 +747,12 @@ export default function ProviderDashboard() {
               {filteredSessions.map((s) => (
                 <TableRow
                   key={s.id}
-                  className="cursor-pointer hover:bg-slate-50/80 transition-colors"
+                  className="cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                   onClick={() => navigate(`/provider/board/${s.id}`)}
                 >
                   <TableCell className="pl-5 py-3.5">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-slate-800 truncate max-w-[240px]">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate max-w-[240px]">
                         {s.title || s.filename}
                       </p>
                       {s.audioUrl ? (
@@ -730,8 +769,11 @@ export default function ProviderDashboard() {
                       {s.summary}
                     </p>
                   </TableCell>
-                  <TableCell className="text-xs text-slate-500">
-                    {s.clientEmail ?? <span className="text-slate-300 italic">—</span>}
+                  <TableCell className="text-xs" onClick={(e) => { if (s.clientEmail) { e.stopPropagation(); navigate(`/provider/clients/${encodeURIComponent(s.clientEmail)}`); } }}>
+                    {s.clientEmail
+                      ? <span className="text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">{s.clientEmail}</span>
+                      : <span className="text-slate-300 italic">—</span>
+                    }
                   </TableCell>
                   <TableCell className="text-xs text-slate-500 whitespace-nowrap">
                     {new Date(s.createdAt).toLocaleDateString(
@@ -784,6 +826,7 @@ export default function ProviderDashboard() {
               ))}
             </TableBody>
           </Table>
+          </div>
         )}
       </Card>
 
