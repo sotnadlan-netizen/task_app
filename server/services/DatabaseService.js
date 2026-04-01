@@ -495,6 +495,36 @@ class DatabaseService {
     return { ok: true };
   }
 
+  // ── Per-Provider Custom Prompt ────────────────────────────────────────────
+
+  /**
+   * Retrieve the advisor's personal custom_prompt from their profile row.
+   * Returns null if the column is empty / not yet set.
+   */
+  async getCustomPrompt(providerId) {
+    const { data, error } = await getClient()
+      .from("profiles")
+      .select("custom_prompt")
+      .eq("id", providerId)
+      .single();
+
+    if (error || !data) return null;
+    return data.custom_prompt || null;
+  }
+
+  /**
+   * Persist the advisor's custom_prompt on their profile row.
+   */
+  async saveCustomPrompt(providerId, customPrompt) {
+    const { error } = await getClient()
+      .from("profiles")
+      .update({ custom_prompt: customPrompt })
+      .eq("id", providerId);
+
+    if (error) throw new Error(`[db] saveCustomPrompt: ${error.message}`);
+    return { ok: true };
+  }
+
   // ── Prompt Config ──────────────────────────────────────────────────────────
 
   async getPromptConfig() {

@@ -547,11 +547,8 @@ export default function ProviderDashboard() {
         </div>
       )}
 
-      {/* ⌘K hint + Chat button */}
-      <div className="flex items-center justify-between mb-2">
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border text-xs text-muted-foreground font-mono ml-2">
-          ⌘K
-        </kbd>
+      {/* Chat button */}
+      <div className="flex items-center justify-end mb-2">
         <Button
           variant="outline"
           size="sm"

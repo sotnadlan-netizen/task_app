@@ -4,7 +4,7 @@ import { Bot, Save, Loader2, RotateCcw, Info, History, ChevronDown, ChevronRight
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Layout } from "@/components/Layout";
-import { apiFetchConfig, apiSaveConfig, DEFAULT_SYSTEM_PROMPT } from "@/lib/storage";
+import { apiFetchConfig, apiSaveConfig, DEFAULT_SYSTEM_PROMPT, apiFetchCustomPrompt, apiSaveCustomPrompt } from "@/lib/storage";
 import { apiFetch } from "@/lib/apiClient";
 import { toast } from "sonner";
 
@@ -35,6 +35,11 @@ export default function AgentConfig() {
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
+  // Custom behavioral prompt (per-advisor)
+  const [customPrompt, setCustomPrompt] = useState("");
+  const [customDirty, setCustomDirty] = useState(false);
+  const [customSaving, setCustomSaving] = useState(false);
+
   // FE-031: Version history state
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<PromptHistoryEntry[]>([]);
@@ -42,10 +47,15 @@ export default function AgentConfig() {
   const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
 
   useEffect(() => {
-    apiFetchConfig()
-      .then((c) => { setPrompt(c.systemPrompt); setDirty(false); })
-      .catch(() => { setPrompt(DEFAULT_SYSTEM_PROMPT); })
-      .finally(() => setLoading(false));
+    Promise.all([
+      apiFetchConfig().catch(() => ({ systemPrompt: DEFAULT_SYSTEM_PROMPT })),
+      apiFetchCustomPrompt().catch(() => ""),
+    ]).then(([config, custom]) => {
+      setPrompt(config.systemPrompt);
+      setCustomPrompt(custom);
+      setDirty(false);
+      setCustomDirty(false);
+    }).finally(() => setLoading(false));
   }, []);
 
   async function handleSave() {
@@ -58,6 +68,19 @@ export default function AgentConfig() {
       toast.error("Failed to save configuration");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSaveCustom() {
+    setCustomSaving(true);
+    try {
+      await apiSaveCustomPrompt(customPrompt);
+      setCustomDirty(false);
+      toast.success("Behavioral customization saved");
+    } catch {
+      toast.error("Failed to save customization");
+    } finally {
+      setCustomSaving(false);
     }
   }
 
@@ -169,6 +192,77 @@ export default function AgentConfig() {
                   <Save className="h-3.5 w-3.5" />
                 )}
                 Save Configuration
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Behavioral Customization — per-advisor custom prompt injected as preamble */}
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="px-5 pt-5 pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+              <Bot className="h-4 w-4 text-emerald-500" />
+              Behavioral Customization
+              {customDirty && (
+                <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                  Unsaved changes
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5 space-y-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Define your advisor persona here (e.g. <em>"Act as a strict mortgage advisor focused on risk assessment."</em>).
+              This is prepended to the shared system prompt — it controls <strong>tone and focus</strong>, while the system
+              prompt ensures the AI outputs valid JSON that the app can parse.
+            </p>
+            {loading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+              </div>
+            ) : (
+              <div className="relative">
+                <label htmlFor="advisor-custom-prompt" className="sr-only">
+                  Behavioral Customization Prompt
+                </label>
+                <textarea
+                  id="advisor-custom-prompt"
+                  value={customPrompt}
+                  onChange={(e) => { setCustomPrompt(e.target.value); setCustomDirty(true); }}
+                  rows={6}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3 text-sm leading-7 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none shadow-inner"
+                  placeholder="e.g. Act as a conservative mortgage advisor. Focus on risk. Be concise."
+                  spellCheck={false}
+                />
+                <div className="absolute bottom-3 left-3 text-[10px] text-slate-400 font-mono">
+                  {customPrompt.length} chars
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              {customPrompt && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setCustomPrompt(""); setCustomDirty(true); }}
+                  className="gap-1.5 text-slate-500 border-slate-200 hover:text-slate-800"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Clear
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={handleSaveCustom}
+                disabled={customSaving || !customDirty}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700"
+              >
+                {customSaving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                Save Customization
               </Button>
             </div>
           </CardContent>

@@ -136,11 +136,13 @@ export interface SessionsPage {
 
 export async function apiFetchSessions(): Promise<Session[]> {
   const ctx = await getCurrentUserContext();
+  // Security: never query without a user filter — unauthenticated callers get nothing
+  if (!ctx) return [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = supabase.from("sessions").select(SESSION_COLS).order("created_at", { ascending: false });
-  if (ctx?.role === "provider") {
+  if (ctx.role === "provider") {
     query = query.eq("provider_id", ctx.userId);
-  } else if (ctx?.role === "client") {
+  } else {
     query = query.eq("client_email", ctx.userEmail);
   }
   const { data, error } = await query;
@@ -153,15 +155,17 @@ export async function apiFetchSessionsPaginated(
   cursor?: string | null,
 ): Promise<SessionsPage> {
   const ctx = await getCurrentUserContext();
+  // Security: never query without a user filter
+  if (!ctx) return { sessions: [], nextCursor: null };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let query: any = supabase
     .from("sessions")
     .select(SESSION_COLS)
     .order("created_at", { ascending: false })
     .limit(limit + 1);
-  if (ctx?.role === "provider") {
+  if (ctx.role === "provider") {
     query = query.eq("provider_id", ctx.userId);
-  } else if (ctx?.role === "client") {
+  } else {
     query = query.eq("client_email", ctx.userEmail);
   }
   if (cursor) query = query.lt("created_at", cursor);
@@ -270,11 +274,12 @@ export interface AnalyticsOverview {
 
 export async function apiFetchAnalyticsOverview(): Promise<AnalyticsOverview> {
   const ctx = await getCurrentUserContext();
+  if (!ctx) return { totalSessions: 0, totalTasks: 0, completedTasks: 0, completionRate: 0, sessionsByMonth: [] };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let sessQuery: any = supabase.from("sessions").select("id, created_at");
-  if (ctx?.role === "provider") {
+  if (ctx.role === "provider") {
     sessQuery = sessQuery.eq("provider_id", ctx.userId);
-  } else if (ctx?.role === "client") {
+  } else {
     sessQuery = sessQuery.eq("client_email", ctx.userEmail);
   }
   const { data: sessions, error: sessErr } = await sessQuery;
@@ -329,7 +334,9 @@ export async function apiProcessAudio(
   const res = await apiFetch("/api/process-audio", { method: "POST", body: formData });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Unknown error" }));
-    throw new Error(err.error || "Processing failed");
+    const e = new Error(err.error || "Processing failed");
+    (e as Error & { code?: string }).code = err.code;
+    throw e;
   }
   return res.json();
 }
@@ -352,6 +359,27 @@ export async function apiSaveConfig(config: PromptConfig): Promise<PromptConfig>
     .upsert({ id: 1, system_prompt: config.systemPrompt });
   if (error) throw new Error(error.message);
   return config;
+}
+
+// ─── Custom Prompt API ────────────────────────────────────────────────────────
+
+export async function apiFetchCustomPrompt(): Promise<string> {
+  const res = await apiFetch("/api/config/custom-prompt");
+  if (!res.ok) return "";
+  const data = await res.json();
+  return data.customPrompt ?? "";
+}
+
+export async function apiSaveCustomPrompt(customPrompt: string): Promise<void> {
+  const res = await apiFetch("/api/config/custom-prompt", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ customPrompt }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Failed to save custom prompt");
+  }
 }
 
 // ─── RAG Chat History API ──────────────────────────────────────────────────────
@@ -432,6 +460,30 @@ export async function apiAddCalendarEvent(
 
   const data = await res.json();
   return { htmlLink: data.htmlLink };
+}
+
+// ─── All tasks for a given client email (across all their sessions) ──────────
+
+export async function apiFetchTasksByClient(clientEmail: string): Promise<ActionItem[]> {
+  const ctx = await getCurrentUserContext();
+  if (!ctx) return [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let sessionQuery: any = supabase
+    .from("sessions")
+    .select("id")
+    .eq("client_email", clientEmail);
+  if (ctx.role === "provider") sessionQuery = sessionQuery.eq("provider_id", ctx.userId);
+  const { data: sessionRows, error: sessErr } = await sessionQuery;
+  if (sessErr) throw new Error(sessErr.message);
+  const ids = (sessionRows ?? []).map((s: { id: string }) => s.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase
+    .from("tasks")
+    .select("*")
+    .in("session_id", ids)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToTask);
 }
 
 // ─── Assign an unassigned session to a client email ──────────────────────────

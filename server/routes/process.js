@@ -52,6 +52,16 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       systemPrompt = config.systemPrompt;
     }
 
+    // Inject the advisor's custom_prompt as a behavioral preamble.
+    // The custom_prompt sets tone/focus; systemPrompt enforces strict JSON schema.
+    // This means the advisor controls behavior without being able to break the output format.
+    if (providerId) {
+      const customPrompt = await db.getCustomPrompt(providerId).catch(() => null);
+      if (customPrompt) {
+        systemPrompt = `${customPrompt}\n\n${systemPrompt}`;
+      }
+    }
+
     logger.info({
       filename: audioFile.originalname,
       sizeKb:   (audioFile.size / 1024).toFixed(1),
@@ -151,9 +161,10 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       return res.status(401).json({ error: "Invalid or missing Google API key." });
     }
     if (msg.includes("404") || msg.includes("not found")) {
-      const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      logger.error({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" }, "[process] Gemini model not found — update GEMINI_MODEL in .env");
       return res.status(502).json({
-        error: `Gemini model "${MODEL}" not found. Set GEMINI_MODEL in .env to a valid model name.`,
+        error: "AI processing is temporarily unavailable due to a configuration error. Please contact support.",
+        code:  "MODEL_CONFIG_ERROR",
       });
     }
     if (msg.includes("timed out")) {
