@@ -40,7 +40,16 @@ router.post("/", requireAuth, validateBody(chatHistorySchema), async (req, res, 
     // 1. Embed the user's query
     const queryEmbedding = await generateEmbedding(query);
     if (!queryEmbedding) {
-      return res.status(503).json({ error: "Embedding service unavailable.", code: "EMBEDDING_FAILED" });
+      // Embedding is best-effort — never crash the request with 503.
+      // Return a 200 with a warning so the frontend can show a helpful message
+      // instead of an unrecoverable error screen.
+      logger.warn({ providerId }, "[chat-history] Embedding unavailable — returning degraded response");
+      return res.json({
+        answer: "שירות החיפוש הסמנטי אינו זמין כרגע. אנא נסה שוב בעוד מספר רגעים.",
+        citations: [],
+        matchCount: 0,
+        warning: "EMBEDDING_UNAVAILABLE",
+      });
     }
 
     // 2. Vector search via match_client_sessions RPC (multi-tenant: always filter by provider_id)

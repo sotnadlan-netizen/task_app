@@ -266,8 +266,9 @@ export async function analyzeText(transcript, systemPrompt) {
 }
 
 /**
- * Generate a text embedding vector using Google's text-embedding-004 model.
+ * Generate a text embedding vector using Google's embedding-001 model.
  * Returns a float[] suitable for pgvector storage, or null on failure.
+ * NOTE: model name must NOT include the "models/" prefix — the SDK adds it internally.
  *
  * @param {string} text
  * @returns {Promise<number[] | null>}
@@ -276,9 +277,9 @@ export async function generateEmbedding(text) {
   if (!process.env.GOOGLE_API_KEY || !text?.trim()) return null;
   try {
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model  = genAI.getGenerativeModel({ model: "models/embedding-001" });
+    const model  = genAI.getGenerativeModel({ model: "embedding-001" });
     const result = await model.embedContent(text.slice(0, 8000));
-    return result.embedding.values;
+    return result.embedding?.values ?? null;
   } catch (err) {
     logger.warn({ err: err.message }, "[gemini] generateEmbedding failed — session saved without embedding");
     return null;

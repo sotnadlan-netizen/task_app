@@ -87,12 +87,20 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
     const { title, summary, sentiment, followUpQuestions, tasks: rawTasks, usage, nextMeetingSuggestion } =
       await analyzeAudio(base64Audio, mimeType, systemPrompt);
 
-    // RAG: generate embedding for this session (best-effort — never blocks save)
+    // RAG: generate embedding for this session (best-effort — never blocks save or response)
     const embeddingText = [
       summary || "",
       ...(rawTasks || []).map((t) => `${t.title}: ${t.description}`),
     ].join("\n").slice(0, 8000);
-    const embedding = await generateEmbedding(embeddingText);
+    // Double-wrapped: generateEmbedding already catches internally, but we
+    // add an outer guard so even an unexpected throw can never reach the catch
+    // block and turn a successful session save into an error response.
+    let embedding = null;
+    try {
+      embedding = await generateEmbedding(embeddingText);
+    } catch (embErr) {
+      logger.warn({ err: embErr.message }, "[process] generateEmbedding threw unexpectedly — continuing without embedding");
+    }
 
     const session = {
       id:                sessionId,
