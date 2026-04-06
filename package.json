@@ -50,7 +50,7 @@
     "react-i18next": "^15.7.4",
     "react-router-dom": "^6.30.3",
     "recharts": "^2.15.4",
-    "resend": "^6.9.4",
+    "resend": "^6.10.0",
     "sonner": "^1.7.4",
     "tailwind-merge": "^2.6.1",
     "tailwindcss-animate": "^1.0.7",
