@@ -237,3 +237,70 @@ SUPABASE SCHEMA RULE: Whenever the user provides a new or updated Supabase SQL m
 3. Reconcile the Column Reference tables to match the new schema.
 4. Output the exact `ALTER TABLE` / `CREATE TABLE` / `CREATE INDEX` / `CREATE POLICY` queries the user needs to run in the Supabase SQL Editor to migrate their existing database.
 Always treat the most recently provided SQL as the authoritative source of truth for the database structure.
+
+## [STRICT RULE: RTL & CSS Logical Properties]
+
+- **ALL new CSS** MUST use [CSS Logical Properties](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_logical_properties_and_values) — never physical directional properties.
+- **BANNED** (do not write these): `padding-left`, `padding-right`, `margin-left`, `margin-right`, `border-left`, `border-right`, `left:`, `right:` (in positioned elements), `text-align: left/right`
+- **REQUIRED equivalents**: `padding-inline-start/end`, `margin-inline-start/end`, `border-inline-start/end`, `inset-inline-start/end`, `text-align: start/end`
+- **Tailwind**: use `ps-*`/`pe-*` (padding-inline), `ms-*`/`me-*` (margin-inline), `start-*`/`end-*` (inset-inline) — never `pl-*`/`pr-*`/`ml-*`/`mr-*`/`left-*`/`right-*`
+- This ensures RTL (Hebrew) and LTR (English/Russian) layouts work without any extra code.
+
+## [STRICT RULE: iPhone & Mobile-Safe Layouts]
+
+- All **page-level wrapper** elements MUST use `min-height: 100dvh` (not `100vh`) to respect iOS Safari's collapsible chrome.
+- All elements near screen edges (top bars, bottom bars, modals) MUST include `env(safe-area-inset-*)` padding:
+  - Top: `padding-top: env(safe-area-inset-top)`
+  - Bottom: `padding-bottom: env(safe-area-inset-bottom)`
+  - Inline: `padding-inline: env(safe-area-inset-left) env(safe-area-inset-right)`
+- In Tailwind use `pb-[env(safe-area-inset-bottom)]` etc., or define CSS variables in `index.css`.
+- **Never** use fixed pixel heights for full-screen containers — always use `dvh` or flex-grow.
+
+## [STRICT RULE: Feature Registry — src/config/features_registry.ts]
+
+- `src/config/features_registry.ts` is the **user-facing source of truth** for all features rendered on the `/features` page.
+- **Every time a feature is added, removed, renamed, or its status changes**, you MUST update this file in the same PR/commit.
+- The `FeatureEntry` shape must remain consistent so the `FeaturesPage` renders correctly.
+- After updating, verify `/features` page renders the new data by checking `src/pages/FeaturesPage.tsx`.
+
+## [STRICT RULE: Folder Structure — Feature-Based Architecture (2026)]
+
+The `src/` directory follows a Domain-Driven Feature Structure. **Never** create files outside these canonical paths:
+
+| Path | Purpose |
+|------|---------|
+| `src/features/<domain>/pages/` | Page-level components (route targets) |
+| `src/features/<domain>/components/` | Domain-specific components |
+| `src/core/api/` | API clients (Supabase, REST) |
+| `src/core/config/` | App-level config (Sentry, env) |
+| `src/core/state/` | Global context providers |
+| `src/core/utils/` | Shared pure utilities |
+| `src/shared/components/ui/` | shadcn/ui primitives (only used ones) |
+| `src/shared/components/layout/` | Layout shells |
+| `src/shared/components/widgets/` | Standalone cross-feature widgets |
+| `src/shared/hooks/` | Reusable React hooks |
+| `src/i18n/locales/` | Translation JSON files |
+| `src/config/` | Feature registry & app-level config |
+| `src/pages/` | Top-level standalone pages (NotFound, FeaturesPage, etc.) |
+
+**Import alias**: always use `@/` (maps to `src/`). Never use relative `../` paths across feature boundaries.
+
+**Test co-location**: every `.tsx`/`.ts` file MUST have a sibling `.test.tsx`/`.test.ts` file. Tests live next to the file they test — NOT in a separate `src/test/` folder (except `src/test/setup.ts`).
+
+## Documentation & Feature Tracking
+
+### Source of Truth Files
+
+- **APP_MAP.md** — Technical source of truth for folder structure, API endpoints, and DB schema.
+- **src/config/features_registry.ts** — Functional source of truth for all user-facing features.
+
+### AUTOMATION RULE (Always Enforced)
+
+After EVERY code change that adds, modifies, or removes a feature:
+
+1. **Update `src/config/features_registry.ts`** to reflect the change (add/edit/remove the relevant `FeatureEntry`).
+2. **Update `APP_MAP.md`** if the file structure or DB schema changed.
+3. **Verify the `/features` page** correctly renders the new data.
+4. **State in your completion message**: "The features registry has been synchronized."
+
+This rule has NO exceptions — it applies to every PR, hotfix, and refactor that touches user-visible functionality.

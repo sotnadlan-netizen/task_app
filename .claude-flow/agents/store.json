@@ -1,0 +1,67 @@
+{
+  "agents": {
+    "coder-mobile-fix": {
+      "agentId": "coder-mobile-fix",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-29T22:17:16.311Z",
+      "domain": "frontend",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "reviewer-mobile": {
+      "agentId": "reviewer-mobile",
+      "agentType": "reviewer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-29T22:17:17.418Z",
+      "domain": "frontend",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "coder-server-analysis": {
+      "agentId": "coder-server-analysis",
+      "agentType": "coder",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "swarmId": "swarm-1774824308589-behm9d",
+        "namespace": "server-analysis",
+        "targetFile": "server/index.js",
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-29T22:45:14.338Z",
+      "domain": "backend",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    },
+    "reviewer-server-analysis": {
+      "agentId": "reviewer-server-analysis",
+      "agentType": "reviewer",
+      "status": "idle",
+      "health": 1,
+      "taskCount": 0,
+      "config": {
+        "swarmId": "swarm-1774824308589-behm9d",
+        "namespace": "server-analysis",
+        "targetFile": "server/index.js",
+        "model": "sonnet"
+      },
+      "createdAt": "2026-03-29T22:45:19.146Z",
+      "domain": "security",
+      "model": "sonnet",
+      "modelRoutedBy": "explicit"
+    }
+  },
+  "version": "3.0.0"
+}

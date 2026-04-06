@@ -1,0 +1,42 @@
+
+Role: Senior Full-Stack Engineer & Mobile UX Specialist (Expert in RTL & Accessibility)
+Task: Comprehensive UI/UX Overhaul for "Listen Agent" (Mobile-First & High Contrast focus)
+I need to upgrade my React 18 / Tailwind / Radix UI / Supabase app to a "Premium 2026" standard. The current mobile design is broken: components are cut in half on iPhone, AI summaries overlap tasks, and low contrast makes text unreadable.
+
+1. Mobile Layout & Responsiveness (Fixing "Half-Cut" UI)
+Audit all viewports. Implement a strictly responsive layout that uses safe-area-insets for iPhone (notched devices).
+
+Eliminate overlapping overlays. Implement a 'Standard Bottom Sheet' pattern (using Vaul or Radix) for the AI Summary. It must be collapsible to a minimal bar so the Task List remains 100% visible and interactive behind it.
+
+Ensure 0% horizontal scrolling on mobile. All containers must fit 100vw minus padding.
+
+Implement 'Thumb-First Design': Place critical actions (Start Recording, Save, Approve Task) in the bottom 33% of the screen.
+
+2. Professional Visual Identity & High Contrast
+Theme: "Warm Minimalism" with 'Liquid Glass' effects (backdrop-blur).
+
+Contrast: Ensure all text/background pairs meet WCAG 2.1 AA (min 4.5:1 ratio). Use OKLCH for dynamic luminance control.
+
+Palette: Primary: Sage Green; Secondary: Slate Blue. Backgrounds: High-contrast Off-white or Deep Charcoal for Dark Mode.
+
+Borders & Depth: Use 1px subtle borders and 'Post-Neumorphism' soft shadows to separate cards from the background effectively.
+
+Typography: Use 'Assistant' for Hebrew. Mobile font size for body text must be 17px/18px minimum. Implement font-scaling where Hebrew is 10% larger than English.
+
+3. Specialized AI & RTL Patterns
+Recording UI: Replace static indicators with a real-time 'Motion UI' waveform and a 'Pulse' aura around the mic.
+
+RTL Compliance: 100% Hebrew mirroring. Sidebar on the right. Numbers/Dates/Currency must remain LTR inside the RTL flow.
+
+AI Transparency: Add "Just-in-Time" notices explaining that data is processed in-memory and deleted automatically (Ephemeral Data UI).
+
+Confidence Indicators: Add subtle visual badges (e.g., green/yellow dots) to AI-generated tasks to show model certainty.
+
+4. Engineering Standards
+Patterns: Use 'Compound Components' and 'Progressive Disclosure'.
+
+Performance: Implement Skeleton Loaders for AI processing states. Use Optimistic Updates for task toggles.
+
+Code: React 19 patterns (no forwardRef, use new hooks).
+
+Step 1: Perform a "Mobile Layout Audit" and propose the structural changes for iPhone compatibility before editing files.
