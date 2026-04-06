@@ -266,21 +266,68 @@ export async function analyzeText(transcript, systemPrompt) {
 }
 
 /**
- * Generate a text embedding vector using Google's text-embedding-004 model.
- * Returns a float[] suitable for pgvector storage, or null on failure.
+ * Generate a text embedding vector via direct REST API (SDK bypassed).
+ *
+ * The @google/generative-ai SDK mis-constructs the embedding URL for some API
+ * key configurations, returning a 404. We call the REST endpoint directly so
+ * we control the exact URL and body.
+ *
+ * Primary model  : text-embedding-004  (768-dim, matches pgvector(768) schema)
+ * Fallback model : gemini-embedding-001 (some keys only support this alias)
+ *
+ * Returns a float[] on success, or null on any failure (best-effort — never
+ * blocks a session save or throws to callers).
  *
  * @param {string} text
  * @returns {Promise<number[] | null>}
  */
 export async function generateEmbedding(text) {
-  if (!process.env.GOOGLE_API_KEY || !text?.trim()) return null;
+  const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey || !text?.trim()) return null;
+
+  const truncated = text.slice(0, 8000);
+
+  // ── Inner helper: one REST call for a given model alias ──────────────────
+  async function callEmbedREST(modelAlias) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAlias}:embedContent?key=${apiKey}`;
+    const response = await fetch(url, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model:               `models/${modelAlias}`,
+        content:             { parts: [{ text: truncated }] },
+        outputDimensionality: 768, // must match pgvector(768) schema
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => response.statusText);
+      throw new Error(`REST ${response.status}: ${errText}`);
+    }
+
+    const data = await response.json();
+    return data?.embedding?.values ?? null;
+  }
+
+  // ── Primary: text-embedding-004 ──────────────────────────────────────────
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-    const model  = genAI.getGenerativeModel({ model: "models/text-embedding-004" });
-    const result = await model.embedContent(text.slice(0, 8000));
-    return result.embedding.values;
-  } catch (err) {
-    logger.warn({ err: err.message }, "[gemini] generateEmbedding failed — session saved without embedding");
+    const values = await callEmbedREST("text-embedding-004");
+    if (values) return values;
+    throw new Error("empty embedding values returned");
+  } catch (primaryErr) {
+    logger.warn({ err: primaryErr.message }, "[gemini] text-embedding-004 failed — trying gemini-embedding-001 fallback");
+  }
+
+  // ── Fallback: gemini-embedding-001 ───────────────────────────────────────
+  try {
+    const values = await callEmbedREST("gemini-embedding-001");
+    if (values) {
+      logger.info("[gemini] gemini-embedding-001 fallback succeeded");
+      return values;
+    }
+    throw new Error("empty embedding values returned from fallback");
+  } catch (fallbackErr) {
+    logger.warn({ err: fallbackErr.message }, "[gemini] generateEmbedding failed — session saved without embedding");
     return null;
   }
 }

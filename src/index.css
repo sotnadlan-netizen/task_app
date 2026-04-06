@@ -66,8 +66,8 @@
   }
 
   .dark {
-    --background: oklch(0.08 0.004 255);         /* True deep charcoal — ~#121212 */
-    --foreground: oklch(0.97 0.004 90);           /* Crisp white #F7F7F7 */
+    --background: #000000;                        /* True black — OLED perfect */
+    --foreground: #ffffff;                        /* Pure white */
 
     --card: oklch(0.13 0.010 255);
     --card-foreground: oklch(0.93 0.008 90);
@@ -110,6 +110,28 @@
     --glass-border: oklch(0.35 0.02 255 / 0.4);
   }
 }
+
+/* ═══════════════════════════════════════════════════════
+   Dark Mode — Slate contrast correction
+   Hardcoded Tailwind slate-* utilities are designed for light
+   backgrounds. On #000000 true black they render near-invisible.
+   These rules live OUTSIDE @layer so they beat Tailwind utilities.
+   Mapping: dark slate-900 → slate-50 brightness, dark slate-500 → slate-400
+   ═══════════════════════════════════════════════════════ */
+.dark .text-slate-900  { color: #f8fafc; }   /* → slate-50  */
+.dark .text-slate-800  { color: #f1f5f9; }   /* → slate-100 */
+.dark .text-slate-700  { color: #e2e8f0; }   /* → slate-200 */
+.dark .text-slate-600  { color: #cbd5e1; }   /* → slate-300 */
+.dark .text-slate-500  { color: #94a3b8; }   /* → slate-400 */
+
+.dark .bg-white        { background-color: oklch(0.13 0.012 255); }
+.dark .bg-slate-50     { background-color: oklch(0.14 0.012 255); }
+.dark .bg-slate-100    { background-color: oklch(0.17 0.015 255); }
+.dark .bg-slate-900    { background-color: #000000; }
+
+.dark .border-slate-100 { border-color: oklch(0.22 0.015 255); }
+.dark .border-slate-200 { border-color: oklch(0.26 0.018 255); }
+/* ─────────────────────────────────────────────────────── */
 
 @layer base {
   * {
@@ -172,6 +194,26 @@
   :lang(he) {
     font-size: 17px;
     line-height: 1.7;
+  }
+
+  /* Hebrew legibility boost in dark mode — OLED crispness */
+  .dark .font-hebrew,
+  .dark :lang(he) {
+    font-weight: 500;
+    letter-spacing: 0.025em;
+  }
+
+  /* iOS auto-zoom fix — all inputs must be ≥ 16px */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="date"],
+  input[type="number"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: max(16px, 1em);
   }
 
   /* Prevent nested scroll containers from hijacking outer scroll */

@@ -3,28 +3,32 @@ import type { ErrorInfo, ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import PageTransition from "@/components/PageTransition";
-import Login from "./pages/Login";
-import AuthCallback from "./pages/AuthCallback";
-import Signup from "./pages/Signup";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import ProviderDashboard from "./pages/provider/ProviderDashboard";
-import ProviderBoard from "./pages/provider/ProviderBoard";
-import ProviderClients from "./pages/provider/ProviderClients";
-import ProviderTasks from "./pages/provider/ProviderTasks";
-import AgentConfig from "./pages/AgentConfig";
-import ProviderAnalytics from "./pages/provider/ProviderAnalytics";
-import ClientDashboard from "./pages/client/ClientDashboard";
-import ClientBoard from "./pages/client/ClientBoard";
-import NotFound from "./pages/NotFound";
-import { AccessibilityWidget } from "@/components/AccessibilityWidget";
-import { Sentry } from "@/lib/sentry";
+import { Toaster as Sonner } from "@/shared/components/ui/sonner";
+import { Toaster } from "@/shared/components/ui/toaster";
+import { TooltipProvider } from "@/shared/components/ui/tooltip";
+import { AuthProvider } from "@/core/state/AuthContext";
+import ProtectedRoute from "@/features/auth/components/ProtectedRoute";
+import PageTransition from "@/shared/components/layout/PageTransition";
+import Login from '@/features/auth/pages/Login';
+import AuthCallback from '@/features/auth/pages/AuthCallback';
+import Signup from '@/features/auth/pages/Signup';
+import ForgotPassword from '@/features/auth/pages/ForgotPassword';
+import ResetPassword from '@/features/auth/pages/ResetPassword';
+import ProviderDashboard from '@/features/dashboard/pages/ProviderDashboard';
+import ProviderBoard from '@/features/tasks/pages/ProviderBoard';
+import ProviderClients from '@/features/clients/pages/ProviderClients';
+import ProviderTasks from '@/features/tasks/pages/ProviderTasks';
+import AgentConfig from '@/features/agent-config/pages/AgentConfig';
+import ProviderAnalytics from '@/features/analytics/pages/ProviderAnalytics';
+import ClientProfile from '@/features/clients/pages/ClientProfile';
+import ClientDashboard from '@/features/sessions/pages/ClientDashboard';
+import ClientBoard from '@/features/sessions/pages/ClientBoard';
+import FeaturesPage from '@/pages/FeaturesPage';
+import AccessibilityStatement from '@/pages/AccessibilityStatement';
+import NotFound from '@/pages/NotFound';
+import { AccessibilityWidget } from "@/shared/components/widgets/AccessibilityWidget";
+import { CookieConsentBanner } from "@/shared/components/widgets/CookieConsentBanner";
+import { Sentry } from "@/core/config/sentry";
 
 // ── React Error Boundary — catches render/lifecycle errors ────────────────────
 class ErrorBoundary extends Component<
@@ -115,6 +119,7 @@ function AnimatedRoutes() {
         <Route path="/signup"         element={<PageTransition><Signup /></PageTransition>} />
         <Route path="/forgot-password" element={<PageTransition><ForgotPassword /></PageTransition>} />
         <Route path="/reset-password"  element={<PageTransition><ResetPassword /></PageTransition>} />
+        <Route path="/accessibility"   element={<PageTransition><AccessibilityStatement /></PageTransition>} />
 
         {/* Provider routes */}
         <Route element={<ProtectedRoute requiredRole="provider" />}>
@@ -124,6 +129,8 @@ function AnimatedRoutes() {
           <Route path="/provider/tasks"              element={<PageTransition><ProviderTasks /></PageTransition>} />
           <Route path="/provider/config"             element={<PageTransition><AgentConfig /></PageTransition>} />
           <Route path="/provider/analytics"          element={<PageTransition><ProviderAnalytics /></PageTransition>} />
+          <Route path="/provider/clients/:clientEmail" element={<PageTransition><ClientProfile /></PageTransition>} />
+          <Route path="/features"                    element={<PageTransition><FeaturesPage /></PageTransition>} />
         </Route>
 
         {/* Client routes */}
@@ -144,6 +151,7 @@ const App = () => (
       <TooltipProvider>
         <AppBootstrap />
         <AccessibilityWidget />
+        <CookieConsentBanner />
         <Toaster />
         <Sonner richColors position="top-right" />
         <BrowserRouter>

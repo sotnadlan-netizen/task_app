@@ -1,7 +1,7 @@
 # APP_MAP.md — Listen Agent Application Map
 
 > **Living Document** — Updated automatically whenever features, endpoints, or architecture change.
-> Last updated: 2026-03-30 (Mobile stability — dvh viewport fix, deferred spinner hook, debounced search, viewport-fit=cover)
+> Last updated: 2026-04-06 (Nuclear Cleanup: feature-based restructure, dead code purge, dependency trim)
 
 ---
 
@@ -70,13 +70,12 @@
 | Vite | 5.4 | Build tool & dev server (port 8080) |
 | React Router | v6 | SPA routing |
 | Tailwind CSS | 3.4 | Utility-first styling |
-| Radix UI | latest | Accessible component primitives (60+ components) |
+| Radix UI | latest | Accessible component primitives (19 used) |
 | Framer Motion | 12.38 | Page transitions & animations |
 | TanStack React Query | 5.83 | Server state management & caching |
 | Supabase JS | 2.100 | Auth + Realtime subscriptions |
-| react-hook-form | 7.61 | Form state management |
 | Zod | 3.25 | Client-side schema validation |
-| i18next | 23.16 | Internationalization (Hebrew + English) |
+| i18next | 23.16 | Internationalization (Hebrew, English, Russian) |
 | recharts | 2.15 | Analytics charts |
 | sonner | 1.7 | Toast notifications |
 | Sentry | latest | Client-side error reporting |
@@ -309,6 +308,19 @@ User clicks FAB (bottom-end) → Sheet panel opens
   - Footer: link to `/accessibility` (הצהרת נגישות)
 - [x] Skip navigation link: `<a href="#main-content" class="skip-nav">דלג לתוכן הראשי</a>` — visible on Tab press (WCAG 2.4.1)
 - [x] `<main id="main-content" tabIndex={-1}>` landmark target in `Layout.tsx`
+- [x] **`/accessibility`** — Accessibility Statement page (public, no auth required) in Hebrew; IS 5568 / WCAG 2.1 AA compliant content
+- [x] Accessibility footer in provider Layout (desktop): link to `/accessibility` + "IS 5568 / WCAG 2.1 AA" label
+- [x] **`CookieConsentBanner`** — Non-intrusive bottom banner; "אני מסכים/ה" / "דחייה" buttons; consent stored in `localStorage('cookie-consent')`; 1.2s delayed appearance; RTL layout
+
+### Feature Discovery Hub
+- [x] **`/features`** — Feature Guide page accessible to all providers
+  - Bento Grid layout (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-4`) with `auto-rows` sizing
+  - Feature cards: icon (Lucide), title, description, status badge (Active/New/Beta/Soon)
+  - Data source: `src/config/features_registry.ts` (22 features across 5 categories)
+  - Sidebar entry: "מדריך פיצ'רים" / "Feature Guide" / "Гид по функциям" (all 3 languages)
+  - Mobile Bottom Nav entry: `BookOpen` icon
+  - Full i18n: he/en/ru translation keys under `features.*`
+  - High-contrast black/white theme; `min-h-[calc(100dvh-8rem)]` for iPhone
 
 ### UI/UX Features
 - [x] Dark mode — class-based (`darkMode: 'class'`), persisted in localStorage, system-preference fallback
@@ -672,109 +684,169 @@ Automatically inserts a row into `profiles` when a new user registers (including
 
 ## 7. Project Folder Structure
 
+> Restructured 2026-04-06 — Domain-Driven Feature Architecture. All code is in `src/features/<domain>/`.
+
 ```
 listen_agent/
 │
 ├── src/                            # React frontend (Vite + TypeScript)
-│   ├── pages/
-│   │   ├── Login.tsx               # Email/Google OAuth sign-in
-│   │   ├── Signup.tsx              # Registration + role selection
-│   │   ├── AuthCallback.tsx        # OAuth redirect handler
-│   │   ├── ForgotPassword.tsx      # Password reset request
-│   │   ├── ResetPassword.tsx       # Token-based password reset
-│   │   ├── AgentConfig.tsx         # AI prompt configuration UI
-│   │   ├── provider/
-│   │   │   ├── ProviderDashboard.tsx   # Session list + recording + ⌘K command palette + glass cards
-│   │   │   ├── ProviderBoard.tsx       # Mobile: 3-tab (Summary|Tasks|Audio) + fixed bottom bar + bulk CTA; Desktop: unchanged
-│   │   │   ├── ProviderClients.tsx     # CRM bento grid + master-detail slide-in panel (Framer Motion)
-│   │   │   ├── ProviderTasks.tsx       # Unified task center — all pending tasks, urgency badges
-│   │   │   └── ProviderAnalytics.tsx  # Stats + CSV export + Talk-Time bar chart
-│   │   └── client/
-│   │       ├── ClientDashboard.tsx    # Executive Summary + Progress Checklist + skeleton loading
-│   │       └── ClientBoard.tsx        # Mobile: 2-tab (Summary|Tasks) + client tasks first; Desktop: unchanged
 │   │
-│   ├── components/
-│   │   ├── features/
-│   │   │   ├── RecordDialog.tsx       # Audio recording + framer-motion waveform + pulse aura
-│   │   │   └── AudioPlayer.tsx        # Session audio playback
-│   │   ├── provider/
-│   │   │   ├── ClientPulseGrid.tsx    # Client health cards + filters + expandable sessions + pulse ring
-│   │   │   └── TaskReviewDialog.tsx   # Task editing modal + ConfidenceBadge + DraftReview
-│   │   ├── client/
-│   │   │   ├── ProgressGraph.tsx      # Task completion chart (glassmorphism)
-│   │   │   └── TimeCapsule.tsx        # Session history timeline (glassmorphism + ltr-in-rtl dates)
-│   │   ├── ui/                        # 60+ Radix UI components
-│   │   ├── Layout.tsx                 # Nav + sidebar shell + skip-nav link + mobile bottom nav
-│   │   ├── AccessibilityWidget.tsx    # FAB + Sheet panel — 9 a11y toggles, localStorage, IS 5568
-│   │   ├── ProtectedRoute.tsx         # Auth + role guard wrapper
-│   │   └── PageTransition.tsx         # Framer Motion transitions
+│   ├── features/                  # Domain-driven feature modules
+│   │   ├── auth/
+│   │   │   ├── pages/
+│   │   │   │   ├── Login.tsx               # Email/Google OAuth sign-in
+│   │   │   │   ├── Signup.tsx              # Registration + role selection
+│   │   │   │   ├── AuthCallback.tsx        # OAuth redirect handler
+│   │   │   │   ├── ForgotPassword.tsx      # Password reset request
+│   │   │   │   └── ResetPassword.tsx       # Token-based password reset
+│   │   │   └── components/
+│   │   │       └── ProtectedRoute.tsx      # Auth + role guard wrapper
+│   │   │
+│   │   ├── clients/
+│   │   │   ├── pages/
+│   │   │   │   ├── ProviderClients.tsx     # CRM bento grid + master-detail slide-in
+│   │   │   │   └── ClientProfile.tsx       # Per-client detail view
+│   │   │   └── components/
+│   │   │       ├── ClientPulseGrid.tsx     # Client health cards + pulse ring
+│   │   │       ├── AssignClientDialog.tsx  # Assign client to session dialog
+│   │   │       ├── ProgressGraph.tsx       # Task completion chart (glassmorphism)
+│   │   │       └── TimeCapsule.tsx         # Session history timeline
+│   │   │
+│   │   ├── sessions/
+│   │   │   ├── pages/
+│   │   │   │   ├── ClientDashboard.tsx     # Client: Executive Summary + Progress
+│   │   │   │   └── ClientBoard.tsx         # Client: task board per session
+│   │   │   └── components/
+│   │   │       ├── RecordDialog.tsx        # Audio recording + waveform + pulse aura
+│   │   │       └── AudioPlayer.tsx         # Session audio playback
+│   │   │
+│   │   ├── tasks/
+│   │   │   ├── pages/
+│   │   │   │   ├── ProviderBoard.tsx       # Provider: task board per session
+│   │   │   │   └── ProviderTasks.tsx       # Unified task center — all pending tasks
+│   │   │   └── components/
+│   │   │       └── TaskReviewDialog.tsx    # Task editing modal + ConfidenceBadge
+│   │   │
+│   │   ├── analytics/
+│   │   │   └── pages/
+│   │   │       └── ProviderAnalytics.tsx   # Stats + CSV export + Talk-Time chart
+│   │   │
+│   │   ├── dashboard/
+│   │   │   └── pages/
+│   │   │       └── ProviderDashboard.tsx   # Session list + recording + ⌘K palette
+│   │   │
+│   │   └── agent-config/
+│   │       └── pages/
+│   │           └── AgentConfig.tsx         # AI prompt configuration UI
 │   │
-│   ├── contexts/
-│   │   └── AuthContext.tsx            # Supabase auth + role state
+│   ├── shared/                    # Cross-feature shared code
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── Layout.tsx              # Nav + sidebar + mobile bottom nav
+│   │   │   │   ├── ClientLayout.tsx        # Client-facing layout shell
+│   │   │   │   └── PageTransition.tsx      # Framer Motion page transitions
+│   │   │   ├── widgets/
+│   │   │   │   ├── AccessibilityWidget.tsx # FAB + Sheet — 9 a11y toggles, IS 5568
+│   │   │   │   └── CookieConsentBanner.tsx # GDPR cookie consent banner
+│   │   │   └── ui/                         # shadcn/ui primitives (19 used)
+│   │   │       ├── alert-dialog.tsx   ├── badge.tsx      ├── button.tsx
+│   │   │       ├── card.tsx           ├── checkbox.tsx   ├── command.tsx
+│   │   │       ├── dialog.tsx         ├── dropdown-menu.tsx  ├── input.tsx
+│   │   │       ├── scroll-area.tsx    ├── select.tsx     ├── sheet.tsx
+│   │   │       ├── skeleton.tsx       ├── sonner.tsx     ├── table.tsx
+│   │   │       ├── textarea.tsx       ├── toast.tsx      ├── toaster.tsx
+│   │   │       └── tooltip.tsx
+│   │   └── hooks/
+│   │       ├── useRealtimeSessions.ts  # Supabase realtime for sessions
+│   │       ├── useRealtimeTasks.ts     # Supabase realtime for tasks
+│   │       ├── useLoadingDelay.ts      # Deferred spinner — shows after 200ms
+│   │       ├── use-mobile.tsx          # Responsive breakpoint hook
+│   │       └── use-toast.ts            # Toast imperative API
 │   │
-│   ├── hooks/
-│   │   ├── useRealtimeSessions.ts     # Supabase realtime for sessions
-│   │   ├── useRealtimeTasks.ts        # Supabase realtime for tasks
-│   │   ├── useLoadingDelay.ts         # Deferred spinner — shows only after 200ms
-│   │   └── use-mobile.tsx             # Responsive breakpoint hook
+│   ├── core/                      # Infrastructure & global state
+│   │   ├── api/
+│   │   │   ├── supabaseClient.ts       # Supabase JS client init
+│   │   │   └── apiClient.ts            # HTTP fetch wrapper + JWT refresh
+│   │   ├── config/
+│   │   │   └── sentry.ts               # Sentry error reporting init
+│   │   ├── state/
+│   │   │   └── AuthContext.tsx         # Supabase auth + role context
+│   │   └── utils/
+│   │       ├── utils.ts                # cn() + general helpers
+│   │       └── storage.ts              # API type definitions + data endpoints
 │   │
-│   ├── lib/
-│   │   ├── supabaseClient.ts          # Supabase JS client init
-│   │   ├── apiClient.ts               # HTTP fetch wrapper + JWT refresh
-│   │   ├── storage.ts                 # API type definitions + endpoints
-│   │   ├── sentry.ts                  # Sentry error reporting init
-│   │   └── utils.ts                   # General helpers
+│   ├── pages/                     # Standalone top-level pages
+│   │   ├── AccessibilityStatement.tsx  # IS 5568 accessibility statement
+│   │   ├── FeaturesPage.tsx            # Feature Discovery Hub
+│   │   └── NotFound.tsx                # 404 page
 │   │
-│   ├── i18n/                          # i18next localization config
+│   ├── i18n/                      # i18next localization config
+│   │   ├── index.ts
 │   │   └── locales/
-│   │       ├── en/                    # English translations
-│   │       └── he/                    # Hebrew translations
+│   │       ├── en.json            # English translations
+│   │       ├── he.json            # Hebrew translations
+│   │       └── ru.json            # Russian translations
 │   │
-│   ├── App.tsx                        # Route config + AppBootstrap (dark mode + RTL init) + AccessibilityWidget
-│   ├── main.tsx                       # React app entry point
-│   └── index.css                      # Tailwind + OKLCH vars + .glass/.glass-sidebar/.ltr-in-rtl + .a11y-* + .skip-nav
+│   ├── config/
+│   │   └── features_registry.ts   # User-facing feature inventory (source of truth)
+│   │
+│   ├── test/
+│   │   └── setup.ts               # Vitest global setup (mocks, matchers)
+│   │
+│   ├── App.tsx                    # Route config + AppBootstrap (dark/RTL init)
+│   ├── main.tsx                   # React app entry point
+│   ├── index.css                  # Tailwind + OKLCH vars + .glass + .a11y-*
+│   └── vite-env.d.ts
 │
-├── server/                            # Express.js backend
-│   ├── index.js                       # Server init, middleware, startup jobs
+├── server/                        # Express.js backend (Node.js 20)
+│   ├── index.js                   # Server init, middleware, startup jobs
 │   ├── middleware/
-│   │   ├── authMiddleware.js          # JWT validation via Supabase
-│   │   ├── rateLimitMiddleware.js     # API + audio rate limiters
-│   │   ├── uploadMiddleware.js        # Multer (memory storage)
-│   │   ├── errorHandler.js            # Global error handler
-│   │   └── validateBody.js            # Zod request validation
-│   │
+│   │   ├── authMiddleware.js      # JWT validation via Supabase
+│   │   ├── rateLimitMiddleware.js # API + audio rate limiters
+│   │   ├── uploadMiddleware.js    # Multer (memory storage — no disk)
+│   │   ├── errorHandler.js        # Global error handler
+│   │   └── validateBody.js        # Zod request validation
 │   ├── routes/
-│   │   ├── process.js                 # POST /api/process-audio
-│   │   ├── sessions.js                # Session CRUD
-│   │   ├── tasks.js                   # Task CRUD + bulk ops
-│   │   ├── config.js                  # System prompt + history
-│   │   ├── analytics.js               # Overview stats + CSV export
-│   │   ├── auth.js                    # Token refresh
-│   │   ├── profiles.js                # User profile ops
-│   │   └── mock.js                    # Dev: mock session generator
-│   │
+│   │   ├── process.js             # POST /api/process-audio
+│   │   ├── sessions.js            # Session CRUD
+│   │   ├── tasks.js               # Task CRUD + bulk ops
+│   │   ├── config.js              # System prompt + history
+│   │   ├── analytics.js           # Overview stats + CSV export
+│   │   ├── auth.js                # Token refresh
+│   │   ├── profiles.js            # User profile ops
+│   │   ├── chat-history.js        # Chat history
+│   │   └── transcripts.js         # Transcript retrieval
 │   ├── services/
-│   │   ├── GeminiService.js           # Google Gemini AI integration
-│   │   ├── DatabaseService.js         # Supabase CRUD abstraction
-│   │   └── EmailService.js            # Resend transactional email
-│   │
+│   │   ├── GeminiService.js       # Google Gemini AI integration
+│   │   ├── DatabaseService.js     # Supabase CRUD abstraction
+│   │   └── EmailService.js        # Resend transactional email
 │   ├── utils/
-│   │   ├── logger.js                  # Pino logger instance
-│   │   ├── parseGeminiResponse.js     # JSON extraction from AI output
-│   │   ├── validateAudio.js           # Audio duration/format checks
-│   │   └── deduplicateTasks.js        # Task deduplication logic
-│   │
-│   ├── test/                          # Server-side test files
-│   └── openapi.js                     # OpenAPI/RapiDoc spec definition
+│   │   ├── logger.js              # Pino logger instance
+│   │   ├── parseGeminiResponse.js # JSON extraction from AI output
+│   │   ├── validateAudio.js       # Audio duration/format checks
+│   │   └── deduplicateTasks.js    # Task deduplication logic
+│   └── openapi.js                 # OpenAPI/RapiDoc spec definition
 │
-├── supabase_schema.sql                # Database schema + RLS policies
-├── APP_MAP.md                         # This file — application map
-├── CLAUDE.md                          # AI assistant configuration
-├── vite.config.ts                     # Vite config (proxy /api → :3001)
-├── tailwind.config.ts                 # Tailwind theme customization
-├── tsconfig.json                      # TypeScript config
-├── playwright.config.ts               # E2E test configuration
-└── package.json                       # Dependencies + npm scripts
+├── scripts/
+│   └── migrate-imports.js         # One-time import migration script (2026-04-06)
+│
+├── e2e/                           # Playwright E2E tests
+│   ├── agent-config.spec.ts
+│   ├── client-task-board.spec.ts
+│   ├── provider-dashboard.spec.ts
+│   ├── session-isolation.spec.ts
+│   ├── helpers.ts
+│   └── load/
+│       └── process-audio.k6.js
+│
+├── APP_MAP.md                     # This file — application map
+├── CLAUDE.md                      # AI assistant configuration + coding rules
+├── vite.config.ts                 # Vite config (proxy /api → :3001)
+├── vitest.config.ts               # Test config (co-located tests, jsdom)
+├── tailwind.config.ts             # Tailwind theme customization
+├── tsconfig.json                  # TypeScript config
+├── playwright.config.ts           # E2E test configuration
+└── package.json                   # Dependencies + npm scripts
 ```
 
 ---

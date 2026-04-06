@@ -34,6 +34,39 @@ router.put("/", requireAuth, validateBody(saveConfigSchema), async (req, res) =>
   }
 });
 
+// GET /api/config/custom-prompt — fetch this provider's personal custom prompt
+router.get("/custom-prompt", requireAuth, async (req, res) => {
+  if (req.user.role !== "provider") {
+    return res.status(403).json({ error: "Forbidden: providers only" });
+  }
+  try {
+    const customPrompt = await db.getCustomPrompt(req.user.id);
+    res.json({ customPrompt: customPrompt ?? "" });
+  } catch (err) {
+    logger.error({ err: err.message }, "[config] GET /custom-prompt failed");
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/config/custom-prompt — save this provider's personal custom prompt
+router.put("/custom-prompt", requireAuth, async (req, res) => {
+  if (req.user.role !== "provider") {
+    return res.status(403).json({ error: "Forbidden: providers only" });
+  }
+  const { customPrompt } = req.body;
+  if (typeof customPrompt !== "string") {
+    return res.status(400).json({ error: "customPrompt must be a string" });
+  }
+  try {
+    await db.saveCustomPrompt(req.user.id, customPrompt.trim());
+    logger.info({ userId: req.user.id }, "[config] Custom prompt updated");
+    res.json({ customPrompt: customPrompt.trim() });
+  } catch (err) {
+    logger.error({ err: err.message }, "[config] PUT /custom-prompt failed");
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/config/history — return last 20 prompt snapshots
 router.get("/history", requireAuth, async (req, res) => {
   if (req.user.role !== "provider") {

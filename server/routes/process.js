@@ -52,6 +52,16 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       systemPrompt = config.systemPrompt;
     }
 
+    // Inject the advisor's custom_prompt as a behavioral preamble.
+    // The custom_prompt sets tone/focus; systemPrompt enforces strict JSON schema.
+    // This means the advisor controls behavior without being able to break the output format.
+    if (providerId) {
+      const customPrompt = await db.getCustomPrompt(providerId).catch(() => null);
+      if (customPrompt) {
+        systemPrompt = `${customPrompt}\n\n${systemPrompt}`;
+      }
+    }
+
     logger.info({
       filename: audioFile.originalname,
       sizeKb:   (audioFile.size / 1024).toFixed(1),
@@ -77,12 +87,20 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
     const { title, summary, sentiment, followUpQuestions, tasks: rawTasks, usage, nextMeetingSuggestion } =
       await analyzeAudio(base64Audio, mimeType, systemPrompt);
 
-    // RAG: generate embedding for this session (best-effort — never blocks save)
+    // RAG: generate embedding for this session (best-effort — never blocks save or response)
     const embeddingText = [
       summary || "",
       ...(rawTasks || []).map((t) => `${t.title}: ${t.description}`),
     ].join("\n").slice(0, 8000);
-    const embedding = await generateEmbedding(embeddingText);
+    // Double-wrapped: generateEmbedding already catches internally, but we
+    // add an outer guard so even an unexpected throw can never reach the catch
+    // block and turn a successful session save into an error response.
+    let embedding = null;
+    try {
+      embedding = await generateEmbedding(embeddingText);
+    } catch (embErr) {
+      logger.warn({ err: embErr.message }, "[process] generateEmbedding threw unexpectedly — continuing without embedding");
+    }
 
     const session = {
       id:                sessionId,
@@ -151,9 +169,10 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       return res.status(401).json({ error: "Invalid or missing Google API key." });
     }
     if (msg.includes("404") || msg.includes("not found")) {
-      const MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+      logger.error({ model: process.env.GEMINI_MODEL || "gemini-2.5-flash" }, "[process] Gemini model not found — update GEMINI_MODEL in .env");
       return res.status(502).json({
-        error: `Gemini model "${MODEL}" not found. Set GEMINI_MODEL in .env to a valid model name.`,
+        error: "AI processing is temporarily unavailable due to a configuration error. Please contact support.",
+        code:  "MODEL_CONFIG_ERROR",
       });
     }
     if (msg.includes("timed out")) {

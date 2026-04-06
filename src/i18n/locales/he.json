@@ -10,9 +10,13 @@
     "analytics.sub": "מדדי השלמה",
     "config": "הגדרות AI",
     "config.sub": "פרומפט מערכת",
+    "features": "מדריך פיצ'רים",
+    "features.sub": "כל יכולות המערכת",
     "settings": "הגדרות",
     "mainNav": "ניווט ראשי",
-    "signOut": "התנתקות"
+    "signOut": "התנתקות",
+    "navigation": "ניווט",
+    "skipToContent": "דלג לתוכן הראשי"
   },
   "priority": {
     "high": "גבוהה",
@@ -37,7 +41,48 @@
     "totalSessions": "סך הפגישות",
     "activeSessions": "פגישות פעילות",
     "totalTasks": "סך המשימות",
-    "completedTasks": "משימות שהושלמו"
+    "completedTasks": "משימות שהושלמו",
+    "subtitle": "פגישות ייעוץ אחרונות ותובנות מחולצות",
+    "uploading": "מעלה הקלטה...",
+    "analyzing": "סוכן AI מאזין",
+    "uploadingDesc": "שולח אודיו לשרת...",
+    "analyzingDesc": "מחלץ תובנות ופריטי פעולה...",
+    "calendarSuggestion": "AI הציע פגישת מעקב",
+    "addToCalendar": "הוסף ללוח השנה",
+    "open": "פתח",
+    "recordSubtitle": "הזן אימייל לקוח או שייך לאחר הניתוח",
+    "unassignedSession": "פגישה לא משויכת",
+    "unassignedDesc": "לא נבחר לקוח — ניתן לשייך לאחר העיבוד",
+    "assignToClient": "שייך ללקוח",
+    "chatHistory": "שוחח עם היסטוריית לקוח",
+    "noSessionsFilter": "אין פגישות התואמות את הסינון",
+    "noSessionsFirstTime": "אין פגישות עדיין",
+    "noSessionsFirstTimeDesc": "הקלט את פגישת הייעוץ הראשונה שלך באמצעות המיקרופון למעלה. ה-AI יחלץ סיכום ופריטי פעולה אוטומטית.",
+    "colSession": "פגישה",
+    "colClient": "לקוח",
+    "colDate": "תאריך",
+    "colTasks": "משימות",
+    "colStatus": "סטטוס",
+    "audioBadge": "שמע",
+    "audioDeletedBadge": "שמע נמחק",
+    "viewBoard": "פתח לוח",
+    "statusNoTasks": "אין משימות",
+    "statusComplete": "הושלם",
+    "statusActive": "פעיל",
+    "chatTitle": "שוחח עם היסטוריית הלקוחות",
+    "chatFilterPlaceholder": "סנן לפי אימייל לקוח (אופציונלי)",
+    "chatEmptyTitle": "שאל שאלה על ההיסטוריה",
+    "chatEmptyDesc": "לדוגמה: \"מה דיברנו על ריבית בחודש שעבר?\"",
+    "cmdSearch": "חיפוש לקוחות, פגישות, פעולות...",
+    "cmdQuickActions": "פעולות מהירות",
+    "cmdRecordNew": "הקלט פגישה חדשה",
+    "cmdOpenTasks": "משימות פתוחות",
+    "cmdNavigate": "ניווט",
+    "cmdSettings": "הגדרות",
+    "cmdToggleLang": "החלף שפה (עב / EN / РУ)",
+    "deleteSessionTitle": "מחק פגישה?",
+    "deleteSessionDesc": "פעולה זו תמחק לצמיתות את הפגישה ואת כל המשימות שלה. לא ניתן לבטל פעולה זו.",
+    "searchByEmail": "חיפוש לפי אימייל לקוח..."
   },
   "board": {
     "aiSummary": "סיכום AI",
@@ -60,7 +105,15 @@
     "editTask": "ערוך משימה",
     "taskTitle": "כותרת המשימה",
     "taskDescription": "תיאור (אופציונלי)",
-    "allDone": "כל המשימות הושלמו!"
+    "allDone": "כל המשימות הושלמו!",
+    "advisorTasks": "משימות יועץ",
+    "clientTasks": "משימות לקוח",
+    "pendingBadge": "{{count}} ממתינות",
+    "completedFraction": "{{done}}/{{total}} הושלמו",
+    "noTasksAssigned": "אין משימות משויכות",
+    "everyTaskComplete": "כל משימה הושלמה.",
+    "taskTitlePlaceholder": "כותרת משימה *",
+    "addBtn": "הוסף"
   },
   "tasks": {
     "title": "משימות פתוחות",
@@ -70,7 +123,11 @@
     "open": "פתוח",
     "done": "הושלם",
     "urgent": "דחוף",
-    "pendingCount": "{{done}}/{{total}} הושלמו"
+    "pendingCount": "{{done}}/{{total}} הושלמו",
+    "sessionsPending": "{{count}} פגישות עם משימות ממתינות",
+    "delayed": "מעוכב",
+    "allDone": "כל המשימות הושלמו!",
+    "noActiveSessions": "אין פגישות עם משימות פתוחות כרגע."
   },
   "clients": {
     "title": "הלקוחות שלי",
@@ -86,7 +143,18 @@
     "warningDecline": "⚠️ שים לב: ירידה בשביעות רצון הלקוח",
     "searchPlaceholder": "חיפוש לפי אימייל...",
     "all": "הכל",
-    "noSessions": "אין פגישות עדיין"
+    "noSessions": "אין פגישות עדיין",
+    "clearSearch": "נקה חיפוש",
+    "clientCount": "{{count}} לקוחות",
+    "clientCountFiltered": "{{shown}} מתוך {{total}} לקוחות",
+    "clientPulse": "דופק לקוח",
+    "overdue": "עם פיגורים",
+    "hideSessions": "הסתר פגישות",
+    "showSessions": "הצג {{count}} פגישות",
+    "sendReminder": "שלח תזכורת",
+    "completionLabel": "השלמה",
+    "lastSessionLabel": "פגישה אחרונה",
+    "reminderSent": "תזכורת נשלחה ל-{{email}}"
   },
   "common": {
     "save": "שמור",
@@ -116,6 +184,19 @@
     "tooShort": "הקלטה קצרה מדי. הקלט לפחות 2 שניות.",
     "idle": "הזן את האימייל של הלקוח, ואז התחל להקליט."
   },
+  "analytics": {
+    "subtitle": "תדירות פגישות ומדדי השלמת משימות",
+    "exportCsv": "ייצוא CSV",
+    "talkTime": "התפלגות זמן דיבור",
+    "talkTimeDesc": "יחס דיבור יועץ לעומת לקוח לפי פגישה",
+    "sessionsByMonth": "פגישות לפי חודש",
+    "noSessionData": "אין נתוני פגישות עדיין",
+    "overallCompletion": "השלמת משימות כוללת",
+    "tasksCompletedDesc": "{{completed}} מתוך {{total}} משימות הושלמו בכל הפגישות",
+    "advisor": "יועץ",
+    "client": "לקוח",
+    "completionRate": "אחוז השלמה"
+  },
   "accessibility": {
     "openWidget": "פתח תפריט נגישות",
     "title": "הגדרות נגישות",
@@ -128,5 +209,104 @@
     "readableFont": "גופן קריא",
     "highlightLinks": "הדגש קישורים",
     "focusRing": "טבעת פוקוס"
+  },
+  "features": {
+    "pageTitle": "מדריך פיצ'רים",
+    "pageSubtitle": "כל יכולות הפלטפורמה במקום אחד",
+    "totalCount": "{{count}} יכולות",
+    "status": {
+      "active": "פעיל",
+      "new": "חדש",
+      "beta": "בטא",
+      "comingSoon": "בקרוב"
+    },
+    "aiSummary": {
+      "title": "סיכום AI אוטומטי",
+      "desc": "סוכן ה-AI מנתח את ההקלטה ומחלץ סיכום מפורט ופריטי פעולה אוטומטית בתום כל פגישה."
+    },
+    "aiActionItems": {
+      "title": "חילוץ פריטי פעולה",
+      "desc": "AI מזהה ומסווג משימות, החלטות ונקודות מפתח מתוך השיחה ויוצר רשימת פעולות מובנית."
+    },
+    "chatHistory": {
+      "title": "שיחה עם היסטוריה",
+      "desc": "שאל את ה-AI שאלות על ההיסטוריה המלאה של הלקוח — בין פגישות, לאורך זמן."
+    },
+    "agentConfig": {
+      "title": "הגדרות סוכן AI",
+      "desc": "הזן פרומפט מערכת מותאם אישית כדי לכוון את התנהגות ה-AI לפי הצרכים הייחודיים שלך."
+    },
+    "followUp": {
+      "title": "שאלות המשך",
+      "desc": "AI מציע שאלות המשך חכמות לפגישה הבאה בהתבסס על תוכן הפגישה הנוכחית."
+    },
+    "voiceRecording": {
+      "title": "הקלטת קול",
+      "desc": "הקלט פגישות ייעוץ ישירות מהדפדפן עם מיקרופון מובנה — ללא צורך בציוד חיצוני."
+    },
+    "privacyAudio": {
+      "title": "פרטיות מוחלטת",
+      "desc": "הקלטות מעובדות בזיכרון בלבד ונמחקות לצמיתות. לא נשמר קובץ שמע בשום שלב."
+    },
+    "audioPlayer": {
+      "title": "נגן שמע",
+      "desc": "האזן מחדש להקלטות פגישות ישירות מתוך לוח הפגישה לפי הצורך."
+    },
+    "clientManagement": {
+      "title": "ניהול לקוחות",
+      "desc": "ממשק מרכזי לניהול כל הלקוחות, מעקב פגישות וצפייה בסטטוס הקשר."
+    },
+    "clientHealth": {
+      "title": "דופק לקוח",
+      "desc": "ניתוח סנטימנט ודירוג בריאות אוטומטי לכל לקוח — זיהוי מוקדם של לקוחות בסיכון."
+    },
+    "clientProfile": {
+      "title": "פרופיל לקוח",
+      "desc": "דף פרופיל מעמיק לכל לקוח עם היסטוריית פגישות, משימות ומגמות לאורך זמן."
+    },
+    "taskReminders": {
+      "title": "תזכורות משימות",
+      "desc": "שליחת תזכורות ישירות ללקוחות על משימות פתוחות באמצעות מייל אוטומטי."
+    },
+    "sessionBoard": {
+      "title": "לוח פגישה",
+      "desc": "ממשק קנבן ייחודי לכל פגישה עם ניהול משימות, סיכום AI ושתף תוצאות."
+    },
+    "calendar": {
+      "title": "שילוב לוח שנה",
+      "desc": "AI מציע פגישות מעקב אוטומטיות עם אפשרות הוספה ישירה ללוח השנה."
+    },
+    "analytics": {
+      "title": "לוח בקרה אנליטי",
+      "desc": "גרפים ומדדים של תדירות פגישות, השלמת משימות ויחסי דיבור יועץ-לקוח."
+    },
+    "taskCenter": {
+      "title": "מרכז משימות",
+      "desc": "תצוגה מאוחדת של כל המשימות הפתוחות מכל הפגישות — לא תפספס שום פעולה."
+    },
+    "csvExport": {
+      "title": "ייצוא CSV",
+      "desc": "ייצא נתוני אנליטיקה לקובץ CSV לניתוח מעמיק בכלים חיצוניים."
+    },
+    "multiLanguage": {
+      "title": "רב-לשוני",
+      "desc": "ממשק מלא בעברית, אנגלית ורוסית עם תמיכה ב-RTL ו-LTR — מתאים לכל קהל."
+    },
+    "realtimeSync": {
+      "title": "סנכרון בזמן אמת",
+      "desc": "עדכונים חיים דרך Supabase Realtime — שינויים נראים מיידית בכל המכשירים."
+    },
+    "accessibility": {
+      "title": "נגישות מתקדמת",
+      "desc": "ווידג'ט נגישות מובנה: גודל גופן, ניגודיות גבוהה, גווני אפור, עצירת אנימציות ועוד."
+    },
+    "darkMode": {
+      "title": "מצב לילה",
+      "desc": "מצב כהה מלא עם שמירה בין סשנים — נוח לעיניים בכל שעה."
+    },
+    "commandPalette": {
+      "title": "פלטת פקודות",
+      "desc": "ניווט מהיר בין כל חלקי האפליקציה בלחיצת מקש — חיפוש חכם בכל המשאבים."
+    }
   }
 }

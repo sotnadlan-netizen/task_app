@@ -23,7 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 TASKS.md
-.envuploads/
+.env
+uploads/
 coverage/
 playwright-report/
 test-results/
