@@ -16,7 +16,8 @@ export function useRealtimeTasks(
     if (!sessionId) return;
 
     const channel = supabase
-      .channel(`realtime:tasks:${sessionId}`)
+      // private: true ensures this channel is access-controlled by RLS.
+      .channel(`realtime:tasks:${sessionId}`, { config: { private: true } })
       .on(
         "postgres_changes",
         {

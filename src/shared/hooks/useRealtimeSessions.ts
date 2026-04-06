@@ -31,7 +31,9 @@ export function useRealtimeSessions(
     const channelName = `realtime:sessions:${providerId ?? clientEmail ?? "anon"}`;
 
     const channel = supabase
-      .channel(channelName)
+      // private: true ensures this channel is access-controlled by RLS.
+      // Without this, any authenticated user could subscribe to any channel name.
+      .channel(channelName, { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "sessions", filter: serverFilter },

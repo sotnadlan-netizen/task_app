@@ -30,12 +30,18 @@ app.set('trust proxy', 1);
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 
+const isProd = process.env.NODE_ENV === "production";
+const allowedOrigins = isProd
+  ? (process.env.ALLOWED_ORIGINS || "").split(",").map((o) => o.trim()).filter(Boolean)
+  : ["http://localhost:8080", "http://localhost:5173"];
+
+if (isProd && allowedOrigins.length === 0) {
+  logger.error("ALLOWED_ORIGINS env var is not set in production — CORS will block all requests");
+  process.exit(1);
+}
+
 const corsOptions = {
-  origin: [
-    "https://task-app-five-woad.vercel.app",
-    "http://localhost:8080",
-    "http://localhost:5173",
-  ],
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -112,13 +118,17 @@ app.use(errorHandler);
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 const server = app.listen(PORT, async () => {
-  const isProd = process.env.NODE_ENV === "production";
   logger.info({ port: PORT, env: isProd ? "production" : "development" }, "API server started");
 
-  const missing = ["GOOGLE_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
-    .filter((k) => !process.env[k]);
+  const required = ["GOOGLE_API_KEY", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY"];
+  const missing = required.filter((k) => !process.env[k]);
   if (missing.length) {
-    logger.warn({ missing }, "Missing environment variables");
+    if (isProd) {
+      logger.error({ missing }, "FATAL: Missing required environment variables in production — exiting");
+      process.exit(1);
+    } else {
+      logger.warn({ missing }, "Missing environment variables (non-fatal in dev)");
+    }
   }
 
   try {

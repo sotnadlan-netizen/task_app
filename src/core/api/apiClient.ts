@@ -1,6 +1,9 @@
 import { supabase } from '@/core/api/supabaseClient';
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL;
+if (!API_BASE) {
+  throw new Error("[apiClient] VITE_API_URL is not set. Set it in your .env or Vercel environment variables.");
+}
 
 async function getToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();

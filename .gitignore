@@ -24,6 +24,8 @@ dist-ssr
 *.sw?
 TASKS.md
 .env
+.env.*
+!.env.example
 uploads/
 coverage/
 playwright-report/
