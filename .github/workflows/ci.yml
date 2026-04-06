@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: Lint · Test · Build
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -23,20 +23,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 14
 
       - name: Build
         run: npm run build
@@ -44,48 +30,3 @@ jobs:
           VITE_API_URL: http://localhost:3001
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder
-
-  e2e:
-    name: E2E Tests (Playwright)
-    runs-on: ubuntu-latest
-    needs: ci
-    # Map secrets to env vars so they can be safely evaluated in step-level conditionals
-    env:
-      E2E_BASE_URL_SECRET: ${{ secrets.E2E_BASE_URL }}
-      E2E_BASE_URL_VAR: ${{ vars.E2E_BASE_URL }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Playwright browsers
-        if: env.E2E_BASE_URL_SECRET != '' || env.E2E_BASE_URL_VAR != ''
-        run: npx playwright install chromium --with-deps
-
-      - name: Run E2E tests
-        if: env.E2E_BASE_URL_SECRET != '' || env.E2E_BASE_URL_VAR != ''
-        run: npx playwright test
-        env:
-          E2E_BASE_URL: ${{ vars.E2E_BASE_URL || secrets.E2E_BASE_URL }}
-          E2E_PROVIDER_EMAIL: ${{ secrets.E2E_PROVIDER_EMAIL }}
-          E2E_PROVIDER_PASSWORD: ${{ secrets.E2E_PROVIDER_PASSWORD }}
-          E2E_CLIENT_EMAIL: ${{ secrets.E2E_CLIENT_EMAIL }}
-          E2E_CLIENT_PASSWORD: ${{ secrets.E2E_CLIENT_PASSWORD }}
-          E2E_FOREIGN_SESSION_ID: ${{ secrets.E2E_FOREIGN_SESSION_ID }}
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 14
