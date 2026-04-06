@@ -276,6 +276,7 @@ export function TaskReviewDialog({
           </button>
         </ScrollArea>
 
+        
         {/* Footer actions */}
         <div className="px-4 md:px-6 py-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 shrink-0 bg-white">
           <Button
