@@ -28,8 +28,20 @@ if (isDev) {
   }
 }
 
+// In production, redact PII fields so they never appear in log aggregators.
+// Paths use dot-notation; bracket notation covers array items.
+const redactPaths = [
+  "ip",
+  "email",
+  "clientEmail",
+  "providerId",
+  "req.headers.authorization",
+  "req.headers.cookie",
+];
+
 const logger = pino({
   level: process.env.LOG_LEVEL || "info",
+  ...(isDev ? {} : { redact: { paths: redactPaths, censor: "[REDACTED]" } }),
   ...(transport && { transport }),
 });
 
