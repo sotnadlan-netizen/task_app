@@ -298,6 +298,39 @@ class DatabaseService {
     return (data || []).map(rowToTask);
   }
 
+  // All tasks across all sessions assigned to a specific client, scoped to a provider.
+  async getTasksByClientEmail(providerId, clientEmail) {
+    // First fetch all session IDs owned by this provider and assigned to this client
+    const { data: sessions, error: sessErr } = await getClient()
+      .from("sessions")
+      .select("id")
+      .eq("provider_id", providerId)
+      .eq("client_email", clientEmail);
+    if (sessErr) throw new Error(`[db] getTasksByClientEmail (sessions): ${sessErr.message}`);
+    const ids = (sessions || []).map((s) => s.id);
+    if (ids.length === 0) return [];
+
+    const { data, error } = await getClient()
+      .from("tasks")
+      .select("*")
+      .in("session_id", ids)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(`[db] getTasksByClientEmail (tasks): ${error.message}`);
+    return (data || []).map(rowToTask);
+  }
+
+  // Assign (or reassign) a session to a client email. Provider ownership verified by caller.
+  async assignSessionToClient(sessionId, clientEmail) {
+    const { data, error } = await getClient()
+      .from("sessions")
+      .update({ client_email: clientEmail })
+      .eq("id", sessionId)
+      .select()
+      .single();
+    if (error) throw new Error(`[db] assignSessionToClient: ${error.message}`);
+    return rowToSession(data);
+  }
+
   async saveTasks(tasks) {
     if (!tasks.length) return tasks;
 
