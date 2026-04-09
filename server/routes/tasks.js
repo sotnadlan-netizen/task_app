@@ -9,6 +9,24 @@ import logger from "../utils/logger.js";
 
 const router = express.Router();
 
+// GET /api/tasks/by-client?email=X — all tasks for a client across all their sessions (provider-only)
+router.get("/by-client", requireAuth, perUserLimiter, async (req, res) => {
+  if (req.user.role !== "provider") {
+    return res.status(403).json({ error: "Forbidden: providers only" });
+  }
+  const { email } = req.query;
+  if (!email || typeof email !== "string") {
+    return res.status(400).json({ error: "email query param required" });
+  }
+  try {
+    const tasks = await db.getTasksByClientEmail(req.user.id, email);
+    res.json(tasks);
+  } catch (err) {
+    logger.error({ err: err.message }, "[tasks] GET /by-client failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // GET /api/tasks?sessionId=X — list tasks for a session
 router.get("/", requireAuth, perUserLimiter, async (req, res) => {
   const { sessionId } = req.query;

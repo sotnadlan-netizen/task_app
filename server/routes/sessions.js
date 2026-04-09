@@ -139,6 +139,35 @@ router.get("/:id/audio", requireAuth, async (req, res) => {
   }
 });
 
+// PATCH /api/sessions/:id/assign — assign session to a client email (provider-only)
+router.patch("/:id/assign", requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== "provider") {
+      return res.status(403).json({ error: "Forbidden: providers only" });
+    }
+    const { clientEmail } = req.body;
+    if (!clientEmail || typeof clientEmail !== "string") {
+      return res.status(400).json({ error: "clientEmail is required" });
+    }
+    // Basic email format check
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+      return res.status(400).json({ error: "clientEmail must be a valid email address" });
+    }
+
+    const session = await db.getSessionById(req.params.id);
+    if (!session) return res.status(404).json({ error: "Session not found" });
+    if (session.providerId !== req.user.id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const updated = await db.assignSessionToClient(req.params.id, clientEmail);
+    res.json(updated);
+  } catch (err) {
+    logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] PATCH /:id/assign failed");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // DELETE /api/sessions/:id — provider-only, cascade deletes tasks via FK
 router.delete("/:id", requireAuth, async (req, res) => {
   try {
