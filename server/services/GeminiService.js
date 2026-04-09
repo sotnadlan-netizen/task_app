@@ -289,10 +289,12 @@ export async function generateEmbedding(text) {
 
   // ── Inner helper: one REST call for a given model alias ──────────────────
   async function callEmbedREST(modelAlias) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAlias}:embedContent?key=${apiKey}`;
+    // Use x-goog-api-key header instead of ?key= query param so the API key
+    // never appears in server access logs or upstream proxy logs.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelAlias}:embedContent`;
     const response = await fetch(url, {
       method:  "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
       body: JSON.stringify({
         model:               `models/${modelAlias}`,
         content:             { parts: [{ text: truncated }] },

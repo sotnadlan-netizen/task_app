@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { perUserLimiter } from "../middleware/rateLimitMiddleware.js";
 import logger from "../utils/logger.js";
 
 const router = express.Router();
@@ -17,11 +18,20 @@ const MAX_PAGE_SIZE     = 100;
 //   dateTo=<ISO>    include only sessions on or before this date
 // Returns { sessions, nextCursor } when any pagination/filter param present;
 // returns plain array otherwise (backward-compatible).
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, perUserLimiter, async (req, res) => {
   try {
     const { limit: rawLimit, cursor, search, dateFrom, dateTo } = req.query;
     const usePagination = rawLimit != null || cursor != null || search != null
       || dateFrom != null || dateTo != null;
+
+    // Validate date-like query params — reject anything that isn't a valid ISO 8601 date
+    // to prevent malformed strings reaching the database layer.
+    const ISO_RE = /^\d{4}-\d{2}-\d{2}(T[\d:.]+Z?)?$/;
+    for (const [name, value] of [["cursor", cursor], ["dateFrom", dateFrom], ["dateTo", dateTo]]) {
+      if (value != null && (!ISO_RE.test(value) || isNaN(Date.parse(value)))) {
+        return res.status(400).json({ error: `Invalid '${name}' — must be a valid ISO 8601 date` });
+      }
+    }
 
     if (usePagination) {
       const parsed = parseInt(rawLimit, 10);
@@ -59,7 +69,7 @@ router.get("/", requireAuth, async (req, res) => {
     res.json(sessions);
   } catch (err) {
     logger.error({ err: err.message }, "[sessions] GET / failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -83,7 +93,7 @@ router.get("/:id", requireAuth, async (req, res) => {
     res.json({ ...session, tasks });
   } catch (err) {
     logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] GET /:id failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -125,7 +135,7 @@ router.get("/:id/audio", requireAuth, async (req, res) => {
     res.json({ signedUrl, expiresIn: 3600 });
   } catch (err) {
     logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] GET /:id/audio failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -147,7 +157,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     logger.error({ err: err.message, sessionId: req.params.id }, "[sessions] DELETE /:id failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

@@ -18,7 +18,7 @@ import chatHistoryRouter  from "./routes/chat-history.js";
 import { db }         from "./services/DatabaseService.js";
 import { sendReminderEmail } from "./services/EmailService.js";
 import { errorHandler } from "./middleware/errorHandler.js";
-import { apiLimiter, audioLimiter } from "./middleware/rateLimitMiddleware.js";
+import { apiLimiter, audioLimiter, perUserLimiter, perUserAudioLimiter } from "./middleware/rateLimitMiddleware.js";
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -30,12 +30,23 @@ app.set('trust proxy', 1);
 // ── Security ──────────────────────────────────────────────────────────────────
 app.use(helmet());
 
+// CORS_ORIGINS env var: comma-separated list of allowed origins.
+// Falls back to known defaults so local dev still works without a .env change.
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+  : [
+      "https://task-app-five-woad.vercel.app",
+      "http://localhost:8080",
+      "http://localhost:5173",
+    ];
+
 const corsOptions = {
-  origin: [
-    "https://task-app-five-woad.vercel.app",
-    "http://localhost:8080",
-    "http://localhost:5173",
-  ],
+  origin: (origin, callback) => {
+    // Allow server-to-server requests (no origin) only in non-production
+    if (!origin && process.env.NODE_ENV !== "production") return callback(null, true);
+    if (origin && allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS: origin '${origin}' not allowed`));
+  },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -78,6 +89,10 @@ app.use("/api/process-audio", (req, _res, next) => {
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
+// Each authenticated route gets two rate-limit layers:
+//   1. IP-based  (apiLimiter / audioLimiter)   — catches bots before auth
+//   2. User-based (perUserLimiter / perUserAudioLimiter) — runs after requireAuth
+//      inside the router, so req.user is available for the key generator.
 app.use("/api/process-audio", audioLimiter, processRouter);
 app.use("/api/tasks",         apiLimiter,   tasksRouter);
 app.use("/api/sessions",      apiLimiter,   sessionsRouter);

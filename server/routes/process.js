@@ -6,6 +6,7 @@ import { analyzeAudio, generateEmbedding } from "../services/GeminiService.js";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody, processAudioSchema } from "../middleware/validateBody.js";
+import { perUserAudioLimiter } from "../middleware/rateLimitMiddleware.js";
 import { validateAudioBuffer } from "../utils/validateAudio.js";
 import { deduplicateTasks } from "../utils/deduplicateTasks.js";
 import { sendNewSessionEmail } from "../services/EmailService.js";
@@ -29,7 +30,7 @@ function resolveMimeType(originalname, mimetype) {
   return map[ext] || "audio/webm";
 }
 
-router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processAudioSchema), async (req, res, next) => {
+router.post("/", requireAuth, perUserAudioLimiter, uploadAudio.single("audio"), validateBody(processAudioSchema), async (req, res, next) => {
   const audioFile = req.file;
   try {
     if (!audioFile) {
@@ -179,11 +180,8 @@ router.post("/", requireAuth, uploadAudio.single("audio"), validateBody(processA
       return res.status(504).json({ error: "AI request timed out. Please try again." });
     }
 
-    // Generic 500 — include message and stack for debugging
-    return res.status(500).json({
-      error: err.message || "Internal error",
-      stack: process.env.NODE_ENV !== "production" ? err.stack : undefined,
-    });
+    // Generic 500 — never expose stack traces or internal error messages to clients
+    return res.status(500).json({ error: "Internal error" });
   }
   // No finally/unlink needed — memoryStorage leaves no temp files on disk
 });

@@ -2,6 +2,7 @@ import express from "express";
 import { randomUUID } from "crypto";
 import { db } from "../services/DatabaseService.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
+import { perUserLimiter } from "../middleware/rateLimitMiddleware.js";
 import { sendAllTasksCompleteEmail } from "../services/EmailService.js";
 import { validateBody, createTaskSchema, updateTaskDetailsSchema, bulkCompleteSchema } from "../middleware/validateBody.js";
 import logger from "../utils/logger.js";
@@ -9,7 +10,7 @@ import logger from "../utils/logger.js";
 const router = express.Router();
 
 // GET /api/tasks?sessionId=X — list tasks for a session
-router.get("/", requireAuth, async (req, res) => {
+router.get("/", requireAuth, perUserLimiter, async (req, res) => {
   const { sessionId } = req.query;
   if (!sessionId) return res.status(400).json({ error: "sessionId query param required" });
 
@@ -31,7 +32,7 @@ router.get("/", requireAuth, async (req, res) => {
     res.json(tasks);
   } catch (err) {
     logger.error({ err: err.message }, "[tasks] GET / failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -65,7 +66,7 @@ router.post("/", requireAuth, validateBody(createTaskSchema), async (req, res) =
     res.status(201).json(saved);
   } catch (err) {
     logger.error({ err: err.message }, "[tasks] POST / failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -81,7 +82,7 @@ router.patch("/bulk-complete", requireAuth, validateBody(bulkCompleteSchema), as
     res.json(updated);
   } catch (err) {
     logger.error({ err: err.message }, "[tasks] PATCH /bulk-complete failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -124,7 +125,7 @@ router.patch("/:id", requireAuth, async (req, res) => {
     res.json(updated);
   } catch (err) {
     logger.error({ err: err.message, taskId: req.params.id }, "[tasks] PATCH toggle failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -149,7 +150,7 @@ router.patch("/:id/details", requireAuth, validateBody(updateTaskDetailsSchema),
     res.json(updated);
   } catch (err) {
     logger.error({ err: err.message, taskId: req.params.id }, "[tasks] PATCH details failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -170,7 +171,7 @@ router.delete("/:id", requireAuth, async (req, res) => {
     res.json(result);
   } catch (err) {
     logger.error({ err: err.message, taskId: req.params.id }, "[tasks] DELETE failed");
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
