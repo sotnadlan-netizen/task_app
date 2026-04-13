@@ -6,7 +6,18 @@
       "Bash(npm install:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(gh pr:*)",
+      "WebSearch",
+      "WebFetch(domain:ai.google.dev)",
+      "WebFetch(domain:docs.cloud.google.com)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(find /Users/shalevpenker/git/task_app -maxdepth 3 -type d ! -path */node_modules/* ! -path */.git/* ! -path */.claude/*)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(find /Users/shalevpenker/git/task_app -name *.env* -o -name *secret* -o -name *key*)",
+      "Bash(npm run:*)",
+      "Bash(/usr/local/bin/npm run:*)"
     ]
   }
 }
