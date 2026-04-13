@@ -1,0 +1,8 @@
+[project]
+id = "ai-task-orchestrator"
+
+[auth]
+enabled = true
+
+[auth.external.google]
+enabled = true
