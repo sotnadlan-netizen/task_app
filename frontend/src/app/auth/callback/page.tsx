@@ -8,19 +8,28 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient();
+    // Handle error from Supabase redirect (e.g. trigger failure)
+    const searchParams = new URLSearchParams(window.location.search);
+    const error = searchParams.get("error_description") || searchParams.get("error");
+    if (error) {
+      console.error("Auth error:", error);
+      router.push("/?auth_error=" + encodeURIComponent(error));
+      return;
+    }
 
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "SIGNED_IN") {
-        router.push("/dashboard/member");
-      }
-    });
+    const supabase = createClient();
 
     // Handle the auth code exchange
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const accessToken = hashParams.get("access_token");
 
-    if (!accessToken) {
+    if (accessToken) {
+      supabase.auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_IN") {
+          router.push("/dashboard/member");
+        }
+      });
+    } else {
       // Code flow — Supabase SSR handles it automatically
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {

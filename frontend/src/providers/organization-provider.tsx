@@ -8,6 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabase } from "./supabase-provider";
 import type {
   Organization,
@@ -27,6 +28,7 @@ interface OrganizationContextType {
   currentRole: UserRole | null;
   capacity: CapacityInfo | null;
   loading: boolean;
+  isPlatformAdmin: boolean;
   switchOrganization: (orgId: string) => void;
 }
 
@@ -36,9 +38,11 @@ const OrganizationContext = createContext<OrganizationContextType | undefined>(
 
 export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { supabase, user } = useSupabase();
+  const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [memberships, setMemberships] = useState<OrgMembership[]>([]);
   const [currentOrgId, setCurrentOrgId] = useState<string | null>(null);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -51,6 +55,20 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     }
 
     async function loadOrganizations() {
+      // Check platform admin status first
+      const { data: platformAdminData } = await supabase
+        .from("platform_admins")
+        .select("id")
+        .eq("user_id", user!.id)
+        .maybeSingle();
+
+      if (platformAdminData) {
+        setIsPlatformAdmin(true);
+        setLoading(false);
+        router.push("/dashboard/platform");
+        return;
+      }
+
       const { data: membershipData } = await supabase
         .from("org_memberships")
         .select("*, organization:organizations(*)")
@@ -68,6 +86,8 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
           (o: Organization) => o.id === savedOrgId
         );
         setCurrentOrgId(validSaved ? savedOrgId : orgs[0].id);
+      } else {
+        router.push("/no-org");
       }
       setLoading(false);
     }
@@ -114,6 +134,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         currentRole,
         capacity,
         loading,
+        isPlatformAdmin,
         switchOrganization,
       }}
     >
