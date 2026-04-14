@@ -127,6 +127,7 @@ export function useRecording() {
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
     stopTimer();
+    console.log("[recording] stopping MediaRecorder, state=", mediaRecorder.state);
 
     // Wait for MediaRecorder to fully stop before reading IndexedDB.
     // mediaRecorder.stop() is sync but fires ondataavailable (final chunk)
@@ -136,6 +137,7 @@ export function useRecording() {
       mediaRecorder.addEventListener(
         "stop",
         () => {
+          console.log("[recording] onstop fired — all chunks persisted to IndexedDB");
           streamRef.current?.getTracks().forEach((t) => t.stop());
           resolve();
         },
@@ -148,22 +150,29 @@ export function useRecording() {
 
     setProcessing(true);
     try {
+      console.log("[recording] merging chunks from IndexedDB, sessionKey=", sessionKeyRef.current);
       const blob = await mergeChunksToBlob(sessionKeyRef.current);
       if (!blob) throw new Error("No audio data recorded");
+      console.log("[recording] blob size=", blob.size, "type=", blob.type);
 
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       formData.append("org_id", currentOrg?.id || "");
       formData.append("duration_seconds", String(state.duration));
+      console.log("[recording] org_id=", currentOrg?.id, "duration=", state.duration);
 
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
+      console.log("[recording] token present, calling /api/audio/process");
 
-      await api.processAudio(formData, token);
+      const result = await api.processAudio(formData, token);
+      console.log("[recording] API success:", result);
 
       // Upload successful — clear IndexedDB
       await clearSession(sessionKeyRef.current);
+      console.log("[recording] IndexedDB cleared");
     } catch (err) {
+      console.error("[recording] error:", err);
       setState((prev) => ({
         ...prev,
         error:
