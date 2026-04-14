@@ -49,7 +49,7 @@ async def require_role(
         .select("*")
         .eq("user_id", user["id"])
         .eq("org_id", org_id)
-        .single()
+        .maybe_single()
         .execute()
     )
 

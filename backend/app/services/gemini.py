@@ -1,12 +1,12 @@
 import json
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from app.config import get_settings
 
 
-def get_gemini_model():
+def _get_client() -> genai.Client:
     settings = get_settings()
-    genai.configure(api_key=settings.gemini_api_key)
-    return genai.GenerativeModel("gemini-2.5-flash")
+    return genai.Client(api_key=settings.gemini_api_key)
 
 
 async def process_audio_with_gemini(
@@ -18,9 +18,10 @@ async def process_audio_with_gemini(
     Send audio to Gemini 2.5 Flash for transcription and structured extraction.
 
     Audio is processed entirely in-memory — never written to disk.
+    Uses the async google-genai client so it doesn't block the event loop.
     Returns structured JSON with title, summary, sentiment, and tasks.
     """
-    model = get_gemini_model()
+    client = _get_client()
 
     extraction_prompt = f"""{system_prompt}
 
@@ -38,12 +39,18 @@ Respond ONLY with valid JSON in this exact structure:
   ]
 }}"""
 
-    audio_part = {
-        "mime_type": mime_type,
-        "data": audio_bytes,
-    }
-
-    response = model.generate_content([extraction_prompt, audio_part])
+    response = await client.aio.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=[
+            types.Content(
+                role="user",
+                parts=[
+                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                    types.Part.from_text(extraction_prompt),
+                ],
+            )
+        ],
+    )
 
     text = response.text.strip()
     # Strip markdown code fences if present

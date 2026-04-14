@@ -28,12 +28,14 @@ async def process_audio(
     settings = get_settings()
 
     # Validate membership and role (must be at least 'member')
+    # Use maybeSingle() — .single() raises an exception when 0 rows are returned,
+    # which would cause a 500 instead of the intended 403.
     membership = (
         supabase.table("org_memberships")
         .select("*")
         .eq("user_id", user["id"])
         .eq("org_id", org_id)
-        .single()
+        .maybe_single()
         .execute()
     )
 
@@ -62,13 +64,13 @@ async def process_audio(
     if mime_type not in ALLOWED_MIME_TYPES:
         mime_type = "audio/webm"
 
-    # Get active prompt for this org
+    # Get active prompt for this org (may not exist → fall back to default)
     prompt_result = (
         supabase.table("prompt_versions")
         .select("*")
         .eq("org_id", org_id)
         .eq("is_active", True)
-        .single()
+        .maybe_single()
         .execute()
     )
 
