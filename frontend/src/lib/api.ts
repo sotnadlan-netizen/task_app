@@ -1,14 +1,20 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+// Audio processing can take up to 60 s (Gemini latency). All other calls
+// use a shorter 20-second timeout so the UI never hangs indefinitely.
+const AUDIO_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = 20_000;
+
 interface RequestOptions extends RequestInit {
   token?: string;
+  timeoutMs?: number;
 }
 
 async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { token, ...fetchOptions } = options;
+  const { token, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
 
   const headers: Record<string, string> = {
     ...(fetchOptions.headers as Record<string, string>),
@@ -25,10 +31,24 @@ async function request<T>(
     headers["Content-Type"] = "application/json";
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...fetchOptions,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error(`Request timed out after ${timeoutMs / 1000}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({
@@ -46,6 +66,7 @@ export const api = {
       method: "POST",
       body: formData,
       token,
+      timeoutMs: AUDIO_TIMEOUT_MS,
     }),
 
   getTasks: (orgId: string, token: string) =>

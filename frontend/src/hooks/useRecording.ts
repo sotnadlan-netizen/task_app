@@ -99,9 +99,7 @@ export function useRecording() {
         }
       };
 
-      mediaRecorder.onstop = () => {
-        stream.getTracks().forEach((track) => track.stop());
-      };
+      // Track cleanup handled in stopRecording after onstop fires.
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start(1000); // 1-second timeslice for crash safety
@@ -129,7 +127,22 @@ export function useRecording() {
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
     stopTimer();
-    mediaRecorder.stop();
+
+    // Wait for MediaRecorder to fully stop before reading IndexedDB.
+    // mediaRecorder.stop() is sync but fires ondataavailable (final chunk)
+    // and onstop asynchronously. If we read IndexedDB immediately we miss
+    // the last chunk. Awaiting onstop guarantees all chunks are persisted.
+    await new Promise<void>((resolve) => {
+      mediaRecorder.addEventListener(
+        "stop",
+        () => {
+          streamRef.current?.getTracks().forEach((t) => t.stop());
+          resolve();
+        },
+        { once: true }
+      );
+      mediaRecorder.stop();
+    });
 
     setState((prev) => ({ ...prev, isRecording: false, isPaused: false }));
 
