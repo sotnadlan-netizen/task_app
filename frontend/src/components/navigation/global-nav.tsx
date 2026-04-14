@@ -21,6 +21,7 @@ export function GlobalNav() {
     organizations,
     currentOrg,
     currentRole,
+    isPlatformAdmin,
     switchOrganization,
   } = useOrganization();
   const { unreadCount } = useNotificationStore();
@@ -28,8 +29,9 @@ export function GlobalNav() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const dashboardPath =
-    currentRole === "admin"
+  const dashboardPath = isPlatformAdmin
+    ? "/dashboard/platform"
+    : currentRole === "admin"
       ? "/dashboard/admin"
       : currentRole === "member"
         ? "/dashboard/member"
@@ -49,8 +51,15 @@ export function GlobalNav() {
               <span className="hidden sm:inline">TaskOrch</span>
             </Link>
 
+            {/* Platform Admin Badge */}
+            {isPlatformAdmin && (
+              <span className="px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold">
+                Platform Admin
+              </span>
+            )}
+
             {/* Org Switcher */}
-            {organizations.length > 0 && (
+            {!isPlatformAdmin && organizations.length > 0 && (
               <div className="relative">
                 <button
                   onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
