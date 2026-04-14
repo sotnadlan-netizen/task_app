@@ -23,16 +23,18 @@ export interface Organization {
   name: string;
   total_capacity_min: number;
   used_capacity_min: number;
+  max_members: number;
   created_at: string;
 }
 
 export interface OrgMembership {
   id: string;
-  user_id: string;
+  user_id: string | null;
   org_id: string;
   role: UserRole;
   capacity_minutes: number;
   used_minutes: number;
+  invited_email?: string | null;
   created_at: string;
   organization?: Organization;
   profile?: Profile;

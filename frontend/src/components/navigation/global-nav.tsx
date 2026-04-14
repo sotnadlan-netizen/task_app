@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useNotificationStore } from "@/stores/notification-store";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   ChevronDown,
@@ -24,6 +25,8 @@ export function GlobalNav() {
     switchOrganization,
   } = useOrganization();
   const { unreadCount } = useNotificationStore();
+  const pathname = usePathname();
+  const router = useRouter();
   const [orgDropdownOpen, setOrgDropdownOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -34,6 +37,9 @@ export function GlobalNav() {
       : currentRole === "member"
         ? "/dashboard/member"
         : "/dashboard/participant";
+
+  const isOnAdminView = pathname === "/dashboard/admin";
+  const isOnMemberView = pathname === "/dashboard/member";
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -86,8 +92,34 @@ export function GlobalNav() {
             )}
           </div>
 
-          {/* Right: Notifications + User Menu */}
+          {/* Right: Admin/Member Toggle + Notifications + User Menu */}
           <div className="flex items-center gap-3">
+            {/* Admin ↔ Member toggle for admin-role users */}
+            {!isPlatformAdmin && currentRole === "admin" && (
+              <div className="hidden sm:flex items-center bg-gray-100 rounded-lg p-1 gap-1">
+                <button
+                  onClick={() => router.push("/dashboard/member")}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    isOnMemberView
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Member
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/admin")}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    isOnAdminView
+                      ? "bg-white text-indigo-700 shadow-sm"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  Admin
+                </button>
+              </div>
+            )}
+
             {/* Notification Bell */}
             <Link
               href="/dashboard/member/inbox"
