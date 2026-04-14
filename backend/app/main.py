@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.api.middleware.auth import RequestLoggingMiddleware
 from app.api.routes import health, audio, tasks, prompts, organizations
 import logging
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 settings = get_settings()
 
@@ -15,7 +17,25 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# CORS
+# ── Global exception handler ──────────────────────────────────────────────────
+# FastAPI exception handlers execute inside ExceptionMiddleware, which is
+# nested *inside* CORSMiddleware, so CORS headers are added to these responses.
+# Without this, unhandled 500s are caught by Starlette's ServerErrorMiddleware
+# (which is *outside* all user middleware) and CORS headers are never attached.
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.error("Unhandled exception on %s %s", request.method, request.url.path, exc_info=exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+# ── Middleware (added in reverse-wrap order: last added = outermost) ──────────
+# RequestLoggingMiddleware added first → becomes inner (closest to the app)
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORSMiddleware added last → becomes outermost user middleware, so it always
+# gets to attach Access-Control-* headers before the response leaves the server.
 origins = [o.strip() for o in settings.allowed_origins.split(",")]
 app.add_middleware(
     CORSMiddleware,
@@ -24,8 +44,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.add_middleware(RequestLoggingMiddleware)
 
 # Routes
 app.include_router(health.router)
