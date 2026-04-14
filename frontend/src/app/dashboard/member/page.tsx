@@ -85,7 +85,7 @@ export default function MemberPage() {
       </div>
 
       {/* Recording Hub */}
-      <RecordingHub />
+      <RecordingHub onSuccess={loadStats} />
 
       {/* Recent Sessions */}
       {sessions.length > 0 && (

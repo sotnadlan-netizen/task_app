@@ -1,12 +1,13 @@
 "use client";
 
+import React from "react";
 import { useRecording } from "@/hooks/useRecording";
 import { useOrganization } from "@/providers/organization-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { CrashRecoveryModal } from "./crash-recovery-modal";
-import { Mic, Square, Clock } from "lucide-react";
+import { Mic, Square, Clock, CheckCircle } from "lucide-react";
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -14,8 +15,20 @@ function formatDuration(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-export function RecordingHub() {
+interface RecordingHubProps {
+  onSuccess?: () => void;
+}
+
+export function RecordingHub({ onSuccess }: RecordingHubProps) {
   const { capacity } = useOrganization();
+  const [succeeded, setSucceeded] = React.useState(false);
+
+  const handleSuccess = React.useCallback(() => {
+    setSucceeded(true);
+    setTimeout(() => setSucceeded(false), 5000);
+    onSuccess?.();
+  }, [onSuccess]);
+
   const {
     isRecording,
     duration,
@@ -26,7 +39,7 @@ export function RecordingHub() {
     stopRecording,
     recoverCrashedSession,
     discardCrashedSession,
-  } = useRecording();
+  } = useRecording(handleSuccess);
 
   return (
     <>
@@ -70,6 +83,13 @@ export function RecordingHub() {
           <Alert variant="error" className="mb-4">
             {error}
           </Alert>
+        )}
+
+        {succeeded && (
+          <div className="flex items-center gap-2 mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            Recording processed! Tasks have been created.
+          </div>
         )}
 
         {/* Recording Interface */}

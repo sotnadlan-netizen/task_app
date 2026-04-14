@@ -23,7 +23,7 @@ interface CrashRecovery {
   exists: boolean;
 }
 
-export function useRecording() {
+export function useRecording(onSuccess?: () => void) {
   const { session } = useSupabase();
   const { currentOrg, capacity } = useOrganization();
 
@@ -163,7 +163,8 @@ export function useRecording() {
 
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
-      console.log("[recording] token present, calling /api/audio/process");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      console.log("[recording] POSTing to", apiUrl + "/api/audio/process");
 
       const result = await api.processAudio(formData, token);
       console.log("[recording] API success:", result);
@@ -171,6 +172,7 @@ export function useRecording() {
       // Upload successful — clear IndexedDB
       await clearSession(sessionKeyRef.current);
       console.log("[recording] IndexedDB cleared");
+      onSuccess?.();
     } catch (err) {
       console.error("[recording] error:", err);
       setState((prev) => ({
