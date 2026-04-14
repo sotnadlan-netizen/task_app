@@ -55,7 +55,7 @@ async def create_session_and_tasks(
         .select("used_minutes")
         .eq("user_id", user_id)
         .eq("org_id", org_id)
-        .single()
+        .maybe_single()
         .execute()
     )
 
@@ -70,7 +70,7 @@ async def create_session_and_tasks(
         supabase.table("organizations")
         .select("used_capacity_min")
         .eq("id", org_id)
-        .single()
+        .maybe_single()
         .execute()
     )
     if org.data:
