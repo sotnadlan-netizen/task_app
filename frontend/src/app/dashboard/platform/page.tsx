@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
+import { useOrganization } from "@/providers/organization-provider";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -335,12 +337,30 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const totalUsed = members.reduce((s, m) => s + m.used_minutes, 0);
-  const totalCapacity = members.reduce((s, m) => s + m.capacity_minutes, 0);
+  // Split members and participants
+  const nonParticipants = members.filter((m) => m.role !== "participant");
+  const participants = members.filter((m) => m.role === "participant");
+
+  const totalUsed = nonParticipants.reduce((s, m) => s + m.used_minutes, 0);
+  const totalCapacity = nonParticipants.reduce((s, m) => s + m.capacity_minutes, 0);
 
   const handleQuotaSave = async (membershipId: string) => {
     const newQuota = editingQuotas[membershipId];
     if (newQuota === undefined) return;
+
+    // Validate capacity
+    const otherAllocated = nonParticipants
+      .filter((m) => m.id !== membershipId)
+      .reduce((s, m) => s + m.capacity_minutes, 0);
+    const maxAllowed = org.total_capacity_min - otherAllocated;
+    if (newQuota > maxAllowed) {
+      setError(
+        `Cannot set quota to ${newQuota} min. Only ${maxAllowed} min available ` +
+        `(org total: ${org.total_capacity_min} min, other members: ${otherAllocated} min).`
+      );
+      return;
+    }
+
     setSavingQuota(membershipId);
     setError(null);
     const { error: err } = await supabase.from("org_memberships").update({ capacity_minutes: newQuota }).eq("id", membershipId);
@@ -376,7 +396,6 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
             <p className="text-sm text-gray-500">Created {new Date(org.created_at).toLocaleDateString()}</p>
           </div>
         </div>
-        {/* Action buttons */}
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => setShowAddMemberModal(true)}>
             <UserPlus className="w-4 h-4 mr-1" />Add Member
@@ -395,7 +414,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
         <Card>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Users className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Members</p><p className="text-xl font-bold">{members.length}</p></div>
+            <div><p className="text-sm text-gray-500">Members</p><p className="text-xl font-bold">{nonParticipants.length}</p></div>
           </div>
         </Card>
         <Card>
@@ -420,14 +439,12 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 
       {error && <Alert variant="error">{error}</Alert>}
 
-      {/* Members Table */}
+      {/* ── Members Table (admin + member) ── */}
       <Card padding={false}>
         <div className="p-6 pb-0">
-          <CardHeader>
-            <CardTitle>Members & Quotas</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Members &amp; Quotas</CardTitle></CardHeader>
         </div>
-        {members.length === 0 ? (
+        {nonParticipants.length === 0 ? (
           <div className="px-6 pb-8 text-center py-6">
             <p className="text-sm text-gray-400 mb-3">No members yet.</p>
             <Button size="sm" onClick={() => setShowAddMemberModal(true)}>
@@ -447,7 +464,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {members.map((m) => (
+                {nonParticipants.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="px-6 py-3">
                       <p className="font-medium text-gray-900">{m.profile?.full_name || m.invited_email || "—"}</p>
@@ -455,11 +472,8 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                       {!m.user_id && <span className="text-xs text-yellow-600 font-medium">Pending invite</span>}
                     </td>
                     <td className="px-6 py-3">
-                      <select
-                        value={m.role}
-                        onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                      >
+                      <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
+                        className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                         <option value="participant">Participant</option>
@@ -469,7 +483,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 max-w-[120px] h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full bg-indigo-500 rounded-full"
-                            style={{ width: `${Math.min(100, (m.used_minutes / m.capacity_minutes) * 100)}%` }} />
+                            style={{ width: `${Math.min(100, (m.used_minutes / (m.capacity_minutes || 1)) * 100)}%` }} />
                         </div>
                         <span className="text-xs text-gray-500 tabular-nums">{m.used_minutes}/{m.capacity_minutes}</span>
                       </div>
@@ -488,11 +502,61 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                           </Button>
                         )}
                         <button onClick={() => handleRemoveMember(m.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Remove member">
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Remove">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* ── Participants Table ── */}
+      <Card padding={false}>
+        <div className="p-6 pb-0">
+          <CardHeader><CardTitle>Participants</CardTitle></CardHeader>
+        </div>
+        {participants.length === 0 ? (
+          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No participants in this organization.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-y border-gray-200">
+                <tr>
+                  <th className="text-left px-6 py-3 font-medium text-gray-500">Participant</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-500">Role</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-500">Status</th>
+                  <th className="px-6 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {participants.map((m) => (
+                  <tr key={m.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-3">
+                      <p className="font-medium text-gray-900">{m.profile?.full_name || m.invited_email || "—"}</p>
+                      <p className="text-xs text-gray-500">{m.profile?.email || m.invited_email}</p>
+                      {!m.user_id && <span className="text-xs text-yellow-600 font-medium">Pending invite</span>}
+                    </td>
+                    <td className="px-6 py-3">
+                      <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
+                        className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        <option value="admin">Admin</option>
+                        <option value="member">Member</option>
+                        <option value="participant">Participant</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-3">
+                      <Badge variant="default">Read-only access</Badge>
+                    </td>
+                    <td className="px-6 py-3">
+                      <button onClick={() => handleRemoveMember(m.id)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Remove">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -541,11 +605,21 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 // ─── Main Platform Page ───────────────────────────────────────────────────────
 export default function PlatformPage() {
   const { supabase } = useSupabase();
+  const { isPlatformAdmin, loading: orgLoading } = useOrganization();
+  const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<OrgDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Role guard: only platform admins may access this page
+  useEffect(() => {
+    if (orgLoading) return;
+    if (!isPlatformAdmin) {
+      router.replace("/dashboard");
+    }
+  }, [orgLoading, isPlatformAdmin, router]);
 
   const loadOrgs = useCallback(async () => {
     setLoading(true);
@@ -574,6 +648,9 @@ export default function PlatformPage() {
 
   const totalCapacity = organizations.reduce((s, o) => s + o.total_capacity_min, 0);
   const totalUsed = organizations.reduce((s, o) => s + o.used_capacity_min, 0);
+
+  // Don't render while checking role or if not platform admin
+  if (orgLoading || !isPlatformAdmin) return null;
 
   if (detailLoading) {
     return (

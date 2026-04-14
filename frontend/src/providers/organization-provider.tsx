@@ -95,10 +95,22 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     loadOrganizations();
   }, [user, supabase]);
 
-  const switchOrganization = useCallback((orgId: string) => {
-    setCurrentOrgId(orgId);
-    localStorage.setItem("current_org_id", orgId);
-  }, []);
+  const switchOrganization = useCallback(
+    (orgId: string) => {
+      setCurrentOrgId(orgId);
+      localStorage.setItem("current_org_id", orgId);
+
+      // Re-route to the correct dashboard for the new org's role
+      const newMembership = memberships.find((m) => m.org_id === orgId);
+      if (newMembership) {
+        const role = newMembership.role;
+        if (role === "admin") router.push("/dashboard/admin");
+        else if (role === "member") router.push("/dashboard/member");
+        else router.push("/dashboard/participant");
+      }
+    },
+    [memberships, router]
+  );
 
   const currentOrg =
     organizations.find((o) => o.id === currentOrgId) || null;

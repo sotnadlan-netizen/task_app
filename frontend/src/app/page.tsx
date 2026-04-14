@@ -12,7 +12,7 @@ function LandingContent() {
 
   useEffect(() => {
     if (user) {
-      router.push("/dashboard/member");
+      router.push("/dashboard");
     }
   }, [user, router]);
 
