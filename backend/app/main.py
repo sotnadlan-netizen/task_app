@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.api.middleware.auth import RequestLoggingMiddleware
-from app.api.routes import health, audio, tasks, prompts, organizations
+from app.api.routes import health, audio, tasks, prompts, organizations, sessions
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -51,3 +51,4 @@ app.include_router(audio.router)
 app.include_router(tasks.router)
 app.include_router(prompts.router)
 app.include_router(organizations.router)
+app.include_router(sessions.router)

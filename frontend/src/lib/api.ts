@@ -146,4 +146,10 @@ export const api = {
       method: "DELETE",
       token,
     }),
+
+  deleteSession: (sessionId: string, token: string) =>
+    request(`/api/sessions/${sessionId}`, {
+      method: "DELETE",
+      token,
+    }),
 };

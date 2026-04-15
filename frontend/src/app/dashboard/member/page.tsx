@@ -186,10 +186,12 @@ function SessionDetailModal({
   session,
   token,
   onClose,
+  onRequestDelete,
 }: {
   session: Session;
   token: string;
   onClose: () => void;
+  onRequestDelete: (s: Session) => void;
 }) {
   const { supabase } = useSupabase();
   const { currentOrg } = useOrganization();
@@ -550,6 +552,17 @@ function SessionDetailModal({
             </div>
           )}
         </div>
+
+        {/* Delete session */}
+        <div className="border-t border-gray-100 pt-4">
+          <button
+            onClick={() => onRequestDelete(session)}
+            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            מחק פגישה זו (וכל המשימות הקשורות)
+          </button>
+        </div>
       </div>
     </Modal>
   );
@@ -683,6 +696,9 @@ export default function MemberPage() {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [sessionLimit, setSessionLimit] = useState<5 | 10>(5);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
+  const [deletingSession, setDeletingSession] = useState(false);
+  const [deleteSessionError, setDeleteSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (orgLoading) return;
@@ -714,6 +730,22 @@ export default function MemberPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  const handleDeleteSession = async () => {
+    if (!confirmDeleteSession) return;
+    setDeletingSession(true);
+    setDeleteSessionError(null);
+    try {
+      await api.deleteSession(confirmDeleteSession.id, token);
+      setAllSessions((prev) => prev.filter((s) => s.id !== confirmDeleteSession.id));
+      if (selectedSession?.id === confirmDeleteSession.id) setSelectedSession(null);
+      setConfirmDeleteSession(null);
+    } catch (err) {
+      setDeleteSessionError(err instanceof Error ? err.message : "שגיאה במחיקת פגישה");
+    } finally {
+      setDeletingSession(false);
+    }
+  };
 
   const displayedSessions = allSessions.slice(0, sessionLimit);
 
@@ -816,25 +848,37 @@ export default function MemberPage() {
 
           <div className="space-y-3">
             {displayedSessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSelectedSession(s)}
-                className="w-full text-right p-3 rounded-lg bg-gray-50 border border-gray-100
-                  hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-400">
-                    {new Date(s.created_at).toLocaleDateString("he-IL")}
-                  </span>
-                  <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">
-                    {s.title || "פגישה ללא שם"}
-                  </h4>
-                </div>
-                <p className="text-xs text-gray-600 line-clamp-2 text-right">{s.summary}</p>
-                <p className="text-xs text-indigo-400 mt-1 text-left opacity-0 group-hover:opacity-100 transition-opacity">
-                  ← לחץ לפרטים
-                </p>
-              </button>
+              <div key={s.id} className="group relative">
+                <button
+                  onClick={() => setSelectedSession(s)}
+                  className="w-full text-right p-3 rounded-lg bg-gray-50 border border-gray-100
+                    hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-gray-400">
+                      {new Date(s.created_at).toLocaleDateString("he-IL")}
+                    </span>
+                    <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">
+                      {s.title || "פגישה ללא שם"}
+                    </h4>
+                  </div>
+                  <p className="text-xs text-gray-600 line-clamp-2 text-right">{s.summary}</p>
+                  <p className="text-xs text-indigo-400 mt-1 text-left opacity-0 group-hover:opacity-100 transition-opacity">
+                    ← לחץ לפרטים
+                  </p>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setConfirmDeleteSession(s);
+                    setDeleteSessionError(null);
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 transition-all"
+                  aria-label="מחק פגישה"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                </button>
+              </div>
             ))}
           </div>
         </Card>
@@ -849,7 +893,58 @@ export default function MemberPage() {
           session={selectedSession}
           token={token}
           onClose={() => setSelectedSession(null)}
+          onRequestDelete={(s) => {
+            setSelectedSession(null);
+            setConfirmDeleteSession(s);
+            setDeleteSessionError(null);
+          }}
         />
+      )}
+
+      {/* Confirm Delete Session Modal */}
+      {confirmDeleteSession && (
+        <Modal
+          open
+          onClose={() => !deletingSession && setConfirmDeleteSession(null)}
+          title="מחיקת פגישה"
+        >
+          <div className="space-y-4" dir="rtl">
+            <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-red-800">
+                <p className="font-semibold mb-1">
+                  האם למחוק את הפגישה &quot;{confirmDeleteSession.title || "פגישה ללא שם"}&quot;?
+                </p>
+                <p>
+                  פעולה זו תמחק לצמיתות את סיכום הפגישה ואת <strong>כל המשימות הקשורות</strong> אליה.
+                  לא ניתן לבטל פעולה זו.
+                </p>
+              </div>
+            </div>
+
+            {deleteSessionError && (
+              <Alert variant="error">{deleteSessionError}</Alert>
+            )}
+
+            <div className="flex gap-3 justify-start">
+              <Button
+                variant="danger"
+                onClick={handleDeleteSession}
+                loading={deletingSession}
+              >
+                <Trash2 className="w-4 h-4 ml-1" />
+                מחק לצמיתות
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setConfirmDeleteSession(null)}
+                disabled={deletingSession}
+              >
+                ביטול
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {/* Calendar Modal */}
