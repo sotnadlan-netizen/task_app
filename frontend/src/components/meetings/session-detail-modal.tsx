@@ -66,47 +66,50 @@ export function SessionDetailModal({
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   // Meeting edit state
-  const [showEditMeeting, setShowEditMeeting] = useState(false);
+  const [showEditProject, setShowEditProject] = useState(false);
+  const [showEditParticipants, setShowEditParticipants] = useState(false);
   const [editProjectId, setEditProjectId] = useState<string>(session.project_id ?? "");
   const [newProjectName, setNewProjectName] = useState("");
   const [showNewProject, setShowNewProject] = useState(false);
   const [editParticipantIds, setEditParticipantIds] = useState<string[]>(session.participant_ids ?? []);
   const [savingMeeting, setSavingMeeting] = useState(false);
   const [meetingError, setMeetingError] = useState<string | null>(null);
+  const [participantSearch, setParticipantSearch] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentOrg) return;
     async function load() {
       setLoading(true);
-      const [taskRes, memberRes] = await Promise.all([
+      const [taskRes] = await Promise.all([
         supabase
           .from("tasks")
           .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
           .eq("session_id", session.id)
           .order("created_at", { ascending: false }),
-        supabase
-          .from("org_memberships")
-          .select("*, profile:profiles(*)")
-          .eq("org_id", session.org_id),
       ]);
       if (taskRes.data) setTasks(taskRes.data as Task[]);
-      if (memberRes.data) setMembers(memberRes.data as MemberWithProfile[]);
-      setLoading(false);
 
       try {
-        const projs = await api.getProjects(session.org_id, token);
+        const [memberData, projs] = await Promise.all([
+          api.getOrgMembers(session.org_id, token),
+          api.getProjects(session.org_id, token),
+        ]);
+        setMembers(memberData as MemberWithProfile[]);
         setProjects(projs);
       } catch {
         // non-critical
       }
+      setLoading(false);
     }
     load();
   }, [supabase, currentOrg, session, token]);
 
   // ── Meeting edit handlers ────────────────────────────────────────────────────
-  const toggleParticipant = (userId: string) => {
+  const toggleParticipant = (membershipId: string) => {
     setEditParticipantIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+      prev.includes(membershipId) ? prev.filter((id) => id !== membershipId) : [...prev, membershipId]
     );
   };
 
@@ -127,12 +130,37 @@ export function SessionDetailModal({
         participant_ids: editParticipantIds,
       }, token);
       setEditProjectId(projectId);
-      setShowEditMeeting(false);
+      setShowEditProject(false);
+      setShowEditParticipants(false);
       onSessionUpdate?.({ id: session.id, project_id: projectId || null, participant_ids: editParticipantIds });
     } catch (err) {
       setMeetingError(err instanceof Error ? err.message : "שגיאה בשמירה");
     } finally {
       setSavingMeeting(false);
+    }
+  };
+
+  const handleInviteParticipant = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    setInviteSuccess(null);
+    setMeetingError(null);
+    try {
+      const emailToInvite = participantSearch.trim();
+      const newMember = await api.addOrgMember(
+        session.org_id,
+        { email: emailToInvite, role: "participant" },
+        token
+      ) as OrgMembership;
+      setMembers((prev) => [...prev, { ...newMember, profile: null }]);
+      // Use membership ID — always available regardless of login status
+      setEditParticipantIds((prev) => [...prev, newMember.id]);
+      setInviteSuccess(emailToInvite);
+      setParticipantSearch("");
+    } catch (err) {
+      setMeetingError(err instanceof Error ? err.message : "שגיאה בהוספת משתתף");
+    } finally {
+      setInviting(false);
     }
   };
 
@@ -215,16 +243,14 @@ export function SessionDetailModal({
           <p className="text-sm text-gray-600 leading-relaxed">{session.summary || "אין סיכום זמין."}</p>
         </div>
 
-        {/* ── Project + Participants + Edit ──────────────────────────────── */}
-        <div className="space-y-3">
-          {/* Header row: current project + edit button */}
+        {/* ── Project ──────────────────────────────────────────────────── */}
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => { setShowEditMeeting((v) => !v); setMeetingError(null); }}
-              className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+              onClick={() => { setShowEditProject((v) => !v); setMeetingError(null); }}
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
             >
-              <Pencil className="w-3.5 h-3.5" />
-              ערוך פגישה
+              ערוך פרויקט
             </button>
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
               <FolderOpen className="w-4 h-4 text-gray-400" />
@@ -232,121 +258,177 @@ export function SessionDetailModal({
             </div>
           </div>
 
-          {/* Participants chips */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
+          {showEditProject && (
+            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-2">
+              {meetingError && <Alert variant="error">{meetingError}</Alert>}
+              {!showNewProject ? (
+                <div className="flex gap-2">
+                  <select
+                    value={editProjectId}
+                    onChange={(e) => setEditProjectId(e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">ללא פרויקט</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowNewProject(true)}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+                  >
+                    + חדש
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="שם פרויקט חדש"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    onClick={() => setShowNewProject(false)}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    ביטול
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>שמור</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowEditProject(false); setMeetingError(null); }}>ביטול</Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Participants ─────────────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => { setShowEditParticipants((v) => !v); setMeetingError(null); }}
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+            >
+              ערוך משתתפים
+            </button>
+            <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-gray-400" />
               <span className="text-sm font-semibold text-gray-700">משתתפים בפגישה</span>
             </div>
-            {loading ? (
-              <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
-            ) : (
+          </div>
+
+          {loading ? (
+            <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
+          ) : (() => {
+            const creatorMember = members.find((m) => m.user_id === session.created_by);
+            const taggedMembers = members.filter(
+              (m) => editParticipantIds.includes(m.id) && m.user_id !== session.created_by
+            );
+            const allDisplayed = [
+              ...(creatorMember ? [{ member: creatorMember, isCreator: true }] : []),
+              ...taggedMembers.map((m) => ({ member: m, isCreator: false })),
+            ];
+
+            return (
               <div className="flex flex-wrap gap-2">
-                {members
-                  .filter((m) => editParticipantIds.length > 0 ? editParticipantIds.includes(m.user_id ?? "") : true)
-                  .map((m) => {
-                    const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
-                    return (
-                      <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full text-xs text-gray-700">
-                        <div className="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-semibold text-[10px]">
-                          {label.charAt(0).toUpperCase()}
-                        </div>
-                        <span>{label}</span>
-                        <span className="text-gray-400">
-                          ({m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף"})
-                        </span>
+                {allDisplayed.map(({ member: m, isCreator }) => {
+                  const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
+                  const roleLabel = isCreator ? "יוצר" : m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף";
+                  return (
+                    <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full text-xs text-gray-700">
+                      <div className="w-5 h-5 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-semibold text-[10px]">
+                        {label.charAt(0).toUpperCase()}
                       </div>
-                    );
-                  })}
-                {editParticipantIds.length === 0 && !loading && (
+                      <span>{label}</span>
+                      <span className="text-gray-400">({roleLabel})</span>
+                    </div>
+                  );
+                })}
+                {allDisplayed.length === 0 && (
                   <p className="text-xs text-gray-400">לא נבחרו משתתפים</p>
                 )}
               </div>
-            )}
-          </div>
+            );
+          })()}
 
-          {/* Edit panel */}
-          {showEditMeeting && (
-            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-3">
+          {showEditParticipants && (
+            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-2">
               {meetingError && <Alert variant="error">{meetingError}</Alert>}
+              {inviteSuccess && (
+                <p className="text-xs text-green-600">{inviteSuccess} נוסף בהצלחה</p>
+              )}
 
-              {/* Project selector */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">פרויקט</label>
-                {!showNewProject ? (
-                  <div className="flex gap-2">
-                    <select
-                      value={editProjectId}
-                      onChange={(e) => setEditProjectId(e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="">ללא פרויקט</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => setShowNewProject(true)}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
-                    >
-                      + חדש
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="שם פרויקט חדש"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={() => setShowNewProject(false)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      ביטול
-                    </button>
-                  </div>
-                )}
-              </div>
+              {/* Search / filter input */}
+              <input
+                type="text"
+                placeholder="חפש לפי שם או אימייל..."
+                value={participantSearch}
+                onChange={(e) => { setParticipantSearch(e.target.value); setInviteSuccess(null); }}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white"
+              />
 
-              {/* Participants multi-select */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">משתתפים</label>
-                <div className="max-h-36 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2 bg-white">
-                  {members.map((m) => {
-                    const uid = m.user_id ?? "";
-                    const checked = editParticipantIds.includes(uid);
-                    const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
-                    return (
-                      <label
-                        key={m.id}
-                        className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-0.5 rounded text-sm"
+              {/* Results appear only when searching */}
+              {participantSearch.trim() && (() => {
+                const q = participantSearch.trim().toLowerCase();
+                const filtered = members.filter((m) => {
+                  const label = (m.profile?.full_name || m.profile?.email || m.invited_email || "").toLowerCase();
+                  return label.includes(q);
+                });
+                const isEmailInput = q.includes("@");
+                const exactMatch = members.some((m) =>
+                  (m.profile?.email || m.invited_email || "").toLowerCase() === q
+                );
+
+                return (
+                  <>
+                    {filtered.length > 0 && (
+                      <div className="max-h-40 overflow-y-auto space-y-0.5 border border-gray-200 rounded-lg p-2 bg-white">
+                        {filtered.map((m) => {
+                          const checked = editParticipantIds.includes(m.id);
+                          const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
+                          const roleLabel = m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף";
+                          return (
+                            <label
+                              key={m.id}
+                              className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-1 py-1 rounded text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => toggleParticipant(m.id)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              <span className="flex-1">{label}</span>
+                              <span className="text-xs text-gray-400">{roleLabel}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {isEmailInput && !exactMatch && (
+                      <button
+                        onClick={handleInviteParticipant}
+                        disabled={inviting}
+                        className="w-full text-right px-2.5 py-1.5 text-sm rounded-lg bg-white border border-dashed border-indigo-300 text-indigo-600 hover:bg-indigo-50 transition-colors disabled:opacity-50"
                       >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleParticipant(uid)}
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <span className="flex-1">{label}</span>
-                        <span className="text-xs text-gray-400">
-                          {m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף"}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                        {inviting ? "מוסיף..." : `+ הוסף "${participantSearch.trim()}" כמשתתף חדש`}
+                      </button>
+                    )}
 
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>
-                  שמור שינויים
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => { setShowEditMeeting(false); setMeetingError(null); }}>
-                  ביטול
-                </Button>
+                    {filtered.length === 0 && !isEmailInput && (
+                      <p className="text-xs text-gray-400 text-center py-1">לא נמצאו. הקלד אימייל להוספה.</p>
+                    )}
+                  </>
+                );
+              })()}
+
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>שמור</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowEditParticipants(false); setMeetingError(null); setParticipantSearch(""); setInviteSuccess(null); }}>ביטול</Button>
               </div>
             </div>
           )}

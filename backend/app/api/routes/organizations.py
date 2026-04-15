@@ -37,8 +37,8 @@ async def list_org_members(
         .execute()
     )
 
-    if not membership.data or membership.data["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if not membership.data or membership.data["role"] not in ("admin", "member"):
+        raise HTTPException(status_code=403, detail="Member access required")
 
     result = (
         supabase.table("org_memberships")
@@ -161,10 +161,11 @@ async def add_org_member(
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     # Look up profile by email
-    profile = supabase.table("profiles").select("id").eq("email", data.email).maybeSingle().execute()
+    profile_res = supabase.table("profiles").select("id").eq("email", data.email).limit(1).execute()
+    profile_data = profile_res.data[0] if profile_res.data else None
 
-    if profile.data:
-        insert_payload = {"user_id": profile.data["id"], "org_id": org_id, "role": data.role.value, "capacity_minutes": 0}
+    if profile_data:
+        insert_payload = {"user_id": profile_data["id"], "org_id": org_id, "role": data.role.value, "capacity_minutes": 0}
     else:
         insert_payload = {"invited_email": data.email, "org_id": org_id, "role": data.role.value, "capacity_minutes": 0}
 

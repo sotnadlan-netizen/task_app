@@ -26,7 +26,6 @@ import {
   ChevronRight,
   ArrowUpDown,
   FolderOpen,
-  Eye,
 } from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
@@ -288,10 +287,12 @@ export default function MemberPage() {
   // Meeting table state
   const [meetingSort, setMeetingSort] = useState<MeetingSort>("time");
   const [meetingPage, setMeetingPage] = useState(0);
+  const [meetingProjectFilter, setMeetingProjectFilter] = useState<string>("");
 
   // Task table state
   const [taskSort, setTaskSort] = useState<TaskSort>("time");
   const [taskPage, setTaskPage] = useState(0);
+  const [taskProjectFilter, setTaskProjectFilter] = useState<string>("");
 
   const ITEMS_PER_PAGE = 5;
 
@@ -378,9 +379,11 @@ export default function MemberPage() {
     }
   };
 
-  // Sorted/paginated meetings
+  // Sorted/filtered/paginated meetings
   const sortedMeetings = useMemo(() => {
-    const copy = [...allSessions];
+    let copy = meetingProjectFilter
+      ? allSessions.filter((s) => s.project_id === meetingProjectFilter)
+      : [...allSessions];
     if (meetingSort === "project") {
       copy.sort((a, b) => {
         const pa = a.project_id ? (projects[a.project_id] || "") : "";
@@ -389,14 +392,16 @@ export default function MemberPage() {
       });
     }
     return copy;
-  }, [allSessions, meetingSort, projects]);
+  }, [allSessions, meetingSort, meetingProjectFilter, projects]);
 
   const meetingTotalPages = Math.ceil(sortedMeetings.length / ITEMS_PER_PAGE);
   const pagedMeetings = sortedMeetings.slice(meetingPage * ITEMS_PER_PAGE, (meetingPage + 1) * ITEMS_PER_PAGE);
 
-  // Sorted/paginated tasks
+  // Sorted/filtered/paginated tasks
   const sortedTasks = useMemo(() => {
-    const copy = [...allTasks];
+    let copy = taskProjectFilter
+      ? allTasks.filter((t) => t.project_id === taskProjectFilter)
+      : [...allTasks];
     if (taskSort === "urgency") {
       copy.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
     } else if (taskSort === "status") {
@@ -409,7 +414,7 @@ export default function MemberPage() {
       });
     }
     return copy;
-  }, [allTasks, taskSort, projects]);
+  }, [allTasks, taskSort, taskProjectFilter, projects]);
 
   const taskTotalPages = Math.ceil(sortedTasks.length / ITEMS_PER_PAGE);
   const pagedTasks = sortedTasks.slice(taskPage * ITEMS_PER_PAGE, (taskPage + 1) * ITEMS_PER_PAGE);
@@ -484,6 +489,18 @@ export default function MemberPage() {
               <CardTitle>פגישות אחרונות</CardTitle>
             </CardHeader>
             <div className="flex items-center gap-2">
+              {Object.keys(projects).length > 0 && (
+                <select
+                  value={meetingProjectFilter}
+                  onChange={(e) => { setMeetingProjectFilter(e.target.value); setMeetingPage(0); }}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">כל הפרויקטים</option>
+                  {Object.entries(projects).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+              )}
               <button
                 onClick={() => setShowCalendar(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
@@ -509,14 +526,13 @@ export default function MemberPage() {
                   <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">כותרת</th>
                   <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">פרויקט</th>
                   <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">התקדמות</th>
-                  <th className="px-5 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {pagedMeetings.map((s) => {
                   const tc = taskCounts[s.id];
                   return (
-                    <tr key={s.id} className="hover:bg-gray-50">
+                    <tr key={s.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedSession(s)}>
                       <td className="px-5 py-2.5 text-gray-500 text-xs whitespace-nowrap">
                         {new Date(s.created_at).toLocaleDateString("he-IL")}
                       </td>
@@ -541,15 +557,6 @@ export default function MemberPage() {
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>
                         )}
-                      </td>
-                      <td className="px-5 py-2.5">
-                        <button
-                          onClick={() => setSelectedSession(s)}
-                          className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
-                          aria-label="צפה בפרטים"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                       </td>
                     </tr>
                   );
@@ -589,7 +596,20 @@ export default function MemberPage() {
             <CardHeader>
               <CardTitle>משימות אחרונות</CardTitle>
             </CardHeader>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              {Object.keys(projects).length > 0 && (
+                <select
+                  value={taskProjectFilter}
+                  onChange={(e) => { setTaskProjectFilter(e.target.value); setTaskPage(0); }}
+                  className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  <option value="">כל הפרויקטים</option>
+                  {Object.entries(projects).map(([id, name]) => (
+                    <option key={id} value={id}>{name}</option>
+                  ))}
+                </select>
+              )}
+              <div className="flex items-center gap-1.5">
               {(["time", "project", "status", "urgency"] as TaskSort[]).map((s) => {
                 const labels: Record<TaskSort, string> = {
                   time: "זמן",
@@ -611,6 +631,7 @@ export default function MemberPage() {
                   </button>
                 );
               })}
+              </div>
             </div>
           </div>
 

@@ -47,6 +47,7 @@ export function MeetingsList() {
   const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
   const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>("time");
+  const [projectFilter, setProjectFilter] = useState<string>("");
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -112,7 +113,9 @@ export function MeetingsList() {
   }, [subscribe, loadData]);
 
   const sorted = useMemo(() => {
-    const copy = [...sessions];
+    let copy = projectFilter
+      ? sessions.filter((s) => s.project_id === projectFilter)
+      : [...sessions];
     if (sortMode === "project") {
       copy.sort((a, b) => {
         const pa = a.project_id ? (projects[a.project_id] || "") : "";
@@ -121,7 +124,7 @@ export function MeetingsList() {
       });
     }
     return copy;
-  }, [sessions, sortMode, projects]);
+  }, [sessions, sortMode, projectFilter, projects]);
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -160,6 +163,18 @@ export function MeetingsList() {
             <CardTitle>פגישות ({sessions.length})</CardTitle>
           </CardHeader>
           <div className="flex items-center gap-2">
+            {Object.keys(projects).length > 0 && (
+              <select
+                value={projectFilter}
+                onChange={(e) => { setProjectFilter(e.target.value); setPage(0); }}
+                className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">כל הפרויקטים</option>
+                {Object.entries(projects).map(([id, name]) => (
+                  <option key={id} value={id}>{name}</option>
+                ))}
+              </select>
+            )}
             <button
               onClick={() => { setSortMode(sortMode === "time" ? "project" : "time"); setPage(0); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
