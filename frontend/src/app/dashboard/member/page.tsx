@@ -6,7 +6,6 @@ import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
 import { RecordingHub } from "@/components/recording/recording-hub";
-import { TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +25,9 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ArrowUpDown,
+  FolderOpen,
+  Eye,
 } from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
@@ -51,6 +53,12 @@ const priorityColors = {
   high: "warning" as const,
   critical: "danger" as const,
 };
+
+type MeetingSort = "time" | "project";
+type TaskSort = "time" | "project" | "status" | "urgency";
+
+const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+const statusOrder: Record<string, number> = { todo: 0, in_progress: 1, done: 2 };
 
 // ─── Calendar Modal ───────────────────────────────────────────────────────────
 function CalendarModal({
@@ -80,7 +88,7 @@ function CalendarModal({
 
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
-  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sunday
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
@@ -92,7 +100,6 @@ function CalendarModal({
   return (
     <Modal open onClose={onClose} title="לוח שנה — פגישות">
       <div className="space-y-4" dir="rtl">
-        {/* Month navigation */}
         <div className="flex items-center justify-between">
           <button
             onClick={nextMonth}
@@ -113,7 +120,6 @@ function CalendarModal({
           </button>
         </div>
 
-        {/* Day headers */}
         <div className="grid grid-cols-7 text-center">
           {dayHeaders.map((d) => (
             <div key={d} className="text-xs font-medium text-gray-400 py-1">
@@ -122,7 +128,6 @@ function CalendarModal({
           ))}
         </div>
 
-        {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-1">
           {Array.from({ length: firstDayOfWeek }).map((_, i) => (
             <div key={`empty-${i}`} />
@@ -152,7 +157,6 @@ function CalendarModal({
           })}
         </div>
 
-        {/* Sessions for selected day */}
         {selectedDay && (
           <div className="border-t border-gray-100 pt-3 space-y-2">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -199,8 +203,6 @@ function SessionDetailModal({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // edit state
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     title: "",
@@ -208,14 +210,10 @@ function SessionDetailModal({
     priority: "medium",
     status: "todo",
   });
-
-  // add state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTaskForm, setNewTaskForm] = useState({ title: "", description: "", priority: "medium" });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  // delete state
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -308,7 +306,6 @@ function SessionDetailModal({
   return (
     <Modal open onClose={onClose} title={session.title || "פרטי פגישה"}>
       <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1" dir="rtl">
-        {/* Meta */}
         <div className="flex items-center gap-3 text-xs text-gray-500 flex-row-reverse justify-end">
           <span>{new Date(session.created_at).toLocaleString("he-IL")}</span>
           {durationMin > 0 && <span>· {durationMin} דק׳</span>}
@@ -317,7 +314,6 @@ function SessionDetailModal({
           )}
         </div>
 
-        {/* Summary */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-1">סיכום</h3>
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -325,7 +321,6 @@ function SessionDetailModal({
           </p>
         </div>
 
-        {/* Participants */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
             <span className="flex items-center gap-1.5">
@@ -359,7 +354,6 @@ function SessionDetailModal({
           )}
         </div>
 
-        {/* Tasks */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <button
@@ -376,7 +370,6 @@ function SessionDetailModal({
 
           {formError && <Alert variant="error" className="mb-2">{formError}</Alert>}
 
-          {/* Add task form */}
           {showAddForm && (
             <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-2">
               <input
@@ -433,7 +426,6 @@ function SessionDetailModal({
                     }`}
                   >
                     {isEditing ? (
-                      /* Edit form */
                       <div className="space-y-2">
                         <input
                           type="text"
@@ -488,7 +480,6 @@ function SessionDetailModal({
                         </div>
                       </div>
                     ) : (
-                      /* Task display */
                       <div className="flex items-start gap-2">
                         <div className="flex gap-1 flex-shrink-0">
                           {!t.is_locked && (
@@ -554,7 +545,6 @@ function SessionDetailModal({
           )}
         </div>
 
-        {/* Delete session */}
         <div className="border-t border-gray-100 pt-4">
           <button
             onClick={() => onRequestDelete(session)}
@@ -655,15 +645,29 @@ export default function MemberPage() {
   const { currentOrg, capacity, currentRole, loading: orgLoading } = useOrganization();
   const { subscribe } = useRealtime();
   const router = useRouter();
+
   const [allSessions, setAllSessions] = useState<Session[]>([]);
-  const [taskCount, setTaskCount] = useState(0);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [taskCountTotal, setTaskCountTotal] = useState(0);
+  const [taskCounts, setTaskCounts] = useState<Record<string, { total: number; done: number }>>({});
+  const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
+
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [sessionLimit, setSessionLimit] = useState<5 | 10>(5);
   const [showCalendar, setShowCalendar] = useState(false);
   const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
   const [deletingSession, setDeletingSession] = useState(false);
   const [deleteSessionError, setDeleteSessionError] = useState<string | null>(null);
+
+  // Meeting table state
+  const [meetingSort, setMeetingSort] = useState<MeetingSort>("time");
+  const [meetingPage, setMeetingPage] = useState(0);
+
+  // Task table state
+  const [taskSort, setTaskSort] = useState<TaskSort>("time");
+  const [taskPage, setTaskPage] = useState(0);
+
+  const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
     if (orgLoading) return;
@@ -675,7 +679,7 @@ export default function MemberPage() {
   const loadStats = useCallback(async () => {
     if (!currentOrg) return;
 
-    const [sessionRes, taskRes] = await Promise.all([
+    const [sessionRes, taskRes, taskCountRes, projRes] = await Promise.all([
       supabase
         .from("sessions")
         .select("*")
@@ -684,23 +688,51 @@ export default function MemberPage() {
         .limit(100),
       supabase
         .from("tasks")
-        .select("id", { count: "exact" })
+        .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
+        .eq("org_id", currentOrg.id)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("tasks")
+        .select("session_id, status")
+        .eq("org_id", currentOrg.id)
+        .not("session_id", "is", null),
+      supabase
+        .from("projects")
+        .select("id, name")
         .eq("org_id", currentOrg.id),
     ]);
 
     if (sessionRes.data) setAllSessions(sessionRes.data as Session[]);
-    if (taskRes.count !== null) setTaskCount(taskRes.count);
+    if (taskRes.data) {
+      setAllTasks(taskRes.data as Task[]);
+      setTaskCountTotal(taskRes.data.length);
+    }
+
+    if (taskCountRes.data) {
+      const counts: Record<string, { total: number; done: number }> = {};
+      (taskCountRes.data as { session_id: string; status: string }[]).forEach((t) => {
+        if (!t.session_id) return;
+        if (!counts[t.session_id]) counts[t.session_id] = { total: 0, done: 0 };
+        counts[t.session_id].total++;
+        if (t.status === "done") counts[t.session_id].done++;
+      });
+      setTaskCounts(counts);
+    }
+
+    if (projRes.data) {
+      const map: Record<string, string> = {};
+      (projRes.data as { id: string; name: string }[]).forEach((p) => { map[p.id] = p.name; });
+      setProjects(map);
+    }
   }, [supabase, currentOrg]);
 
   useEffect(() => {
     loadStats();
   }, [loadStats]);
 
-  // Refresh sessions + task count whenever a session is inserted or deleted
   useEffect(() => {
-    const unsub = subscribe("sessions", () => {
-      loadStats();
-    });
+    const unsub = subscribe("sessions", () => loadStats());
     return unsub;
   }, [subscribe, loadStats]);
 
@@ -720,7 +752,41 @@ export default function MemberPage() {
     }
   };
 
-  const displayedSessions = allSessions.slice(0, sessionLimit);
+  // Sorted/paginated meetings
+  const sortedMeetings = useMemo(() => {
+    const copy = [...allSessions];
+    if (meetingSort === "project") {
+      copy.sort((a, b) => {
+        const pa = a.project_id ? (projects[a.project_id] || "") : "";
+        const pb = b.project_id ? (projects[b.project_id] || "") : "";
+        return pa.localeCompare(pb, "he");
+      });
+    }
+    return copy;
+  }, [allSessions, meetingSort, projects]);
+
+  const meetingTotalPages = Math.ceil(sortedMeetings.length / ITEMS_PER_PAGE);
+  const pagedMeetings = sortedMeetings.slice(meetingPage * ITEMS_PER_PAGE, (meetingPage + 1) * ITEMS_PER_PAGE);
+
+  // Sorted/paginated tasks
+  const sortedTasks = useMemo(() => {
+    const copy = [...allTasks];
+    if (taskSort === "urgency") {
+      copy.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
+    } else if (taskSort === "status") {
+      copy.sort((a, b) => (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3));
+    } else if (taskSort === "project") {
+      copy.sort((a, b) => {
+        const pa = a.project_id ? (projects[a.project_id] || "") : "";
+        const pb = b.project_id ? (projects[b.project_id] || "") : "";
+        return pa.localeCompare(pb, "he");
+      });
+    }
+    return copy;
+  }, [allTasks, taskSort, projects]);
+
+  const taskTotalPages = Math.ceil(sortedTasks.length / ITEMS_PER_PAGE);
+  const pagedTasks = sortedTasks.slice(taskPage * ITEMS_PER_PAGE, (taskPage + 1) * ITEMS_PER_PAGE);
 
   if (orgLoading || currentRole === "participant") return null;
 
@@ -729,7 +795,7 @@ export default function MemberPage() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">לוח בקרה</h1>
+        <h1 className="text-2xl font-bold text-gray-900">דף בית</h1>
         <Button
           size="sm"
           variant="secondary"
@@ -761,7 +827,7 @@ export default function MemberPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">סה״כ משימות</p>
-              <p className="text-xl font-bold">{taskCount}</p>
+              <p className="text-xl font-bold">{taskCountTotal}</p>
             </div>
           </div>
         </Card>
@@ -784,81 +850,219 @@ export default function MemberPage() {
       {/* Recording Hub */}
       <RecordingHub />
 
-      {/* Recent Sessions */}
+      {/* Meetings Table */}
       {allSessions.length > 0 && (
-        <Card>
-          <div className="flex items-center justify-between mb-4">
+        <Card padding={false}>
+          <div className="p-5 pb-3 flex items-center justify-between">
+            <CardHeader>
+              <CardTitle>פגישות אחרונות</CardTitle>
+            </CardHeader>
             <div className="flex items-center gap-2">
-              {/* Calendar button */}
               <button
                 onClick={() => setShowCalendar(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors"
-                aria-label="פתח לוח שנה"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
               >
-                <CalendarDays className="w-4 h-4" />
+                <CalendarDays className="w-3.5 h-3.5" />
                 לוח שנה
               </button>
+              <button
+                onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+                {meetingSort === "time" ? "לפי פרויקט" : "לפי זמן"}
+              </button>
+            </div>
+          </div>
 
-              {/* Limit toggle */}
-              <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
-                {([5, 10] as const).map((n) => (
-                  <button
-                    key={n}
-                    onClick={() => setSessionLimit(n)}
-                    className={`px-3 py-1.5 transition-colors ${
-                      sessionLimit === n
-                        ? "bg-indigo-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {n} אחרונות
-                  </button>
-                ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-y border-gray-200">
+                <tr>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">תאריך</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">כותרת</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">פרויקט</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">התקדמות</th>
+                  <th className="px-5 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagedMeetings.map((s) => {
+                  const tc = taskCounts[s.id];
+                  return (
+                    <tr key={s.id} className="hover:bg-gray-50">
+                      <td className="px-5 py-2.5 text-gray-500 text-xs whitespace-nowrap">
+                        {new Date(s.created_at).toLocaleDateString("he-IL")}
+                      </td>
+                      <td className="px-5 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">
+                        {s.title || "פגישה ללא שם"}
+                      </td>
+                      <td className="px-5 py-2.5 text-xs text-gray-500">
+                        {s.project_id && projects[s.project_id] ? (
+                          <span className="flex items-center gap-1">
+                            <FolderOpen className="w-3 h-3 text-indigo-400" />
+                            {projects[s.project_id]}
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        {tc ? (
+                          <Badge variant={tc.done === tc.total ? "success" : "default"}>
+                            {tc.done}/{tc.total} ✓
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-300 text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-2.5">
+                        <button
+                          onClick={() => setSelectedSession(s)}
+                          className="p-1.5 rounded hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                          aria-label="צפה בפרטים"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {meetingTotalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100">
+              <span className="text-xs text-gray-400">{meetingPage + 1} / {meetingTotalPages}</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setMeetingPage((p) => Math.max(0, p - 1))}
+                  disabled={meetingPage === 0}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setMeetingPage((p) => Math.min(meetingTotalPages - 1, p + 1))}
+                  disabled={meetingPage >= meetingTotalPages - 1}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
               </div>
             </div>
-            <CardTitle>פגישות אחרונות</CardTitle>
-          </div>
-
-          <div className="space-y-3">
-            {displayedSessions.map((s) => (
-              <div key={s.id} className="group relative">
-                <button
-                  onClick={() => setSelectedSession(s)}
-                  className="w-full text-right p-3 rounded-lg bg-gray-50 border border-gray-100
-                    hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-400">
-                      {new Date(s.created_at).toLocaleDateString("he-IL")}
-                    </span>
-                    <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">
-                      {s.title || "פגישה ללא שם"}
-                    </h4>
-                  </div>
-                  <p className="text-xs text-gray-600 line-clamp-2 text-right">{s.summary}</p>
-                  <p className="text-xs text-indigo-400 mt-1 text-left opacity-0 group-hover:opacity-100 transition-opacity">
-                    ← לחץ לפרטים
-                  </p>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setConfirmDeleteSession(s);
-                    setDeleteSessionError(null);
-                  }}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-100 transition-all"
-                  aria-label="מחק פגישה"
-                >
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                </button>
-              </div>
-            ))}
-          </div>
+          )}
         </Card>
       )}
 
-      {/* Tasks */}
-      <TaskList />
+      {/* Tasks Table */}
+      {allTasks.length > 0 && (
+        <Card padding={false}>
+          <div className="p-5 pb-3 flex items-center justify-between">
+            <CardHeader>
+              <CardTitle>משימות אחרונות</CardTitle>
+            </CardHeader>
+            <div className="flex items-center gap-1.5">
+              {(["time", "project", "status", "urgency"] as TaskSort[]).map((s) => {
+                const labels: Record<TaskSort, string> = {
+                  time: "זמן",
+                  project: "פרויקט",
+                  status: "סטטוס",
+                  urgency: "דחיפות",
+                };
+                return (
+                  <button
+                    key={s}
+                    onClick={() => { setTaskSort(s); setTaskPage(0); }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border ${
+                      taskSort === s
+                        ? "bg-indigo-600 text-white border-indigo-600"
+                        : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    {labels[s]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-y border-gray-200">
+                <tr>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">כותרת</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">פרויקט</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">סטטוס</th>
+                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">עדיפות</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pagedTasks.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-50">
+                    <td className="px-5 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">
+                      <span className={t.status === "done" ? "line-through text-gray-400" : ""}>
+                        {t.title}
+                      </span>
+                    </td>
+                    <td className="px-5 py-2.5 text-xs text-gray-500">
+                      {t.project_id && projects[t.project_id] ? (
+                        <span className="flex items-center gap-1">
+                          <FolderOpen className="w-3 h-3 text-indigo-400" />
+                          {projects[t.project_id]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <Badge
+                        variant={
+                          t.status === "done"
+                            ? "success"
+                            : t.status === "in_progress"
+                              ? "info"
+                              : "default"
+                        }
+                      >
+                        {statusLabels[t.status] ?? t.status}
+                      </Badge>
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <Badge variant={priorityColors[t.priority]}>
+                        {priorityLabels[t.priority] ?? t.priority}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {taskTotalPages > 1 && (
+            <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100">
+              <span className="text-xs text-gray-400">{taskPage + 1} / {taskTotalPages}</span>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setTaskPage((p) => Math.max(0, p - 1))}
+                  disabled={taskPage === 0}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setTaskPage((p) => Math.min(taskTotalPages - 1, p + 1))}
+                  disabled={taskPage >= taskTotalPages - 1}
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Session Detail Modal */}
       {selectedSession && (

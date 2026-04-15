@@ -155,7 +155,7 @@ export function useRecording() {
   }, [capacity, startTimer]);
 
   // ── Stop recording ───────────────────────────────────────────────────────────
-  const stopRecording = useCallback(async () => {
+  const stopRecording = useCallback(async (opts?: { projectId?: string; participantIds?: string[] }) => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
@@ -185,6 +185,12 @@ export function useRecording() {
       formData.append("audio", blob, "recording.webm");
       formData.append("org_id", currentOrg?.id || "");
       formData.append("duration_seconds", String(state.duration));
+      if (opts?.projectId) {
+        formData.append("project_id", opts.projectId);
+      }
+      if (opts?.participantIds && opts.participantIds.length > 0) {
+        formData.append("participant_ids", opts.participantIds.join(","));
+      }
 
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");

@@ -386,8 +386,8 @@ export default function AdminPage() {
   if (orgLoading || currentRole !== "admin") return null;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Organization Admin</h1>
+    <div className="space-y-6" dir="rtl">
+      <h1 className="text-2xl font-bold text-gray-900">דף בית — ניהול ארגון</h1>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

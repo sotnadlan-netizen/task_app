@@ -170,4 +170,17 @@ export const api = {
 
   updateMemberRole: (orgId: string, membershipId: string, role: string, token: string) =>
     request(`/api/organizations/${orgId}/members/${membershipId}/role`, { method: "PATCH", body: JSON.stringify({ role }), token }),
+
+  getProjects: (orgId: string, token: string) =>
+    request<{ id: string; org_id: string; name: string; created_at: string }[]>(
+      `/api/projects?org_id=${orgId}`, { token }
+    ),
+
+  createProject: (data: { org_id: string; name: string }, token: string) =>
+    request<{ id: string; org_id: string; name: string; created_at: string }>(
+      "/api/projects", { method: "POST", body: JSON.stringify(data), token }
+    ),
+
+  updateSession: (sessionId: string, data: { project_id?: string; participant_ids?: string[] }, token: string) =>
+    request(`/api/sessions/${sessionId}`, { method: "PATCH", body: JSON.stringify(data), token }),
 };
