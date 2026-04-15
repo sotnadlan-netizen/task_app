@@ -47,6 +47,8 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
   const { currentOrg } = useOrganization();
   const { subscribe } = useRealtime();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
+  const [projectFilter, setProjectFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [editRequestTaskId, setEditRequestTaskId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -75,13 +77,24 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
   const loadTasks = useCallback(async () => {
     if (!currentOrg) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("tasks")
-      .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
-      .eq("org_id", currentOrg.id)
-      .order("created_at", { ascending: false });
+    const [taskRes, projRes] = await Promise.all([
+      supabase
+        .from("tasks")
+        .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
+        .eq("org_id", currentOrg.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("projects")
+        .select("id, name")
+        .eq("org_id", currentOrg.id),
+    ]);
 
-    if (data) setTasks(data as Task[]);
+    if (taskRes.data) setTasks(taskRes.data as Task[]);
+    if (projRes.data) {
+      const map: Record<string, string> = {};
+      (projRes.data as { id: string; name: string }[]).forEach((p) => { map[p.id] = p.name; });
+      setProjects(map);
+    }
     setLoading(false);
   }, [supabase, currentOrg]);
 
@@ -259,13 +272,30 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
         </div>
       )}
 
-      {tasks.length === 0 ? (
+      {Object.keys(projects).length > 0 && (
+        <div className="px-6 pb-0 pt-2" dir="rtl">
+          <select
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          >
+            <option value="">כל הפרויקטים</option>
+            {Object.entries(projects).map(([id, name]) => (
+              <option key={id} value={id}>{name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {(() => {
+        const filtered = projectFilter ? tasks.filter((t) => t.project_id === projectFilter) : tasks;
+        return filtered.length === 0 ? (
         <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8" dir="rtl">
-          אין משימות עדיין. התחל הקלטה כדי ליצור משימות.
+          {projectFilter ? "אין משימות בפרויקט זה." : "אין משימות עדיין. התחל הקלטה כדי ליצור משימות."}
         </div>
       ) : (
         <div className="divide-y divide-gray-100 mt-3" dir="rtl">
-          {tasks.map((task) => {
+          {filtered.map((task) => {
             const isDone = task.status === "done";
             const isEditing = editingTaskId === task.id;
             const isConfirmingDelete = confirmDeleteId === task.id;
@@ -466,7 +496,8 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
             );
           })}
         </div>
-      )}
+      );
+      })()}
     </Card>
   );
 }

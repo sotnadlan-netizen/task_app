@@ -4,6 +4,7 @@ from app.api.deps import get_current_user, get_supabase, require_role
 from app.services.gemini import process_audio_with_gemini, DEFAULT_SYSTEM_PROMPT
 from app.services.task_service import create_session_and_tasks
 from app.config import get_settings
+from typing import Optional
 
 router = APIRouter(prefix="/api/audio", tags=["audio"])
 
@@ -16,6 +17,8 @@ async def process_audio(
     org_id: str = Form(...),
     duration_seconds: int = Form(0),
     recovered: str = Form("false"),
+    project_id: Optional[str] = Form(None),
+    participant_ids: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),
 ):
@@ -87,6 +90,11 @@ async def process_audio(
         # Ensure audio is garbage collected
         del audio_bytes
 
+    # Parse participant_ids from comma-separated string
+    parsed_participant_ids = []
+    if participant_ids:
+        parsed_participant_ids = [p.strip() for p in participant_ids.split(",") if p.strip()]
+
     # Create session and tasks
     result = await create_session_and_tasks(
         supabase=supabase,
@@ -95,6 +103,8 @@ async def process_audio(
         duration_seconds=duration_seconds,
         ai_result=ai_result,
         prompt_version=prompt_version,
+        project_id=project_id or None,
+        participant_ids=parsed_participant_ids,
     )
 
     return result

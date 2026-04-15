@@ -62,6 +62,8 @@ async def create_task(
     }
     if data.session_id:
         task_data["session_id"] = data.session_id
+    if data.project_id:
+        task_data["project_id"] = data.project_id
 
     result = supabase.table("tasks").insert(task_data).execute()
     return result.data[0] if result.data else {}

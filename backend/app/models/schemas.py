@@ -57,6 +57,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     assignee_id: Optional[str] = None
+    project_id: Optional[str] = None
 
 
 class TaskCreate(BaseModel):
@@ -66,6 +67,7 @@ class TaskCreate(BaseModel):
     priority: TaskPriority = TaskPriority.medium
     status: TaskStatus = TaskStatus.todo
     session_id: Optional[str] = None
+    project_id: Optional[str] = None
 
 
 class OrgCreate(BaseModel):
