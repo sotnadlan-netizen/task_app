@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
@@ -11,8 +11,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
+import { api } from "@/lib/api";
 import type { Session, Task, OrgMembership, Profile } from "@/types";
-import { BarChart3, Clock, ListChecks, UserPlus, Users } from "lucide-react";
+import {
+  BarChart3,
+  Clock,
+  ListChecks,
+  UserPlus,
+  Users,
+  Pencil,
+  Trash2,
+  Plus,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile | null;
@@ -38,12 +51,144 @@ const priorityColors = {
   critical: "danger" as const,
 };
 
+// ─── Calendar Modal ───────────────────────────────────────────────────────────
+function CalendarModal({
+  sessions,
+  onClose,
+  onSelectSession,
+}: {
+  sessions: Session[];
+  onClose: () => void;
+  onSelectSession: (s: Session) => void;
+}) {
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
+  const sessionsByDay = useMemo(() => {
+    const map: Record<string, Session[]> = {};
+    sessions.forEach((s) => {
+      const day = new Date(s.created_at).toISOString().split("T")[0];
+      if (!map[day]) map[day] = [];
+      map[day].push(s);
+    });
+    return map;
+  }, [sessions]);
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0=Sunday
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
+
+  const dayHeaders = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+  const selectedDaySessions = selectedDay ? sessionsByDay[selectedDay] || [] : [];
+
+  return (
+    <Modal open onClose={onClose} title="לוח שנה — פגישות">
+      <div className="space-y-4" dir="rtl">
+        {/* Month navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={nextMonth}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="חודש הבא"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <span className="font-semibold text-gray-800">
+            {currentMonth.toLocaleString("he-IL", { month: "long", year: "numeric" })}
+          </span>
+          <button
+            onClick={prevMonth}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="חודש קודם"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Day headers */}
+        <div className="grid grid-cols-7 text-center">
+          {dayHeaders.map((d) => (
+            <div key={d} className="text-xs font-medium text-gray-400 py-1">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Calendar grid */}
+        <div className="grid grid-cols-7 gap-1">
+          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+            <div key={`empty-${i}`} />
+          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const hasSessions = !!sessionsByDay[dateStr];
+            const isSelected = selectedDay === dateStr;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                className={`relative py-2 rounded-lg text-sm text-center transition-colors ${
+                  isSelected
+                    ? "bg-indigo-600 text-white"
+                    : hasSessions
+                      ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold"
+                      : "hover:bg-gray-100 text-gray-700"
+                }`}
+              >
+                {day}
+                {hasSessions && !isSelected && (
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Sessions for selected day */}
+        {selectedDay && (
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {selectedDaySessions.length > 0
+                ? `פגישות — ${new Date(selectedDay).toLocaleDateString("he-IL")}`
+                : "אין פגישות ביום זה"}
+            </p>
+            {selectedDaySessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  onSelectSession(s);
+                  onClose();
+                }}
+                className="w-full text-right p-2.5 rounded-lg bg-gray-50 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-sm transition-colors"
+              >
+                <p className="font-medium text-gray-900">{s.title || "פגישה ללא שם"}</p>
+                {s.summary && (
+                  <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{s.summary}</p>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
 // ─── Session Detail Modal ─────────────────────────────────────────────────────
 function SessionDetailModal({
   session,
+  token,
   onClose,
 }: {
   session: Session;
+  token: string;
   onClose: () => void;
 }) {
   const { supabase } = useSupabase();
@@ -51,6 +196,24 @@ function SessionDetailModal({
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // edit state
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    priority: "medium",
+    status: "todo",
+  });
+
+  // add state
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTaskForm, setNewTaskForm] = useState({ title: "", description: "", priority: "medium" });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // delete state
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentOrg) return;
@@ -74,11 +237,74 @@ function SessionDetailModal({
     load();
   }, [supabase, currentOrg, session]);
 
+  const startEdit = (t: Task) => {
+    setEditingTaskId(t.id);
+    setEditForm({
+      title: t.title,
+      description: t.description || "",
+      priority: t.priority,
+      status: t.status,
+    });
+    setFormError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingTaskId || !editForm.title.trim()) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      const updated = await api.updateTask(editingTaskId, editForm, token) as Task;
+      setTasks((prev) => prev.map((t) => (t.id === editingTaskId ? { ...t, ...updated } : t)));
+      setEditingTaskId(null);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "שגיאה בשמירה");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskForm.title.trim() || !currentOrg) return;
+    setSaving(true);
+    setFormError(null);
+    try {
+      const created = await api.createTask(
+        {
+          org_id: currentOrg.id,
+          session_id: session.id,
+          title: newTaskForm.title.trim(),
+          description: newTaskForm.description.trim(),
+          priority: newTaskForm.priority,
+        },
+        token
+      ) as Task;
+      setTasks((prev) => [created, ...prev]);
+      setNewTaskForm({ title: "", description: "", priority: "medium" });
+      setShowAddForm(false);
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "שגיאה ביצירת משימה");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    setDeletingTaskId(taskId);
+    try {
+      await api.deleteTask(taskId, token);
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "שגיאה במחיקת משימה");
+    } finally {
+      setDeletingTaskId(null);
+    }
+  };
+
   const durationMin = Math.round(session.duration_seconds / 60);
 
   return (
     <Modal open onClose={onClose} title={session.title || "פרטי פגישה"}>
-      <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1" dir="rtl">
+      <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1" dir="rtl">
         {/* Meta */}
         <div className="flex items-center gap-3 text-xs text-gray-500 flex-row-reverse justify-end">
           <span>{new Date(session.created_at).toLocaleString("he-IL")}</span>
@@ -132,56 +358,195 @@ function SessionDetailModal({
 
         {/* Tasks */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            משימות ({tasks.length})
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <button
+              onClick={() => { setShowAddForm(!showAddForm); setFormError(null); }}
+              className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              הוסף משימה
+            </button>
+            <h3 className="text-sm font-semibold text-gray-700">
+              משימות ({tasks.length})
+            </h3>
+          </div>
+
+          {formError && <Alert variant="error" className="mb-2">{formError}</Alert>}
+
+          {/* Add task form */}
+          {showAddForm && (
+            <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-2">
+              <input
+                type="text"
+                placeholder="כותרת המשימה *"
+                value={newTaskForm.title}
+                onChange={(e) => setNewTaskForm((f) => ({ ...f, title: e.target.value }))}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <textarea
+                placeholder="תיאור (אופציונלי)"
+                value={newTaskForm.description}
+                onChange={(e) => setNewTaskForm((f) => ({ ...f, description: e.target.value }))}
+                rows={2}
+                className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              />
+              <div className="flex items-center gap-2">
+                <select
+                  value={newTaskForm.priority}
+                  onChange={(e) => setNewTaskForm((f) => ({ ...f, priority: e.target.value }))}
+                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="low">נמוכה</option>
+                  <option value="medium">בינונית</option>
+                  <option value="high">גבוהה</option>
+                  <option value="critical">קריטית</option>
+                </select>
+                <Button size="sm" onClick={handleAddTask} loading={saving} disabled={!newTaskForm.title.trim()}>
+                  צור
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                  ביטול
+                </Button>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
           ) : tasks.length === 0 ? (
             <p className="text-sm text-gray-400">לא נוצרו משימות מפגישה זו.</p>
           ) : (
             <div className="space-y-2">
-              {tasks.map((t) => (
-                <div
-                  key={t.id}
-                  className={`p-3 rounded-lg border text-sm ${
-                    t.status === "done"
-                      ? "bg-green-50 border-green-200"
-                      : "bg-gray-50 border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <Badge variant={priorityColors[t.priority]}>
-                        {priorityLabels[t.priority] ?? t.priority}
-                      </Badge>
-                      <Badge
-                        variant={
-                          t.status === "done"
-                            ? "success"
-                            : t.status === "in_progress"
-                              ? "info"
-                              : "default"
-                        }
-                      >
-                        {statusLabels[t.status] ?? t.status}
-                      </Badge>
-                    </div>
-                    <div className="flex-1 min-w-0 text-right">
-                      <p
-                        className={`font-medium ${t.status === "done" ? "text-green-700 line-through" : "text-gray-900"}`}
-                      >
-                        {t.title}
-                      </p>
-                      {t.description && (
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
-                          {t.description}
-                        </p>
-                      )}
-                    </div>
+              {tasks.map((t) => {
+                const isEditing = editingTaskId === t.id;
+                const isDeleting = deletingTaskId === t.id;
+                return (
+                  <div
+                    key={t.id}
+                    className={`p-3 rounded-lg border text-sm ${
+                      t.status === "done"
+                        ? "bg-green-50 border-green-200"
+                        : "bg-gray-50 border-gray-200"
+                    }`}
+                  >
+                    {isEditing ? (
+                      /* Edit form */
+                      <div className="space-y-2">
+                        <input
+                          type="text"
+                          value={editForm.title}
+                          onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <textarea
+                          value={editForm.description}
+                          onChange={(e) =>
+                            setEditForm((f) => ({ ...f, description: e.target.value }))
+                          }
+                          rows={2}
+                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                        />
+                        <div className="flex gap-2">
+                          <select
+                            value={editForm.priority}
+                            onChange={(e) =>
+                              setEditForm((f) => ({ ...f, priority: e.target.value }))
+                            }
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="low">נמוכה</option>
+                            <option value="medium">בינונית</option>
+                            <option value="high">גבוהה</option>
+                            <option value="critical">קריטית</option>
+                          </select>
+                          <select
+                            value={editForm.status}
+                            onChange={(e) =>
+                              setEditForm((f) => ({ ...f, status: e.target.value }))
+                            }
+                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          >
+                            <option value="todo">לביצוע</option>
+                            <option value="in_progress">בתהליך</option>
+                            <option value="done">הושלם</option>
+                          </select>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleSaveEdit} loading={saving}>
+                            שמור
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingTaskId(null)}
+                          >
+                            ביטול
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Task display */
+                      <div className="flex items-start gap-2">
+                        <div className="flex gap-1 flex-shrink-0">
+                          {!t.is_locked && (
+                            <>
+                              <button
+                                onClick={() => startEdit(t)}
+                                className="p-1 rounded hover:bg-gray-200 transition-colors"
+                                aria-label="ערוך משימה"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTask(t.id)}
+                                disabled={isDeleting}
+                                className="p-1 rounded hover:bg-red-100 transition-colors disabled:opacity-40"
+                                aria-label="מחק משימה"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        <div className="flex items-start justify-between gap-2 flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <Badge variant={priorityColors[t.priority]}>
+                              {priorityLabels[t.priority] ?? t.priority}
+                            </Badge>
+                            <Badge
+                              variant={
+                                t.status === "done"
+                                  ? "success"
+                                  : t.status === "in_progress"
+                                    ? "info"
+                                    : "default"
+                              }
+                            >
+                              {statusLabels[t.status] ?? t.status}
+                            </Badge>
+                          </div>
+                          <div className="flex-1 min-w-0 text-right">
+                            <p
+                              className={`font-medium ${
+                                t.status === "done"
+                                  ? "text-green-700 line-through"
+                                  : "text-gray-900"
+                              }`}
+                            >
+                              {t.title}
+                            </p>
+                            {t.description && (
+                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                                {t.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -309,13 +674,15 @@ function AddParticipantModal({
 
 // ─── Member Page ──────────────────────────────────────────────────────────────
 export default function MemberPage() {
-  const { supabase } = useSupabase();
+  const { supabase, session } = useSupabase();
   const { currentOrg, capacity, currentRole, loading: orgLoading } = useOrganization();
   const router = useRouter();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [taskCount, setTaskCount] = useState(0);
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [sessionLimit, setSessionLimit] = useState<5 | 10>(5);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   useEffect(() => {
     if (orgLoading) return;
@@ -333,14 +700,14 @@ export default function MemberPage() {
         .select("*")
         .eq("org_id", currentOrg.id)
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(100),
       supabase
         .from("tasks")
         .select("id", { count: "exact" })
         .eq("org_id", currentOrg.id),
     ]);
 
-    if (sessionRes.data) setSessions(sessionRes.data as Session[]);
+    if (sessionRes.data) setAllSessions(sessionRes.data as Session[]);
     if (taskRes.count !== null) setTaskCount(taskRes.count);
   }, [supabase, currentOrg]);
 
@@ -348,7 +715,11 @@ export default function MemberPage() {
     loadStats();
   }, [loadStats]);
 
+  const displayedSessions = allSessions.slice(0, sessionLimit);
+
   if (orgLoading || currentRole === "participant") return null;
+
+  const token = session?.access_token || "";
 
   return (
     <div className="space-y-6" dir="rtl">
@@ -373,7 +744,7 @@ export default function MemberPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">פגישות</p>
-              <p className="text-xl font-bold">{sessions.length}</p>
+              <p className="text-xl font-bold">{allSessions.length}</p>
             </div>
           </div>
         </Card>
@@ -409,13 +780,42 @@ export default function MemberPage() {
       <RecordingHub />
 
       {/* Recent Sessions */}
-      {sessions.length > 0 && (
+      {allSessions.length > 0 && (
         <Card>
-          <CardHeader>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {/* Calendar button */}
+              <button
+                onClick={() => setShowCalendar(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm text-gray-600 transition-colors"
+                aria-label="פתח לוח שנה"
+              >
+                <CalendarDays className="w-4 h-4" />
+                לוח שנה
+              </button>
+
+              {/* Limit toggle */}
+              <div className="flex rounded-lg border border-gray-200 overflow-hidden text-sm">
+                {([5, 10] as const).map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setSessionLimit(n)}
+                    className={`px-3 py-1.5 transition-colors ${
+                      sessionLimit === n
+                        ? "bg-indigo-600 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {n} אחרונות
+                  </button>
+                ))}
+              </div>
+            </div>
             <CardTitle>פגישות אחרונות</CardTitle>
-          </CardHeader>
+          </div>
+
           <div className="space-y-3">
-            {sessions.map((s) => (
+            {displayedSessions.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSelectedSession(s)}
@@ -447,7 +847,17 @@ export default function MemberPage() {
       {selectedSession && (
         <SessionDetailModal
           session={selectedSession}
+          token={token}
           onClose={() => setSelectedSession(null)}
+        />
+      )}
+
+      {/* Calendar Modal */}
+      {showCalendar && (
+        <CalendarModal
+          sessions={allSessions}
+          onClose={() => setShowCalendar(false)}
+          onSelectSession={(s) => setSelectedSession(s)}
         />
       )}
 
