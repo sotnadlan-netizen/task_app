@@ -17,7 +17,16 @@
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
       "Bash(find /Users/shalevpenker/git/task_app -name *.env* -o -name *secret* -o -name *key*)",
       "Bash(npm run:*)",
-      "Bash(/usr/local/bin/npm run:*)"
+      "Bash(/usr/local/bin/npm run:*)",
+      "Bash(python -m uvicorn app.main:app --reload)",
+      "Bash(git:*)",
+      "Bash(npx tsc:*)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist /FI \"PID eq 13696\" /FO LIST)",
+      "Bash(tasklist /FI \"PID eq 7180\" /FO LIST)",
+      "Bash(tasklist /FI \"PID eq 37464\" /FO LIST)",
+      "Bash(tasklist)",
+      "Bash(where gh *)"
     ]
   }
 }

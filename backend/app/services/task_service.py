@@ -34,7 +34,7 @@ async def create_session_and_tasks(
     # Insert tasks
     tasks_data = []
     for task in ai_result.get("tasks", []):
-        tasks_data.append({
+        row: dict = {
             "session_id": session["id"],
             "org_id": org_id,
             "title": task.get("title", ""),
@@ -43,7 +43,10 @@ async def create_session_and_tasks(
             "status": "todo",
             "priority": task.get("priority", "medium"),
             "is_locked": False,
-        })
+        }
+        if task.get("deadline"):
+            row["deadline"] = task["deadline"]
+        tasks_data.append(row)
 
     if tasks_data:
         supabase.table("tasks").insert(tasks_data).execute()

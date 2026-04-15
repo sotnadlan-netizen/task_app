@@ -170,4 +170,32 @@ export const api = {
 
   updateMemberRole: (orgId: string, membershipId: string, role: string, token: string) =>
     request(`/api/organizations/${orgId}/members/${membershipId}/role`, { method: "PATCH", body: JSON.stringify({ role }), token }),
+
+  // ── System Prompts (platform admin) ──────────────────────────────────────
+  listSystemPrompts: (token: string) =>
+    request("/api/system-prompts", { token }),
+
+  createSystemPrompt: (
+    data: { name: string; description: string; system_text: string },
+    token: string
+  ) =>
+    request("/api/system-prompts", { method: "POST", body: JSON.stringify(data), token }),
+
+  updateSystemPrompt: (
+    promptId: string,
+    data: { name?: string; description?: string; system_text?: string },
+    token: string
+  ) =>
+    request(`/api/system-prompts/${promptId}`, { method: "PATCH", body: JSON.stringify(data), token }),
+
+  deleteSystemPrompt: (promptId: string, token: string) =>
+    request(`/api/system-prompts/${promptId}`, { method: "DELETE", token }),
+
+  // ── Org Prompt Selection (org admin) ─────────────────────────────────────
+  selectOrgPrompt: (orgId: string, promptId: string | null, token: string) =>
+    request(`/api/organizations/${orgId}/prompt`, {
+      method: "PATCH",
+      body: JSON.stringify({ prompt_id: promptId }),
+      token,
+    }),
 };

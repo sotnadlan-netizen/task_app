@@ -1,5 +1,6 @@
 .env
-.env.example
+# keep *.example templates committed — they contain no secrets
+!.env*.example
 __pycache__/
 *.pyc
 *.pyo

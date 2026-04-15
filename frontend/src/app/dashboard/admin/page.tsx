@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { PromptEditor } from "@/components/inbox/prompt-editor";
+import { PromptSelector } from "@/components/inbox/prompt-selector";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -560,7 +561,10 @@ export default function AdminPage() {
         )}
       </Card>
 
-      {/* Prompt Editor */}
+      {/* Global System Prompt Selector (from platform admin library) */}
+      <PromptSelector />
+
+      {/* Local Org Prompt Editor (fallback / override) */}
       <PromptEditor />
 
       {/* Modals */}

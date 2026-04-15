@@ -39,6 +39,8 @@ CRITICAL RULES:
 3. If the audio is silent, inaudible, too noisy, or cannot be meaningfully transcribed,
    respond with exactly this JSON and nothing else:
    {{"title": "AUDIO_UNPROCESSABLE", "summary": "", "sentiment": "neutral", "tasks": []}}
+4. For EVERY task, explicitly extract and list a deadline if one was mentioned or implied.
+   Set "deadline" to null if no deadline was stated or can be reasonably inferred.
 
 Respond ONLY with valid JSON in this exact structure:
 {{
@@ -49,7 +51,8 @@ Respond ONLY with valid JSON in this exact structure:
     {{
       "title": "string",
       "description": "string",
-      "priority": "low|medium|high|critical"
+      "priority": "low|medium|high|critical",
+      "deadline": "string or null"
     }}
   ]
 }}"""
@@ -119,6 +122,9 @@ DEFAULT_SYSTEM_PROMPT = """You are a meeting assistant AI. Analyze the provided 
    - title: Short, actionable task title
    - description: Detailed description of what needs to be done
    - priority: low, medium, high, or critical
+   - deadline: Explicitly extract and list a deadline for every task if one was mentioned or implied.
+     Use the exact wording from the conversation (e.g. "end of week", "2024-01-15", "next Monday").
+     Set to null if no deadline was stated or can be reasonably inferred.
 
 IMPORTANT — Language rule:
 Detect the language spoken in the meeting and respond entirely in that language.
@@ -126,4 +132,5 @@ Detect the language spoken in the meeting and respond entirely in that language.
 - If the participants speak English, write everything in English.
 - If mixed, use the dominant language.
 The "sentiment" field must always be one of: positive, neutral, negative, mixed (in English, always).
-The "priority" field must always be one of: low, medium, high, critical (in English, always)."""
+The "priority" field must always be one of: low, medium, high, critical (in English, always).
+The "deadline" field is a string in the original meeting language, or null."""
