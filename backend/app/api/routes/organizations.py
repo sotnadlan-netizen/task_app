@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase
-from app.models.schemas import QuotaUpdate, CapacityResponse
+from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
@@ -91,6 +91,117 @@ async def update_member_quota(
         .execute()
     )
 
+    return result.data[0] if result.data else {}
+
+
+@router.post("")
+async def create_org(
+    data: OrgCreate,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Create a new organization (platform admin only)."""
+    is_admin = supabase.table("platform_admins").select("id").eq("user_id", user["id"]).execute()
+    if not is_admin.data:
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    result = supabase.table("organizations").insert({
+        "name": data.name,
+        "total_capacity_min": data.total_capacity_min,
+        "max_members": data.max_members,
+    }).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.patch("/{org_id}")
+async def update_org(
+    org_id: str,
+    data: OrgUpdate,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Update org name/capacity (platform admin only)."""
+    is_admin = supabase.table("platform_admins").select("id").eq("user_id", user["id"]).execute()
+    if not is_admin.data:
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    update_data = data.model_dump(exclude_none=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    result = supabase.table("organizations").update(update_data).eq("id", org_id).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.delete("/{org_id}")
+async def delete_org(
+    org_id: str,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Delete an organization (platform admin only)."""
+    is_admin = supabase.table("platform_admins").select("id").eq("user_id", user["id"]).execute()
+    if not is_admin.data:
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    supabase.table("organizations").delete().eq("id", org_id).execute()
+    return {"deleted": True}
+
+
+@router.post("/{org_id}/members")
+async def add_org_member(
+    org_id: str,
+    data: MemberAdd,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Add a member or participant to an org (admin or member)."""
+    membership = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).single().execute()
+    if not membership.data or membership.data["role"] not in ("admin", "member"):
+        raise HTTPException(status_code=403, detail="Insufficient permissions")
+
+    # Look up profile by email
+    profile = supabase.table("profiles").select("id").eq("email", data.email).maybeSingle().execute()
+
+    if profile.data:
+        insert_payload = {"user_id": profile.data["id"], "org_id": org_id, "role": data.role.value, "capacity_minutes": 0}
+    else:
+        insert_payload = {"invited_email": data.email, "org_id": org_id, "role": data.role.value, "capacity_minutes": 0}
+
+    result = supabase.table("org_memberships").insert(insert_payload).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.delete("/{org_id}/members/{membership_id}")
+async def remove_org_member(
+    org_id: str,
+    membership_id: str,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Remove a member from an org (admin only)."""
+    membership = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).single().execute()
+    if not membership.data or membership.data["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    supabase.table("org_memberships").delete().eq("id", membership_id).eq("org_id", org_id).execute()
+    return {"deleted": True}
+
+
+@router.patch("/{org_id}/members/{membership_id}/role")
+async def update_member_role(
+    org_id: str,
+    membership_id: str,
+    data: MemberRoleUpdate,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Change a member's role (admin only)."""
+    membership = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).single().execute()
+    if not membership.data or membership.data["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    result = supabase.table("org_memberships").update({"role": data.role.value}).eq("id", membership_id).eq("org_id", org_id).execute()
     return result.data[0] if result.data else {}
 
 

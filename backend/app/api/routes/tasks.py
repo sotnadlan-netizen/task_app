@@ -14,6 +14,16 @@ async def list_tasks(
     supabase: Client = Depends(get_supabase),
 ):
     """List all tasks for the given org (filtered by RLS)."""
+    membership = (
+        supabase.table("org_memberships")
+        .select("role")
+        .eq("user_id", user["id"])
+        .eq("org_id", org_id)
+        .execute()
+    )
+    if not membership.data:
+        raise HTTPException(status_code=403, detail="Not a member of this organization")
+
     result = (
         supabase.table("tasks")
         .select("*")

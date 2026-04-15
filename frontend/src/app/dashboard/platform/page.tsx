@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
+import { api } from "@/lib/api";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ interface OrgDetail {
 
 // ─── Create Org Modal ─────────────────────────────────────────────────────────
 function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(600);
   const [loading, setLoading] = useState(false);
@@ -42,21 +43,13 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
     setLoading(true);
     setError(null);
 
-    // Check for duplicate org name
-    const { data: existing } = await supabase
-      .from("organizations")
-      .select("id")
-      .ilike("name", name.trim())
-      .maybeSingle();
-
-    if (existing) {
-      setError(`An organization named "${name.trim()}" already exists. Please choose a different name.`);
-      setLoading(false);
-      return;
+    const token = session?.access_token || "";
+    try {
+      await api.createOrg({ name: name.trim(), total_capacity_min: capacity, max_members: maxMembers }, token);
+      setName(""); setCapacity(600); setMaxMembers(10); onCreated(); onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create organization");
     }
-
-    const { error: err } = await supabase.from("organizations").insert({ name: name.trim(), total_capacity_min: capacity, max_members: maxMembers });
-    if (err) { setError(err.message); } else { setName(""); setCapacity(600); setMaxMembers(10); onCreated(); onClose(); }
     setLoading(false);
   };
 
@@ -90,7 +83,7 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
 
 // ─── Edit Org Modal ───────────────────────────────────────────────────────────
 function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose: () => void; org: Organization; onSaved: (updated: Organization) => void }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const [name, setName] = useState(org.name);
   const [capacity, setCapacity] = useState(org.total_capacity_min);
   const [maxMembers, setMaxMembers] = useState(org.max_members);
@@ -103,13 +96,13 @@ function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose:
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { data, error: err } = await supabase
-      .from("organizations")
-      .update({ name: name.trim(), total_capacity_min: capacity, max_members: maxMembers })
-      .eq("id", org.id)
-      .select()
-      .single();
-    if (err) { setError(err.message); } else { onSaved(data as Organization); onClose(); }
+    const token = session?.access_token || "";
+    try {
+      const updated = await api.updateOrg(org.id, { name: name.trim(), total_capacity_min: capacity, max_members: maxMembers }, token) as Organization;
+      onSaved(updated); onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update organization");
+    }
     setLoading(false);
   };
 
@@ -149,7 +142,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
   members: MemberWithProfile[];
   onAdded: () => void;
 }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
   const [capacity, setCapacity] = useState(120);
@@ -197,19 +190,13 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", trimmedEmail)
-      .maybeSingle();
-
-    const insertPayload = profile
-      ? { user_id: profile.id, org_id: org.id, role, capacity_minutes: capacity }
-      : { invited_email: trimmedEmail, org_id: org.id, role, capacity_minutes: capacity };
-
-    const { error: insertErr } = await supabase.from("org_memberships").insert(insertPayload);
-
-    if (insertErr) { setError(insertErr.message); } else { setEmail(""); setCapacity(120); onAdded(); onClose(); }
+    const token = session?.access_token || "";
+    try {
+      await api.addOrgMember(org.id, { email: trimmedEmail, role }, token);
+      setEmail(""); setCapacity(120); onAdded(); onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add member");
+    }
     setLoading(false);
   };
 
@@ -282,7 +269,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
 
 // ─── Delete Org Confirm Modal ─────────────────────────────────────────────────
 function DeleteOrgModal({ open, onClose, org, onDeleted }: { open: boolean; onClose: () => void; org: Organization; onDeleted: () => void }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -290,8 +277,13 @@ function DeleteOrgModal({ open, onClose, org, onDeleted }: { open: boolean; onCl
   const handleDelete = async () => {
     setLoading(true);
     setError(null);
-    const { error: err } = await supabase.from("organizations").delete().eq("id", org.id);
-    if (err) { setError(err.message); } else { onDeleted(); onClose(); }
+    const token = session?.access_token || "";
+    try {
+      await api.deleteOrg(org.id, token);
+      onDeleted(); onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete organization");
+    }
     setLoading(false);
   };
 
@@ -327,7 +319,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
   onRefresh: () => void;
   onDeleted: () => void;
 }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const [org, setOrg] = useState(detail.org);
   const { members, sessions, taskCount } = detail;
   const [editingQuotas, setEditingQuotas] = useState<Record<string, number>>({});
@@ -363,24 +355,35 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 
     setSavingQuota(membershipId);
     setError(null);
-    const { error: err } = await supabase.from("org_memberships").update({ capacity_minutes: newQuota }).eq("id", membershipId);
-    if (err) { setError(err.message); } else {
+    const token = session?.access_token || "";
+    try {
+      await api.updateMemberQuota(membershipId, newQuota, token);
       setEditingQuotas((prev) => { const n = { ...prev }; delete n[membershipId]; return n; });
       onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update quota");
     }
     setSavingQuota(null);
   };
 
   const handleRoleChange = async (membershipId: string, newRole: UserRole) => {
-    const { error: err } = await supabase.from("org_memberships").update({ role: newRole }).eq("id", membershipId);
-    if (err) setError(err.message);
-    else onRefresh();
+    const token = session?.access_token || "";
+    try {
+      await api.updateMemberRole(org.id, membershipId, newRole, token);
+      onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role");
+    }
   };
 
   const handleRemoveMember = async (membershipId: string) => {
-    const { error: err } = await supabase.from("org_memberships").delete().eq("id", membershipId);
-    if (err) setError(err.message);
-    else onRefresh();
+    const token = session?.access_token || "";
+    try {
+      await api.removeOrgMember(org.id, membershipId, token);
+      onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove member");
+    }
   };
 
   return (

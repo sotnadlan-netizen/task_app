@@ -68,6 +68,27 @@ class TaskCreate(BaseModel):
     session_id: Optional[str] = None
 
 
+class OrgCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    total_capacity_min: int = Field(ge=0)
+    max_members: int = Field(ge=1)
+
+
+class OrgUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    total_capacity_min: Optional[int] = Field(None, ge=0)
+    max_members: Optional[int] = Field(None, ge=1)
+
+
+class MemberAdd(BaseModel):
+    email: str
+    role: UserRole = UserRole.participant
+
+
+class MemberRoleUpdate(BaseModel):
+    role: UserRole
+
+
 # --- Response Schemas ---
 
 class TaskExtracted(BaseModel):

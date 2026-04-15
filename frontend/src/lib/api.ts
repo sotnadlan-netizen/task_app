@@ -152,4 +152,22 @@ export const api = {
       method: "DELETE",
       token,
     }),
+
+  createOrg: (data: { name: string; total_capacity_min: number; max_members: number }, token: string) =>
+    request("/api/organizations", { method: "POST", body: JSON.stringify(data), token }),
+
+  updateOrg: (orgId: string, data: { name?: string; total_capacity_min?: number; max_members?: number }, token: string) =>
+    request(`/api/organizations/${orgId}`, { method: "PATCH", body: JSON.stringify(data), token }),
+
+  deleteOrg: (orgId: string, token: string) =>
+    request(`/api/organizations/${orgId}`, { method: "DELETE", token }),
+
+  addOrgMember: (orgId: string, data: { email: string; role: string }, token: string) =>
+    request(`/api/organizations/${orgId}/members`, { method: "POST", body: JSON.stringify(data), token }),
+
+  removeOrgMember: (orgId: string, membershipId: string, token: string) =>
+    request(`/api/organizations/${orgId}/members/${membershipId}`, { method: "DELETE", token }),
+
+  updateMemberRole: (orgId: string, membershipId: string, role: string, token: string) =>
+    request(`/api/organizations/${orgId}/members/${membershipId}/role`, { method: "PATCH", body: JSON.stringify({ role }), token }),
 };
