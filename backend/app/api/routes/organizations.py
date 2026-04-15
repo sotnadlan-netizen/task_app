@@ -243,6 +243,6 @@ async def get_capacity(
         capacity_minutes=cap,
         used_minutes=used,
         remaining_minutes=remaining,
-        is_low_balance=remaining <= 70,
-        is_blocked=remaining <= 55,
+        is_low_balance=remaining <= 10,
+        is_blocked=remaining <= 0,
     )

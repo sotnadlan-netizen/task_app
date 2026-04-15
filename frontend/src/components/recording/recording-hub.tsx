@@ -121,14 +121,14 @@ export function RecordingHub() {
         {/* Low Balance Warning */}
         {capacity?.is_low_balance && !capacity.is_blocked && (
           <Alert variant="warning" title="קיבולת נמוכה" className="mb-4">
-            נותרו לך {capacity.remaining_minutes} דקות. נהל את זמן ההקלטה בזהירות.
+            נותרו לך {capacity.remaining_minutes} דקות. פנה למנהל להגדלת ההקצאה בקרוב.
           </Alert>
         )}
 
         {/* Hard Block */}
         {capacity?.is_blocked && (
           <Alert variant="error" title="הקלטה חסומה" className="mb-4">
-            הקיבולת נמוכה מדי ({capacity.remaining_minutes} דק׳). פנה למנהל להגדלת ההקצאה.
+            נגמרה הקיבולת. פנה למנהל להגדלת ההקצאה.
           </Alert>
         )}
 
@@ -282,7 +282,7 @@ export function RecordingHub() {
 
           <p className="text-sm text-gray-500">
             {capacity?.is_blocked
-              ? "ההקלטה מושבתת עקב קיבולת נמוכה"
+              ? "ההקלטה מושבתת — אין קיבולת"
               : isRecording
                 ? "מקליט... לחץ לעצירה"
                 : "לחץ להתחלת הקלטה"}
