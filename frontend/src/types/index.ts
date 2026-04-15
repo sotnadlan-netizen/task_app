@@ -49,6 +49,13 @@ export interface OrgMembership {
   profile?: Profile;
 }
 
+export interface Project {
+  id: string;
+  org_id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Session {
   id: string;
   org_id: string;
@@ -59,6 +66,8 @@ export interface Session {
   duration_seconds: number;
   ai_prompt_version: number;
   created_at: string;
+  project_id?: string | null;
+  participant_ids?: string[];
 }
 
 export interface Task {
@@ -74,6 +83,7 @@ export interface Task {
   is_locked: boolean;
   deadline: string | null;
   created_at: string;
+  project_id?: string | null;
   assignee?: Profile;
 }
 

@@ -679,8 +679,8 @@ export default function PlatformPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Platform Administration</h1>
-          <p className="text-sm text-gray-500">Global organization configuration and monitoring.</p>
+          <h1 className="text-2xl font-bold text-gray-900">דף בית — ניהול פלטפורמה</h1>
+          <p className="text-sm text-gray-500">הגדרת ארגונים וניטור גלובלי.</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="w-4 h-4 mr-2" />New Organization

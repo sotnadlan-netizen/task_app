@@ -17,8 +17,8 @@ import type {
   CapacityInfo,
 } from "@/types";
 
-const LOW_BALANCE_THRESHOLD = 70;
-const HARD_BLOCK_THRESHOLD = 55;
+const LOW_BALANCE_THRESHOLD = 10;
+const HARD_BLOCK_THRESHOLD = 0;
 
 interface OrganizationContextType {
   organizations: Organization[];

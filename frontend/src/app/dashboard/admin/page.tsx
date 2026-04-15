@@ -278,7 +278,7 @@ function RemoveMemberModal({
 
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const { supabase, session } = useSupabase();
+  const { session } = useSupabase();
   const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
   const router = useRouter();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -302,17 +302,16 @@ export default function AdminPage() {
   }, [orgLoading, currentRole, router]);
 
   const loadMembers = useCallback(async () => {
-    if (!currentOrg) return;
+    if (!currentOrg || !session) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("org_memberships")
-      .select("*, profile:profiles(*)")
-      .eq("org_id", currentOrg.id)
-      .order("created_at", { ascending: true });
-
-    if (data) setMembers(data as MemberWithProfile[]);
+    try {
+      const data = await api.getOrgMembers(currentOrg.id, session.access_token);
+      setMembers(data as MemberWithProfile[]);
+    } catch {
+      // silently fail — members list stays empty
+    }
     setLoading(false);
-  }, [supabase, currentOrg]);
+  }, [currentOrg, session]);
 
   useEffect(() => {
     loadMembers();
@@ -387,8 +386,8 @@ export default function AdminPage() {
   if (orgLoading || currentRole !== "admin") return null;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Organization Admin</h1>
+    <div className="space-y-6" dir="rtl">
+      <h1 className="text-2xl font-bold text-gray-900">דף בית — ניהול ארגון</h1>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

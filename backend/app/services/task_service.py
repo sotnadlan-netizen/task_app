@@ -1,5 +1,6 @@
 from supabase import Client
 from fastapi import HTTPException
+from typing import Optional, List
 
 
 async def create_session_and_tasks(
@@ -9,6 +10,8 @@ async def create_session_and_tasks(
     duration_seconds: int,
     ai_result: dict,
     prompt_version: int,
+    project_id: Optional[str] = None,
+    participant_ids: Optional[List[str]] = None,
 ) -> dict:
     """
     Atomically create a session and its extracted tasks.
@@ -23,7 +26,10 @@ async def create_session_and_tasks(
         "sentiment": ai_result.get("sentiment", "neutral"),
         "duration_seconds": duration_seconds,
         "ai_prompt_version": prompt_version,
+        "participant_ids": participant_ids or [],
     }
+    if project_id:
+        session_data["project_id"] = project_id
 
     session_result = supabase.table("sessions").insert(session_data).execute()
     if not session_result.data:
@@ -34,7 +40,7 @@ async def create_session_and_tasks(
     # Insert tasks
     tasks_data = []
     for task in ai_result.get("tasks", []):
-        row: dict = {
+        task_entry: dict = {
             "session_id": session["id"],
             "org_id": org_id,
             "title": task.get("title", ""),
@@ -45,8 +51,10 @@ async def create_session_and_tasks(
             "is_locked": False,
         }
         if task.get("deadline"):
-            row["deadline"] = task["deadline"]
-        tasks_data.append(row)
+            task_entry["deadline"] = task["deadline"]
+        if project_id:
+            task_entry["project_id"] = project_id
+        tasks_data.append(task_entry)
 
     if tasks_data:
         supabase.table("tasks").insert(tasks_data).execute()
