@@ -100,14 +100,13 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
     if (task.is_locked) return;
     setTogglingId(task.id);
     const newStatus = task.status === "done" ? "todo" : "done";
-    const { error } = await supabase
-      .from("tasks")
-      .update({ status: newStatus })
-      .eq("id", task.id);
-    if (!error) {
+    try {
+      await api.updateTask(task.id, { status: newStatus }, token);
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, status: newStatus } : t))
       );
+    } catch {
+      // silently fail — task remains unchanged
     }
     setTogglingId(null);
   };

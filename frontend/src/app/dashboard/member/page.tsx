@@ -576,7 +576,7 @@ function AddParticipantModal({
   open: boolean;
   onClose: () => void;
 }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
   const { currentOrg } = useOrganization();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -592,51 +592,14 @@ function AddParticipantModal({
     setLoading(true);
 
     const trimmedEmail = email.trim();
+    const token = session?.access_token || "";
 
-    const { data: existing } = await supabase
-      .from("org_memberships")
-      .select("id")
-      .eq("org_id", currentOrg.id)
-      .or(`invited_email.eq.${trimmedEmail}`);
-
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", trimmedEmail)
-      .maybeSingle();
-
-    if (existing && existing.length > 0) {
-      setError(`${trimmedEmail} כבר נמצא בארגון זה.`);
-      setLoading(false);
-      return;
-    }
-
-    if (existingProfile) {
-      const { data: existingById } = await supabase
-        .from("org_memberships")
-        .select("id")
-        .eq("org_id", currentOrg.id)
-        .eq("user_id", existingProfile.id)
-        .maybeSingle();
-
-      if (existingById) {
-        setError(`${trimmedEmail} כבר נמצא בארגון זה.`);
-        setLoading(false);
-        return;
-      }
-    }
-
-    const insertPayload = existingProfile
-      ? { user_id: existingProfile.id, org_id: currentOrg.id, role: "participant", capacity_minutes: 0 }
-      : { invited_email: trimmedEmail, org_id: currentOrg.id, role: "participant", capacity_minutes: 0 };
-
-    const { error: insertErr } = await supabase.from("org_memberships").insert(insertPayload);
-
-    if (insertErr) {
-      setError(insertErr.message);
-    } else {
+    try {
+      await api.addOrgMember(currentOrg.id, { email: trimmedEmail, role: "participant" }, token);
       setSuccess(`${trimmedEmail} נוסף כמשתתף.`);
       setEmail("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "שגיאה בהוספת משתתף");
     }
     setLoading(false);
   };

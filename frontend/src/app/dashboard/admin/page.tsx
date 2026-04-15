@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import type { OrgMembership, Profile, UserRole } from "@/types";
+import { api } from "@/lib/api";
 import { Users, Clock, Building2, Save, UserPlus, Trash2 } from "lucide-react";
 
 type MemberWithProfile = Omit<OrgMembership, "profile"> & {
@@ -32,7 +33,7 @@ function AddMemberModal({
   /** Pre-select a role (e.g. "participant" from member page shortcut) */
   defaultRole?: UserRole;
 }) {
-  const { supabase } = useSupabase();
+  const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>(defaultRole);
@@ -88,28 +89,16 @@ function AddMemberModal({
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", trimmedEmail)
-      .maybeSingle();
-
-    const capacityToAssign = isParticipant ? 0 : capacity;
-
-    const insertPayload = profile
-      ? { user_id: profile.id, org_id: currentOrg.id, role, capacity_minutes: capacityToAssign }
-      : { invited_email: trimmedEmail, org_id: currentOrg.id, role, capacity_minutes: capacityToAssign };
-
-    const { error: insertErr } = await supabase.from("org_memberships").insert(insertPayload);
-
-    if (insertErr) {
-      setError(insertErr.message);
-    } else {
+    const token = session?.access_token || "";
+    try {
+      await api.addOrgMember(currentOrg.id, { email: trimmedEmail, role }, token);
       setEmail("");
       setCapacity(120);
       setRole(defaultRole);
       onAdded();
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add member");
     }
     setLoading(false);
   };
@@ -238,7 +227,8 @@ function RemoveMemberModal({
   member: MemberWithProfile;
   onRemoved: () => void;
 }) {
-  const { supabase } = useSupabase();
+  const { session } = useSupabase();
+  const { currentOrg } = useOrganization();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -249,17 +239,16 @@ function RemoveMemberModal({
     "this member";
 
   const handleRemove = async () => {
+    if (!currentOrg) return;
     setLoading(true);
     setError(null);
-    const { error: err } = await supabase
-      .from("org_memberships")
-      .delete()
-      .eq("id", member.id);
-    if (err) {
-      setError(err.message);
-    } else {
+    const token = session?.access_token || "";
+    try {
+      await api.removeOrgMember(currentOrg.id, member.id, token);
       onRemoved();
       onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to remove member");
     }
     setLoading(false);
   };
@@ -288,7 +277,7 @@ function RemoveMemberModal({
 
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const { supabase } = useSupabase();
+  const { supabase, session } = useSupabase();
   const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
   const router = useRouter();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -357,20 +346,16 @@ export default function AdminPage() {
     setSavingQuota(membershipId);
     setError(null);
 
-    const { error: updateError } = await supabase
-      .from("org_memberships")
-      .update({ capacity_minutes: newQuota })
-      .eq("id", membershipId);
-
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    try {
+      await api.updateMemberQuota(membershipId, newQuota, session?.access_token || "");
       setEditingQuotas((prev) => {
         const next = { ...prev };
         delete next[membershipId];
         return next;
       });
       loadMembers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update quota");
     }
     setSavingQuota(null);
   };
@@ -382,20 +367,17 @@ export default function AdminPage() {
     setSavingRole(membershipId);
     setError(null);
 
-    const { error: updateError } = await supabase
-      .from("org_memberships")
-      .update({ role: newRole })
-      .eq("id", membershipId);
-
-    if (updateError) {
-      setError(updateError.message);
-    } else {
+    if (!currentOrg) return;
+    try {
+      await api.updateMemberRole(currentOrg.id, membershipId, newRole, session?.access_token || "");
       setEditingRoles((prev) => {
         const next = { ...prev };
         delete next[membershipId];
         return next;
       });
       loadMembers();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update role");
     }
     setSavingRole(null);
   };
