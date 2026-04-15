@@ -93,10 +93,27 @@ class MemberRoleUpdate(BaseModel):
 
 # --- Response Schemas ---
 
+class SystemPromptCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    description: str = Field(default="", max_length=500)
+    system_text: str = Field(min_length=10, max_length=20000)
+
+
+class SystemPromptUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+    system_text: Optional[str] = Field(None, min_length=10, max_length=20000)
+
+
+class OrgPromptSelect(BaseModel):
+    prompt_id: Optional[str] = None  # None = clear selection (fall back to prompt_versions)
+
+
 class TaskExtracted(BaseModel):
     title: str
     description: str
     priority: TaskPriority = TaskPriority.medium
+    deadline: Optional[str] = None
 
 
 class AudioProcessingResult(BaseModel):

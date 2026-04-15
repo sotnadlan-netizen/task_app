@@ -15,5 +15,11 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: APP_URL
+        sync: false
     healthCheckPath: /health
     autoDeploy: true

@@ -40,7 +40,7 @@ async def create_session_and_tasks(
     # Insert tasks
     tasks_data = []
     for task in ai_result.get("tasks", []):
-        task_entry = {
+        task_entry: dict = {
             "session_id": session["id"],
             "org_id": org_id,
             "title": task.get("title", ""),
@@ -50,6 +50,8 @@ async def create_session_and_tasks(
             "priority": task.get("priority", "medium"),
             "is_locked": False,
         }
+        if task.get("deadline"):
+            task_entry["deadline"] = task["deadline"]
         if project_id:
             task_entry["project_id"] = project_id
         tasks_data.append(task_entry)

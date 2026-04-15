@@ -15,6 +15,7 @@ import {
   Building2, Clock, Users, Activity, Plus, ChevronRight,
   ChevronLeft, Save, BarChart3, ListChecks, Trash2, Settings, UserPlus,
 } from "lucide-react";
+import { SystemPromptsPanel } from "@/components/platform/system-prompts-panel";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile;
@@ -780,6 +781,9 @@ export default function PlatformPage() {
       </Card>
 
       <CreateOrgModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={loadOrgs} />
+
+      {/* ── System Prompts CRUD ── */}
+      <SystemPromptsPanel />
     </div>
   );
 }

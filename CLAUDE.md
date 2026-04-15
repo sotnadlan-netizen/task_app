@@ -93,5 +93,5 @@ Follow this exact flow — do not deviate:
 - Do not write audio chunks to disk or a server database — memory only.
 - Do not bypass RLS using `service_role` from the frontend.
 - Do not create new Supabase clients — use the existing ones in `lib/`.
-- Do not commit `.env`, `.env.local`, or any file containing secrets.
+- Do not commit `.env`, `.env.local`,`.env.example` or any file containing secrets.
 - Do not add speculative abstractions or unused utilities.

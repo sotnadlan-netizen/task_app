@@ -1,8 +1,10 @@
+import asyncio
 from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase, require_role
 from app.services.gemini import process_audio_with_gemini, DEFAULT_SYSTEM_PROMPT
 from app.services.task_service import create_session_and_tasks
+from app.services.email_service import send_meeting_summary
 from app.config import get_settings
 from typing import Optional
 
@@ -66,21 +68,49 @@ async def process_audio(
     if mime_type not in ALLOWED_MIME_TYPES:
         mime_type = "audio/webm"
 
-    # Get active prompt for this org
-    prompt_result = (
-        supabase.table("prompt_versions")
-        .select("*")
-        .eq("org_id", org_id)
-        .eq("is_active", True)
-        .maybe_single()
-        .execute()
-    )
-
+    # Resolve system prompt — priority:
+    # 1. org.selected_prompt_id  → global system_prompts.system_text
+    # 2. org's active prompt_version
+    # 3. DEFAULT_SYSTEM_PROMPT
     system_prompt = DEFAULT_SYSTEM_PROMPT
     prompt_version = 0
-    if prompt_result and prompt_result.data:
-        system_prompt = prompt_result.data["prompt_text"]
-        prompt_version = prompt_result.data["version"]
+
+    selected_prompt_id = None
+    try:
+        org_row = (
+            supabase.table("organizations")
+            .select("selected_prompt_id")
+            .eq("id", org_id)
+            .single()
+            .execute()
+        )
+        selected_prompt_id = (org_row.data or {}).get("selected_prompt_id")
+    except Exception:
+        # Column may not exist yet (migration pending) — fall through to prompt_versions
+        pass
+
+    if selected_prompt_id:
+        sp_result = (
+            supabase.table("system_prompts")
+            .select("system_text")
+            .eq("id", selected_prompt_id)
+            .maybe_single()
+            .execute()
+        )
+        if sp_result and sp_result.data:
+            system_prompt = sp_result.data["system_text"]
+    else:
+        prompt_result = (
+            supabase.table("prompt_versions")
+            .select("*")
+            .eq("org_id", org_id)
+            .eq("is_active", True)
+            .maybe_single()
+            .execute()
+        )
+        if prompt_result and prompt_result.data:
+            system_prompt = prompt_result.data["prompt_text"]
+            prompt_version = prompt_result.data["version"]
 
     # Process with Gemini (in-memory only)
     try:
@@ -106,6 +136,16 @@ async def process_audio(
         prompt_version=prompt_version,
         project_id=project_id or None,
         participant_ids=parsed_participant_ids,
+    )
+
+    # Fire post-meeting summary email in the background (failures are logged, not raised)
+    asyncio.create_task(
+        send_meeting_summary(
+            supabase=supabase,
+            org_id=org_id,
+            session_title=result.get("title", "Meeting"),
+            session_summary=result.get("summary", ""),
+        )
     )
 
     return result

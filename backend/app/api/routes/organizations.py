@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase, check_platform_admin
-from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate
+from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate, OrgPromptSelect
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
@@ -212,6 +212,34 @@ async def update_member_role(
             raise HTTPException(status_code=403, detail="Admin access required")
 
     result = supabase.table("org_memberships").update({"role": data.role.value}).eq("id", membership_id).eq("org_id", org_id).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.patch("/{org_id}/prompt")
+async def select_org_prompt(
+    org_id: str,
+    data: OrgPromptSelect,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Set or clear the global system prompt for this org (admin only)."""
+    membership = (
+        supabase.table("org_memberships")
+        .select("role")
+        .eq("user_id", user["id"])
+        .eq("org_id", org_id)
+        .single()
+        .execute()
+    )
+    if not membership.data or membership.data["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    result = (
+        supabase.table("organizations")
+        .update({"selected_prompt_id": data.prompt_id})
+        .eq("id", org_id)
+        .execute()
+    )
     return result.data[0] if result.data else {}
 
 

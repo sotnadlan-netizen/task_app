@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function GlobalNav() {
   const { user, signOut } = useSupabase();
@@ -192,6 +193,9 @@ export function GlobalNav() {
                 </button>
               </div>
             )}
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
 
             {/* Notification Bell */}
             <Link

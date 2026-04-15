@@ -24,6 +24,15 @@ export interface Organization {
   total_capacity_min: number;
   used_capacity_min: number;
   max_members: number;
+  selected_prompt_id: string | null;
+  created_at: string;
+}
+
+export interface SystemPrompt {
+  id: string;
+  name: string;
+  description: string;
+  system_text?: string;   // Only returned to platform admins
   created_at: string;
 }
 
@@ -72,6 +81,7 @@ export interface Task {
   priority: TaskPriority;
   external_sync_id: string | null;
   is_locked: boolean;
+  deadline: string | null;
   created_at: string;
   project_id?: string | null;
   assignee?: Profile;
