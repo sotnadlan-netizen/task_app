@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
+import { useRealtime } from "@/providers/realtime-provider";
 import { RecordingHub } from "@/components/recording/recording-hub";
 import { TaskList } from "@/components/tasks/task-list";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -652,6 +653,7 @@ function AddParticipantModal({
 export default function MemberPage() {
   const { supabase, session } = useSupabase();
   const { currentOrg, capacity, currentRole, loading: orgLoading } = useOrganization();
+  const { subscribe } = useRealtime();
   const router = useRouter();
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [taskCount, setTaskCount] = useState(0);
@@ -693,6 +695,14 @@ export default function MemberPage() {
   useEffect(() => {
     loadStats();
   }, [loadStats]);
+
+  // Refresh sessions + task count whenever a session is inserted or deleted
+  useEffect(() => {
+    const unsub = subscribe("sessions", () => {
+      loadStats();
+    });
+    return unsub;
+  }, [subscribe, loadStats]);
 
   const handleDeleteSession = async () => {
     if (!confirmDeleteSession) return;
