@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase
-from app.models.schemas import TaskUpdate, EditRequestCreate, EditRequestReview
+from app.models.schemas import TaskUpdate, TaskCreate, EditRequestCreate, EditRequestReview
 from app.services.task_service import approve_edit_request, reject_edit_request
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -22,6 +22,69 @@ async def list_tasks(
         .execute()
     )
     return result.data or []
+
+
+@router.post("")
+async def create_task(
+    data: TaskCreate,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Create a task manually (member/admin only)."""
+    membership = (
+        supabase.table("org_memberships")
+        .select("role")
+        .eq("user_id", user["id"])
+        .eq("org_id", data.org_id)
+        .single()
+        .execute()
+    )
+    if not membership.data or membership.data["role"] == "participant":
+        raise HTTPException(status_code=403, detail="Participants cannot create tasks")
+
+    task_data: dict = {
+        "org_id": data.org_id,
+        "title": data.title,
+        "description": data.description,
+        "priority": data.priority.value,
+        "status": data.status.value,
+        "is_locked": False,
+    }
+    if data.session_id:
+        task_data["session_id"] = data.session_id
+
+    result = supabase.table("tasks").insert(task_data).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.delete("/{task_id}")
+async def delete_task(
+    task_id: str,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Delete a task (member/admin only). Locked tasks cannot be deleted."""
+    task = supabase.table("tasks").select("*").eq("id", task_id).single().execute()
+
+    if not task.data:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if task.data["is_locked"]:
+        raise HTTPException(status_code=400, detail="Task is locked")
+
+    membership = (
+        supabase.table("org_memberships")
+        .select("role")
+        .eq("user_id", user["id"])
+        .eq("org_id", task.data["org_id"])
+        .single()
+        .execute()
+    )
+    if not membership.data or membership.data["role"] == "participant":
+        raise HTTPException(status_code=403, detail="Participants cannot delete tasks")
+
+    supabase.table("tasks").delete().eq("id", task_id).execute()
+    return {"deleted": True}
 
 
 @router.patch("/{task_id}")

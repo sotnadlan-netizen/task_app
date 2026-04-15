@@ -59,6 +59,15 @@ class TaskUpdate(BaseModel):
     assignee_id: Optional[str] = None
 
 
+class TaskCreate(BaseModel):
+    org_id: str
+    title: str
+    description: str = ""
+    priority: TaskPriority = TaskPriority.medium
+    status: TaskStatus = TaskStatus.todo
+    session_id: Optional[str] = None
+
+
 # --- Response Schemas ---
 
 class TaskExtracted(BaseModel):

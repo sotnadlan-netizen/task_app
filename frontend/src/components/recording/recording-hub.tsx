@@ -39,30 +39,26 @@ export function RecordingHub() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Recording Hub</CardTitle>
+          <CardTitle>מרכז הקלטה</CardTitle>
           {capacity && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <Clock className="w-4 h-4" />
-              <span>
-                {capacity.remaining_minutes} min remaining
-              </span>
+              <span>{capacity.remaining_minutes} דקות נותרות</span>
             </div>
           )}
         </CardHeader>
 
         {/* Low Balance Warning */}
         {capacity?.is_low_balance && !capacity.is_blocked && (
-          <Alert variant="warning" title="Low Capacity" className="mb-4">
-            You have {capacity.remaining_minutes} minutes remaining.
-            Please manage your recording time carefully.
+          <Alert variant="warning" title="קיבולת נמוכה" className="mb-4">
+            נותרו לך {capacity.remaining_minutes} דקות. נהל את זמן ההקלטה בזהירות.
           </Alert>
         )}
 
         {/* Hard Block */}
         {capacity?.is_blocked && (
-          <Alert variant="error" title="Recording Blocked" className="mb-4">
-            Capacity too low ({capacity.remaining_minutes} min). Contact your
-            admin to increase your allocation.
+          <Alert variant="error" title="הקלטה חסומה" className="mb-4">
+            הקיבולת נמוכה מדי ({capacity.remaining_minutes} דק׳). פנה למנהל להגדלת ההקצאה.
           </Alert>
         )}
 
@@ -93,7 +89,7 @@ export function RecordingHub() {
                     ? "bg-gray-300 cursor-not-allowed"
                     : "bg-red-500 hover:bg-red-600 hover:scale-105 active:scale-95"
                 }`}
-              aria-label="Start recording"
+              aria-label="התחל הקלטה"
             >
               <Mic className="w-10 h-10 text-white" />
             </button>
@@ -103,7 +99,7 @@ export function RecordingHub() {
               className="w-24 h-24 rounded-full bg-gray-800 hover:bg-gray-900 flex items-center justify-center
                 transition-all duration-200 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-400
                 hover:scale-105 active:scale-95 animate-pulse"
-              aria-label="Stop recording"
+              aria-label="עצור הקלטה"
             >
               <Square className="w-8 h-8 text-white" />
             </button>
@@ -111,10 +107,10 @@ export function RecordingHub() {
 
           <p className="text-sm text-gray-500">
             {capacity?.is_blocked
-              ? "Recording is disabled due to low capacity"
+              ? "ההקלטה מושבתת עקב קיבולת נמוכה"
               : isRecording
-                ? "Recording in progress... tap to stop"
-                : "Tap to start recording"}
+                ? "מקליט... לחץ לעצירה"
+                : "לחץ להתחלת הקלטה"}
           </p>
         </div>
 
@@ -141,7 +137,7 @@ export function RecordingHub() {
               />
             </svg>
             <span className="text-sm text-indigo-600 font-medium">
-              Processing audio with AI...
+              מעבד אודיו עם בינה מלאכותית...
             </span>
           </div>
         )}

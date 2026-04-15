@@ -123,4 +123,33 @@ export const api = {
       `/api/organizations/${orgId}/capacity`,
       { token }
     ),
+
+  createTask: (
+    data: {
+      org_id: string;
+      title: string;
+      description?: string;
+      priority?: string;
+      status?: string;
+      session_id?: string;
+    },
+    token: string
+  ) =>
+    request("/api/tasks", {
+      method: "POST",
+      body: JSON.stringify(data),
+      token,
+    }),
+
+  deleteTask: (taskId: string, token: string) =>
+    request(`/api/tasks/${taskId}`, {
+      method: "DELETE",
+      token,
+    }),
+
+  deleteSession: (sessionId: string, token: string) =>
+    request(`/api/sessions/${sessionId}`, {
+      method: "DELETE",
+      token,
+    }),
 };
