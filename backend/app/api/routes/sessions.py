@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from supabase import Client
-from app.api.deps import get_current_user, get_supabase
+from app.api.deps import get_current_user, get_supabase, check_platform_admin
 from pydantic import BaseModel
 from typing import Optional, List
 
@@ -29,16 +29,18 @@ async def delete_session(
     if not session.data:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", session.data["org_id"])
-        .single()
-        .execute()
-    )
-    if not membership.data or membership.data["role"] == "participant":
-        raise HTTPException(status_code=403, detail="Participants cannot delete sessions")
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", session.data["org_id"])
+            .limit(1)
+            .execute()
+        )
+        membership_data = membership.data[0] if membership.data else None
+        if not membership_data or membership_data["role"] == "participant":
+            raise HTTPException(status_code=403, detail="Participants cannot delete sessions")
 
     supabase.table("sessions").delete().eq("id", session_id).execute()
     return {"deleted": True}
@@ -61,16 +63,18 @@ async def update_session(
     )
     if not session.data:
         raise HTTPException(status_code=404, detail="Session not found")
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", session.data["org_id"])
-        .single()
-        .execute()
-    )
-    if not membership.data or membership.data["role"] == "participant":
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", session.data["org_id"])
+            .limit(1)
+            .execute()
+        )
+        membership_data = membership.data[0] if membership.data else None
+        if not membership_data or membership_data["role"] == "participant":
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
     update_data = data.model_dump(exclude_none=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")

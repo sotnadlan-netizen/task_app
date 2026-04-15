@@ -31,25 +31,26 @@ async def process_audio(
     settings = get_settings()
 
     # Validate membership and role (must be at least 'member')
-    membership = (
+    membership_res = (
         supabase.table("org_memberships")
         .select("*")
         .eq("user_id", user["id"])
         .eq("org_id", org_id)
-        .single()
+        .limit(1)
         .execute()
     )
+    membership_data = membership_res.data[0] if membership_res.data else None
 
-    if not membership.data:
+    if not membership_data:
         raise HTTPException(status_code=403, detail="Not a member of this organization")
 
-    if membership.data["role"] == "participant":
+    if membership_data["role"] == "participant":
         raise HTTPException(status_code=403, detail="Participants cannot record")
 
     # Check capacity
-    remaining = membership.data["capacity_minutes"] - membership.data["used_minutes"]
-    if remaining <= 55:
-        raise HTTPException(status_code=403, detail="Insufficient capacity (≤55 minutes)")
+    remaining = membership_data["capacity_minutes"] - membership_data["used_minutes"]
+    if remaining <= 0:
+        raise HTTPException(status_code=403, detail="Insufficient capacity")
 
     # Read audio into memory (never touch disk)
     audio_bytes = await audio.read()
