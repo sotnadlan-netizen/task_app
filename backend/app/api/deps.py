@@ -37,6 +37,12 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
+def check_platform_admin(user_id: str, supabase: Client) -> bool:
+    """Return True if the user is a platform admin."""
+    result = supabase.table("platform_admins").select("id").eq("user_id", user_id).limit(1).execute()
+    return bool(result.data)
+
+
 async def require_role(
     role: str,
     org_id: str,

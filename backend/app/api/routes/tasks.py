@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
-from app.api.deps import get_current_user, get_supabase
+from app.api.deps import get_current_user, get_supabase, check_platform_admin
 from app.models.schemas import TaskUpdate, TaskCreate, EditRequestCreate, EditRequestReview
 from app.services.task_service import approve_edit_request, reject_edit_request
 
@@ -14,15 +14,16 @@ async def list_tasks(
     supabase: Client = Depends(get_supabase),
 ):
     """List all tasks for the given org (filtered by RLS)."""
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", org_id)
-        .execute()
-    )
-    if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", org_id)
+            .execute()
+        )
+        if not membership.data:
+            raise HTTPException(status_code=403, detail="Not a member of this organization")
 
     result = (
         supabase.table("tasks")
@@ -41,16 +42,18 @@ async def create_task(
     supabase: Client = Depends(get_supabase),
 ):
     """Create a task manually (member/admin only)."""
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", data.org_id)
-        .single()
-        .execute()
-    )
-    if not membership.data or membership.data["role"] == "participant":
-        raise HTTPException(status_code=403, detail="Participants cannot create tasks")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", data.org_id)
+            .limit(1)
+            .execute()
+        )
+        membership_data = membership_res.data[0] if membership_res.data else None
+        if not membership_data or membership_data["role"] == "participant":
+            raise HTTPException(status_code=403, detail="Participants cannot create tasks")
 
     task_data: dict = {
         "org_id": data.org_id,
@@ -84,16 +87,18 @@ async def delete_task(
     if task.data["is_locked"]:
         raise HTTPException(status_code=400, detail="Task is locked")
 
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", task.data["org_id"])
-        .single()
-        .execute()
-    )
-    if not membership.data or membership.data["role"] == "participant":
-        raise HTTPException(status_code=403, detail="Participants cannot delete tasks")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", task.data["org_id"])
+            .limit(1)
+            .execute()
+        )
+        membership_data = membership_res.data[0] if membership_res.data else None
+        if not membership_data or membership_data["role"] == "participant":
+            raise HTTPException(status_code=403, detail="Participants cannot delete tasks")
 
     supabase.table("tasks").delete().eq("id", task_id).execute()
     return {"deleted": True}
@@ -119,17 +124,18 @@ async def update_task(
         )
 
     # Verify user role
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", task.data["org_id"])
-        .single()
-        .execute()
-    )
-
-    if not membership.data or membership.data["role"] == "participant":
-        raise HTTPException(status_code=403, detail="Participants cannot directly edit tasks")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", task.data["org_id"])
+            .limit(1)
+            .execute()
+        )
+        membership_data = membership_res.data[0] if membership_res.data else None
+        if not membership_data or membership_data["role"] == "participant":
+            raise HTTPException(status_code=403, detail="Participants cannot directly edit tasks")
 
     update_data = data.model_dump(exclude_none=True)
     if not update_data:

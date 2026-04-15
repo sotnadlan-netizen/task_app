@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
-from app.api.deps import get_current_user, get_supabase
+from app.api.deps import get_current_user, get_supabase, check_platform_admin
 from pydantic import BaseModel, Field
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
@@ -17,15 +17,16 @@ async def list_projects(
     user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),
 ):
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", org_id)
-        .execute()
-    )
-    if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", org_id)
+            .execute()
+        )
+        if not membership.data:
+            raise HTTPException(status_code=403, detail="Not a member of this organization")
     result = (
         supabase.table("projects")
         .select("*")
@@ -42,15 +43,16 @@ async def create_project(
     user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),
 ):
-    membership = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", data.org_id)
-        .execute()
-    )
-    if not membership.data:
-        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", data.org_id)
+            .execute()
+        )
+        if not membership.data:
+            raise HTTPException(status_code=403, detail="Not a member of this organization")
     # Check if project with same name already exists
     existing = (
         supabase.table("projects")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
-from app.api.deps import get_current_user, get_supabase
+from app.api.deps import get_current_user, get_supabase, check_platform_admin
 from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
@@ -28,18 +28,18 @@ async def list_org_members(
     supabase: Client = Depends(get_supabase),
 ):
     """List all members of an organization (admin only)."""
-    membership_res = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", org_id)
-        .limit(1)
-        .execute()
-    )
-    membership = membership_res.data[0] if membership_res.data else None
-
-    if not membership or membership["role"] not in ("admin", "member"):
-        raise HTTPException(status_code=403, detail="Member access required")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", org_id)
+            .limit(1)
+            .execute()
+        )
+        membership = membership_res.data[0] if membership_res.data else None
+        if not membership or membership["role"] not in ("admin", "member"):
+            raise HTTPException(status_code=403, detail="Member access required")
 
     result = (
         supabase.table("org_memberships")
@@ -74,18 +74,18 @@ async def update_member_quota(
         raise HTTPException(status_code=404, detail="Membership not found")
 
     # Verify admin role
-    admin_check_res = (
-        supabase.table("org_memberships")
-        .select("role")
-        .eq("user_id", user["id"])
-        .eq("org_id", target_data["org_id"])
-        .limit(1)
-        .execute()
-    )
-    admin_check_data = admin_check_res.data[0] if admin_check_res.data else None
-
-    if not admin_check_data or admin_check_data["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if not check_platform_admin(user["id"], supabase):
+        admin_check_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", target_data["org_id"])
+            .limit(1)
+            .execute()
+        )
+        admin_check_data = admin_check_res.data[0] if admin_check_res.data else None
+        if not admin_check_data or admin_check_data["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
 
     result = (
         supabase.table("org_memberships")
@@ -159,10 +159,11 @@ async def add_org_member(
     supabase: Client = Depends(get_supabase),
 ):
     """Add a member or participant to an org (admin or member)."""
-    membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
-    membership = membership_res.data[0] if membership_res.data else None
-    if not membership or membership["role"] not in ("admin", "member"):
-        raise HTTPException(status_code=403, detail="Insufficient permissions")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
+        membership = membership_res.data[0] if membership_res.data else None
+        if not membership or membership["role"] not in ("admin", "member"):
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     # Look up profile by email
     profile_res = supabase.table("profiles").select("id").eq("email", data.email).limit(1).execute()
@@ -185,10 +186,11 @@ async def remove_org_member(
     supabase: Client = Depends(get_supabase),
 ):
     """Remove a member from an org (admin only)."""
-    membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
-    membership = membership_res.data[0] if membership_res.data else None
-    if not membership or membership["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
+        membership = membership_res.data[0] if membership_res.data else None
+        if not membership or membership["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
 
     supabase.table("org_memberships").delete().eq("id", membership_id).eq("org_id", org_id).execute()
     return {"deleted": True}
@@ -203,10 +205,11 @@ async def update_member_role(
     supabase: Client = Depends(get_supabase),
 ):
     """Change a member's role (admin only)."""
-    membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
-    membership = membership_res.data[0] if membership_res.data else None
-    if not membership or membership["role"] != "admin":
-        raise HTTPException(status_code=403, detail="Admin access required")
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = supabase.table("org_memberships").select("role").eq("user_id", user["id"]).eq("org_id", org_id).limit(1).execute()
+        membership = membership_res.data[0] if membership_res.data else None
+        if not membership or membership["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
 
     result = supabase.table("org_memberships").update({"role": data.role.value}).eq("id", membership_id).eq("org_id", org_id).execute()
     return result.data[0] if result.data else {}
