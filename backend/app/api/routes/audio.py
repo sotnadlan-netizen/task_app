@@ -71,15 +71,19 @@ async def process_audio(
     system_prompt = DEFAULT_SYSTEM_PROMPT
     prompt_version = 0
 
-    org_row = (
-        supabase.table("organizations")
-        .select("selected_prompt_id")
-        .eq("id", org_id)
-        .single()
-        .execute()
-    )
-
-    selected_prompt_id = org_row.data.get("selected_prompt_id") if org_row.data else None
+    selected_prompt_id = None
+    try:
+        org_row = (
+            supabase.table("organizations")
+            .select("selected_prompt_id")
+            .eq("id", org_id)
+            .single()
+            .execute()
+        )
+        selected_prompt_id = (org_row.data or {}).get("selected_prompt_id")
+    except Exception:
+        # Column may not exist yet (migration pending) — fall through to prompt_versions
+        pass
 
     if selected_prompt_id:
         sp_result = (
