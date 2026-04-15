@@ -11,6 +11,7 @@ import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { api } from "@/lib/api";
 import type { Session, Task } from "@/types";
+import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
 import {
   CalendarDays,
   ChevronLeft,
@@ -303,39 +304,24 @@ export function MeetingsList() {
         </Modal>
       )}
 
-      {/* Session detail inline — just show summary in modal */}
+      {/* Full session detail modal — tasks, edit meeting, delete */}
       {selectedSession && (
-        <Modal open onClose={() => setSelectedSession(null)} title={selectedSession.title || "פרטי פגישה"}>
-          <div className="space-y-4" dir="rtl">
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span>{new Date(selectedSession.created_at).toLocaleString("he-IL")}</span>
-              {selectedSession.duration_seconds > 0 && (
-                <span>· {Math.round(selectedSession.duration_seconds / 60)} דק׳</span>
-              )}
-              {selectedSession.sentiment && <span className="capitalize">· {selectedSession.sentiment}</span>}
-            </div>
-            {selectedSession.project_id && projects[selectedSession.project_id] && (
-              <div className="flex items-center gap-1.5 text-sm text-indigo-700">
-                <FolderOpen className="w-4 h-4" />
-                <span>{projects[selectedSession.project_id]}</span>
-              </div>
-            )}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-1">סיכום</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {selectedSession.summary || "אין סיכום זמין."}
-              </p>
-            </div>
-            {taskCounts[selectedSession.id] && (
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">התקדמות משימות:</span>
-                <Badge variant={taskCounts[selectedSession.id].done === taskCounts[selectedSession.id].total ? "success" : "default"}>
-                  {taskCounts[selectedSession.id].done}/{taskCounts[selectedSession.id].total} ✓
-                </Badge>
-              </div>
-            )}
-          </div>
-        </Modal>
+        <SessionDetailModal
+          session={selectedSession}
+          token={token}
+          onClose={() => setSelectedSession(null)}
+          onRequestDelete={(s) => {
+            setSelectedSession(null);
+            setConfirmDelete(s);
+            setDeleteError(null);
+          }}
+          onSessionUpdate={(updated) => {
+            setSessions((prev) =>
+              prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s))
+            );
+            setSelectedSession((prev) => prev ? { ...prev, ...updated } : prev);
+          }}
+        />
       )}
     </>
   );

@@ -80,4 +80,11 @@ async def update_session(
         .eq("id", session_id)
         .execute()
     )
+
+    # Cascade project change to all related tasks
+    if "project_id" in update_data:
+        supabase.table("tasks").update(
+            {"project_id": update_data["project_id"]}
+        ).eq("session_id", session_id).execute()
+
     return result.data[0] if result.data else {}
