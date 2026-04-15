@@ -1,9 +1,13 @@
+import io
 import json
+import time
+
 import google.generativeai as genai
+
 from app.config import get_settings
 
 
-def get_gemini_model():
+def _get_model() -> genai.GenerativeModel:
     settings = get_settings()
     genai.configure(api_key=settings.gemini_api_key)
     return genai.GenerativeModel("gemini-2.5-flash")
@@ -15,15 +19,26 @@ async def process_audio_with_gemini(
     system_prompt: str,
 ) -> dict:
     """
-    Send audio to Gemini 2.5 Flash for transcription and structured extraction.
+    Send audio to Gemini 2.5 Flash via the File API for reliable processing.
 
-    Audio is processed entirely in-memory — never written to disk.
+    Using the File API instead of inline data avoids the 20 MB inline limit,
+    which can be exceeded by recordings longer than ~15-20 minutes depending
+    on browser bitrate.  The file is deleted from Google's servers immediately
+    after processing — zero retention.
+
     Returns structured JSON with title, summary, sentiment, and tasks.
-    The output language matches the language spoken in the meeting.
+    Raises if the audio cannot be transcribed (empty, silent, corrupted).
     """
-    model = get_gemini_model()
+    model = _get_model()
 
     extraction_prompt = f"""{system_prompt}
+
+CRITICAL RULES:
+1. Base your entire response ONLY on what was actually spoken in the audio.
+2. Do NOT invent, imagine, or hallucinate any content whatsoever.
+3. If the audio is silent, inaudible, too noisy, or cannot be meaningfully transcribed,
+   respond with exactly this JSON and nothing else:
+   {{"title": "AUDIO_UNPROCESSABLE", "summary": "", "sentiment": "neutral", "tasks": []}}
 
 Respond ONLY with valid JSON in this exact structure:
 {{
@@ -39,14 +54,43 @@ Respond ONLY with valid JSON in this exact structure:
   ]
 }}"""
 
-    audio_part = {
-        "mime_type": mime_type,
-        "data": audio_bytes,
-    }
+    # Strip codec params from mime_type for the File API (e.g. "audio/webm;codecs=opus" → "audio/webm")
+    clean_mime = mime_type.split(";")[0].strip()
+    extension = clean_mime.split("/")[-1]  # e.g. "webm"
 
-    response = model.generate_content([extraction_prompt, audio_part])
+    # Upload to Gemini File API — handles any file size, much more reliable than inline
+    audio_io = io.BytesIO(audio_bytes)
+    uploaded_file = genai.upload_file(
+        audio_io,
+        mime_type=clean_mime,
+        display_name=f"meeting.{extension}",
+    )
+
+    # Wait for Google to finish processing the upload (usually instant for audio)
+    max_wait = 60  # seconds
+    waited = 0
+    while uploaded_file.state.name == "PROCESSING" and waited < max_wait:
+        time.sleep(2)
+        waited += 2
+        uploaded_file = genai.get_file(uploaded_file.name)
+
+    try:
+        if uploaded_file.state.name != "ACTIVE":
+            raise Exception(
+                f"Gemini file processing failed (state={uploaded_file.state.name}). "
+                "The audio format may not be supported."
+            )
+
+        response = model.generate_content([extraction_prompt, uploaded_file])
+    finally:
+        # Always delete — zero retention on Google's servers
+        try:
+            genai.delete_file(uploaded_file.name)
+        except Exception:
+            pass
 
     text = response.text.strip()
+
     # Strip markdown code fences if present
     if text.startswith("```"):
         text = text.split("\n", 1)[1] if "\n" in text else text[3:]
@@ -55,7 +99,15 @@ Respond ONLY with valid JSON in this exact structure:
     if text.startswith("json"):
         text = text[4:].strip()
 
-    return json.loads(text)
+    result = json.loads(text)
+
+    if result.get("title") == "AUDIO_UNPROCESSABLE":
+        raise Exception(
+            "The audio could not be transcribed. "
+            "Please check that your microphone is working and that the meeting audio is audible."
+        )
+
+    return result
 
 
 DEFAULT_SYSTEM_PROMPT = """You are a meeting assistant AI. Analyze the provided audio and extract:
