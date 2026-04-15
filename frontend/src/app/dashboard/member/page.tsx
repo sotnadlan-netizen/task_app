@@ -18,6 +18,19 @@ interface MemberWithProfile extends OrgMembership {
   profile: Profile | null;
 }
 
+const priorityLabels: Record<string, string> = {
+  low: "נמוכה",
+  medium: "בינונית",
+  high: "גבוהה",
+  critical: "קריטית",
+};
+
+const statusLabels: Record<string, string> = {
+  todo: "לביצוע",
+  in_progress: "בתהליך",
+  done: "הושלם",
+};
+
 const priorityColors = {
   low: "default" as const,
   medium: "info" as const,
@@ -64,12 +77,12 @@ function SessionDetailModal({
   const durationMin = Math.round(session.duration_seconds / 60);
 
   return (
-    <Modal open onClose={onClose} title={session.title || "Session Details"}>
-      <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1">
+    <Modal open onClose={onClose} title={session.title || "פרטי פגישה"}>
+      <div className="space-y-5 max-h-[70vh] overflow-y-auto pr-1" dir="rtl">
         {/* Meta */}
-        <div className="flex items-center gap-3 text-xs text-gray-500">
-          <span>{new Date(session.created_at).toLocaleString()}</span>
-          {durationMin > 0 && <span>· {durationMin} min</span>}
+        <div className="flex items-center gap-3 text-xs text-gray-500 flex-row-reverse justify-end">
+          <span>{new Date(session.created_at).toLocaleString("he-IL")}</span>
+          {durationMin > 0 && <span>· {durationMin} דק׳</span>}
           {session.sentiment && (
             <span className="capitalize">· {session.sentiment}</span>
           )}
@@ -77,22 +90,22 @@ function SessionDetailModal({
 
         {/* Summary */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">Summary</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-1">סיכום</h3>
           <p className="text-sm text-gray-600 leading-relaxed">
-            {session.summary || "No summary available."}
+            {session.summary || "אין סיכום זמין."}
           </p>
         </div>
 
-        {/* Participants (org members) */}
+        {/* Participants */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
             <span className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
-              People in this session
+              אנשים בפגישה
             </span>
           </h3>
           {loading ? (
-            <p className="text-xs text-gray-400 animate-pulse">Loading...</p>
+            <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {members.map((m) => (
@@ -106,9 +119,11 @@ function SessionDetailModal({
                       .toUpperCase()}
                   </div>
                   <span>
-                    {m.profile?.full_name || m.profile?.email || m.invited_email || "Unknown"}
+                    {m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע"}
                   </span>
-                  <span className="text-gray-400 capitalize">({m.role})</span>
+                  <span className="text-gray-400">
+                    ({m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף"})
+                  </span>
                 </div>
               ))}
             </div>
@@ -118,12 +133,12 @@ function SessionDetailModal({
         {/* Tasks */}
         <div>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            Tasks ({tasks.length})
+            משימות ({tasks.length})
           </h3>
           {loading ? (
-            <p className="text-xs text-gray-400 animate-pulse">Loading...</p>
+            <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
           ) : tasks.length === 0 ? (
-            <p className="text-sm text-gray-400">No tasks generated from this session.</p>
+            <p className="text-sm text-gray-400">לא נוצרו משימות מפגישה זו.</p>
           ) : (
             <div className="space-y-2">
               {tasks.map((t) => (
@@ -136,7 +151,23 @@ function SessionDetailModal({
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <Badge variant={priorityColors[t.priority]}>
+                        {priorityLabels[t.priority] ?? t.priority}
+                      </Badge>
+                      <Badge
+                        variant={
+                          t.status === "done"
+                            ? "success"
+                            : t.status === "in_progress"
+                              ? "info"
+                              : "default"
+                        }
+                      >
+                        {statusLabels[t.status] ?? t.status}
+                      </Badge>
+                    </div>
+                    <div className="flex-1 min-w-0 text-right">
                       <p
                         className={`font-medium ${t.status === "done" ? "text-green-700 line-through" : "text-gray-900"}`}
                       >
@@ -147,20 +178,6 @@ function SessionDetailModal({
                           {t.description}
                         </p>
                       )}
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <Badge variant={priorityColors[t.priority]}>{t.priority}</Badge>
-                      <Badge
-                        variant={
-                          t.status === "done"
-                            ? "success"
-                            : t.status === "in_progress"
-                              ? "info"
-                              : "default"
-                        }
-                      >
-                        {t.status.replace("_", " ")}
-                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -211,7 +228,7 @@ function AddParticipantModal({
       .maybeSingle();
 
     if (existing && existing.length > 0) {
-      setError(`${trimmedEmail} is already in this organization.`);
+      setError(`${trimmedEmail} כבר נמצא בארגון זה.`);
       setLoading(false);
       return;
     }
@@ -225,7 +242,7 @@ function AddParticipantModal({
         .maybeSingle();
 
       if (existingById) {
-        setError(`${trimmedEmail} is already in this organization.`);
+        setError(`${trimmedEmail} כבר נמצא בארגון זה.`);
         setLoading(false);
         return;
       }
@@ -240,17 +257,17 @@ function AddParticipantModal({
     if (insertErr) {
       setError(insertErr.message);
     } else {
-      setSuccess(`${trimmedEmail} added as participant.`);
+      setSuccess(`${trimmedEmail} נוסף כמשתתף.`);
       setEmail("");
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Participant">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal open={open} onClose={onClose} title="הוסף משתתף">
+      <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
         <Alert variant="warning">
-          Participants have read-only task access and do not consume recording capacity.
+          למשתתפים יש גישת קריאה בלבד למשימות ואינם צורכים קיבולת הקלטה.
         </Alert>
 
         {error && <Alert variant="error">{error}</Alert>}
@@ -261,27 +278,28 @@ function AddParticipantModal({
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">כתובת אימייל</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="user@example.com"
             required
+            dir="ltr"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
           <p className="text-xs text-gray-400 mt-1">
-            If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.
+            אם המשתמש טרם נכנס למערכת, הוא יקושר אוטומטית בהתחברות הראשונה.
           </p>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Close
-          </Button>
+        <div className="flex justify-start gap-3 pt-2">
           <Button type="submit" loading={loading}>
-            <UserPlus className="w-4 h-4 mr-1" />
-            Add Participant
+            <UserPlus className="w-4 h-4 ml-1" />
+            הוסף משתתף
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            סגור
           </Button>
         </div>
       </form>
@@ -333,16 +351,16 @@ export default function MemberPage() {
   if (orgLoading || currentRole === "participant") return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Member Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900">לוח בקרה</h1>
         <Button
           size="sm"
           variant="secondary"
           onClick={() => setShowAddParticipant(true)}
         >
-          <UserPlus className="w-4 h-4 mr-1" />
-          Add Participant
+          <UserPlus className="w-4 h-4 ml-1" />
+          הוסף משתתף
         </Button>
       </div>
 
@@ -354,7 +372,7 @@ export default function MemberPage() {
               <BarChart3 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Sessions</p>
+              <p className="text-sm text-gray-500">פגישות</p>
               <p className="text-xl font-bold">{sessions.length}</p>
             </div>
           </div>
@@ -366,7 +384,7 @@ export default function MemberPage() {
               <ListChecks className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Total Tasks</p>
+              <p className="text-sm text-gray-500">סה״כ משימות</p>
               <p className="text-xl font-bold">{taskCount}</p>
             </div>
           </div>
@@ -378,9 +396,9 @@ export default function MemberPage() {
               <Clock className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Remaining</p>
+              <p className="text-sm text-gray-500">נותר</p>
               <p className="text-xl font-bold">
-                {capacity?.remaining_minutes ?? "—"} min
+                {capacity?.remaining_minutes ?? "—"} דק׳
               </p>
             </div>
           </div>
@@ -394,27 +412,27 @@ export default function MemberPage() {
       {sessions.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Recent Sessions</CardTitle>
+            <CardTitle>פגישות אחרונות</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {sessions.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setSelectedSession(s)}
-                className="w-full text-left p-3 rounded-lg bg-gray-50 border border-gray-100
+                className="w-full text-right p-3 rounded-lg bg-gray-50 border border-gray-100
                   hover:bg-indigo-50 hover:border-indigo-200 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">
-                    {s.title || "Untitled Session"}
-                  </h4>
                   <span className="text-xs text-gray-400">
-                    {new Date(s.created_at).toLocaleDateString()}
+                    {new Date(s.created_at).toLocaleDateString("he-IL")}
                   </span>
+                  <h4 className="text-sm font-medium text-gray-900 group-hover:text-indigo-700">
+                    {s.title || "פגישה ללא שם"}
+                  </h4>
                 </div>
-                <p className="text-xs text-gray-600 line-clamp-2">{s.summary}</p>
-                <p className="text-xs text-indigo-400 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  Click to view details →
+                <p className="text-xs text-gray-600 line-clamp-2 text-right">{s.summary}</p>
+                <p className="text-xs text-indigo-400 mt-1 text-left opacity-0 group-hover:opacity-100 transition-opacity">
+                  ← לחץ לפרטים
                 </p>
               </button>
             ))}

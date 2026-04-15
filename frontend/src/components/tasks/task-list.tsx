@@ -17,6 +17,19 @@ const priorityColors = {
   critical: "danger" as const,
 };
 
+const priorityLabels: Record<string, string> = {
+  low: "נמוכה",
+  medium: "בינונית",
+  high: "גבוהה",
+  critical: "קריטית",
+};
+
+const statusLabels: Record<string, string> = {
+  todo: "לביצוע",
+  in_progress: "בתהליך",
+  done: "הושלם",
+};
+
 export function TaskList({ readonly = false }: { readonly?: boolean }) {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
@@ -70,7 +83,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
     return (
       <Card>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-pulse text-sm text-gray-400">Loading tasks...</div>
+          <div className="animate-pulse text-sm text-gray-400">טוען משימות...</div>
         </div>
       </Card>
     );
@@ -78,19 +91,19 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
 
   return (
     <Card padding={false}>
-      <div className="p-6 pb-0">
+      <div className="p-6 pb-0" dir="rtl">
         <CardHeader>
-          <CardTitle>Tasks</CardTitle>
+          <CardTitle>משימות</CardTitle>
           <Badge>{tasks.length}</Badge>
         </CardHeader>
       </div>
 
       {tasks.length === 0 ? (
-        <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8">
-          No tasks yet. Start a recording session to generate tasks.
+        <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8" dir="rtl">
+          אין משימות עדיין. התחל הקלטה כדי ליצור משימות.
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-gray-100" dir="rtl">
           {tasks.map((task) => {
             const isDone = task.status === "done";
             return (
@@ -101,25 +114,45 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 flex-1 min-w-0">
-                    {/* Done toggle — only for non-readonly, non-locked tasks */}
-                    {!readonly && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge variant={priorityColors[task.priority]}>
+                      {priorityLabels[task.priority] ?? task.priority}
+                    </Badge>
+                    <Badge
+                      variant={
+                        isDone ? "success" : task.status === "in_progress" ? "info" : "default"
+                      }
+                    >
+                      {statusLabels[task.status] ?? task.status}
+                    </Badge>
+                    {readonly && !task.is_locked && (
                       <button
-                        onClick={() => handleToggleDone(task)}
-                        disabled={task.is_locked || togglingId === task.id}
-                        className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 disabled:opacity-40 transition-colors"
-                        aria-label={isDone ? "Mark as not done" : "Mark as done"}
+                        onClick={() =>
+                          setEditingTaskId(editingTaskId === task.id ? null : task.id)
+                        }
+                        className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
+                        aria-label="בקש עריכה"
                       >
-                        {isDone ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Circle className="w-5 h-5" />
-                        )}
+                        <Pencil className="w-4 h-4 text-gray-500" />
                       </button>
                     )}
+                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 text-right">
+                      <div className="flex items-center justify-end gap-2 mb-1">
+                        {task.external_sync_id && (
+                          <ExternalLink
+                            className="w-3.5 h-3.5 text-blue-400 flex-shrink-0"
+                            aria-label="מסונכרן לפלטפורמה חיצונית"
+                          />
+                        )}
+                        {task.is_locked && (
+                          <Lock
+                            className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
+                            aria-label="נעול"
+                          />
+                        )}
                         <h4
                           className={`text-sm font-medium truncate ${
                             isDone ? "text-green-700 line-through" : "text-gray-900"
@@ -127,18 +160,6 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         >
                           {task.title}
                         </h4>
-                        {task.is_locked && (
-                          <Lock
-                            className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
-                            aria-label="Synced and locked"
-                          />
-                        )}
-                        {task.external_sync_id && (
-                          <ExternalLink
-                            className="w-3.5 h-3.5 text-blue-400 flex-shrink-0"
-                            aria-label="Synced to external platform"
-                          />
-                        )}
                       </div>
                       <p
                         className={`text-sm line-clamp-2 ${
@@ -148,26 +169,20 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         {task.description}
                       </p>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Badge variant={priorityColors[task.priority]}>{task.priority}</Badge>
-                    <Badge
-                      variant={
-                        isDone ? "success" : task.status === "in_progress" ? "info" : "default"
-                      }
-                    >
-                      {task.status.replace("_", " ")}
-                    </Badge>
-                    {readonly && !task.is_locked && (
+                    {/* Done toggle — only for non-readonly, non-locked tasks */}
+                    {!readonly && (
                       <button
-                        onClick={() =>
-                          setEditingTaskId(editingTaskId === task.id ? null : task.id)
-                        }
-                        className="p-1.5 rounded-lg hover:bg-gray-200 transition-colors"
-                        aria-label="Request edit"
+                        onClick={() => handleToggleDone(task)}
+                        disabled={task.is_locked || togglingId === task.id}
+                        className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 disabled:opacity-40 transition-colors"
+                        aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
                       >
-                        <Pencil className="w-4 h-4 text-gray-500" />
+                        {isDone ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <Circle className="w-5 h-5" />
+                        )}
                       </button>
                     )}
                   </div>

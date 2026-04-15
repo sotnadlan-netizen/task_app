@@ -13,10 +13,10 @@ interface TaskEditRequestFormProps {
 }
 
 const EDITABLE_FIELDS = [
-  { key: "title", label: "Title" },
-  { key: "description", label: "Description" },
-  { key: "priority", label: "Priority" },
-  { key: "status", label: "Status" },
+  { key: "title", label: "כותרת" },
+  { key: "description", label: "תיאור" },
+  { key: "priority", label: "עדיפות" },
+  { key: "status", label: "סטטוס" },
 ] as const;
 
 export function TaskEditRequestForm({
@@ -50,7 +50,7 @@ export function TaskEditRequestForm({
       setSuccess(true);
       setTimeout(onClose, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit edit request");
+      setError(err instanceof Error ? err.message : "שליחת הבקשה נכשלה");
     } finally {
       setSubmitting(false);
     }
@@ -59,24 +59,26 @@ export function TaskEditRequestForm({
   if (success) {
     return (
       <Alert variant="success" className="mt-3">
-        Edit request submitted for review.
+        בקשת העריכה נשלחה לאישור.
       </Alert>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3">
+    <form
+      onSubmit={handleSubmit}
+      className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3"
+      dir="rtl"
+    >
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-        Request an edit
+        בקשת עריכה
       </p>
 
-      {error && (
-        <Alert variant="error">{error}</Alert>
-      )}
+      {error && <Alert variant="error">{error}</Alert>}
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Field</label>
+          <label className="text-xs text-gray-500 block mb-1">שדה</label>
           <select
             value={field}
             onChange={(e) => setField(e.target.value)}
@@ -92,25 +94,25 @@ export function TaskEditRequestForm({
 
         <div>
           <label className="text-xs text-gray-500 block mb-1">
-            Current: {String(task[field as keyof Task] || "—")}
+            נוכחי: {String(task[field as keyof Task] || "—")}
           </label>
           <input
             type="text"
             value={newValue}
             onChange={(e) => setNewValue(e.target.value)}
-            placeholder="New value"
+            placeholder="ערך חדש"
             className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             required
           />
         </div>
       </div>
 
-      <div className="flex gap-2 justify-end">
-        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-          Cancel
-        </Button>
+      <div className="flex gap-2 justify-start">
         <Button type="submit" size="sm" loading={submitting}>
-          Submit Request
+          שלח בקשה
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          ביטול
         </Button>
       </div>
     </form>

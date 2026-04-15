@@ -19,6 +19,7 @@ async def process_audio_with_gemini(
 
     Audio is processed entirely in-memory — never written to disk.
     Returns structured JSON with title, summary, sentiment, and tasks.
+    The output language matches the language spoken in the meeting.
     """
     model = get_gemini_model()
 
@@ -65,4 +66,12 @@ DEFAULT_SYSTEM_PROMPT = """You are a meeting assistant AI. Analyze the provided 
 4. **Tasks**: A list of actionable tasks extracted from the discussion. For each task include:
    - title: Short, actionable task title
    - description: Detailed description of what needs to be done
-   - priority: low, medium, high, or critical"""
+   - priority: low, medium, high, or critical
+
+IMPORTANT — Language rule:
+Detect the language spoken in the meeting and respond entirely in that language.
+- If the participants speak Hebrew, write the title, summary, and all task titles and descriptions in Hebrew.
+- If the participants speak English, write everything in English.
+- If mixed, use the dominant language.
+The "sentiment" field must always be one of: positive, neutral, negative, mixed (in English, always).
+The "priority" field must always be one of: low, medium, high, critical (in English, always)."""
