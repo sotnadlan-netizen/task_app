@@ -68,13 +68,13 @@ async def process_audio(
         .select("*")
         .eq("org_id", org_id)
         .eq("is_active", True)
-        .single()
+        .maybe_single()
         .execute()
     )
 
     system_prompt = DEFAULT_SYSTEM_PROMPT
     prompt_version = 0
-    if prompt_result.data:
+    if prompt_result and prompt_result.data:
         system_prompt = prompt_result.data["prompt_text"]
         prompt_version = prompt_result.data["version"]
 
