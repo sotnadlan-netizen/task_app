@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import type { Session, Task, OrgMembership, Profile, Project } from "@/types";
-import { Users, Pencil, Trash2, Plus, FolderOpen } from "lucide-react";
+import { buildGoogleCalendarUrl } from "@/lib/calendar-url";
+import { Users, Pencil, Trash2, Plus, FolderOpen, CalendarPlus } from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile | null;
@@ -242,6 +243,21 @@ export function SessionDetailModal({
           <h3 className="text-sm font-semibold text-gray-700 mb-1">סיכום</h3>
           <p className="text-sm text-gray-600 leading-relaxed">{session.summary || "אין סיכום זמין."}</p>
         </div>
+
+        {/* Calendar Event */}
+        {session.calendar_event?.is_detected && (
+          <div className="flex justify-end">
+            <a
+              href={buildGoogleCalendarUrl(session.calendar_event)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium transition-colors shadow-sm"
+            >
+              <CalendarPlus className="w-4 h-4 flex-shrink-0" />
+              הוסף ליומן גוגל
+            </a>
+          </div>
+        )}
 
         {/* ── Project ──────────────────────────────────────────────────── */}
         <div className="space-y-1.5">

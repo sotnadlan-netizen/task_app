@@ -56,6 +56,14 @@ export interface Project {
   created_at: string;
 }
 
+export interface CalendarEvent {
+  is_detected: boolean;
+  title: string;
+  suggested_date: string | null;
+  suggested_time: string | null;
+  participants: string[];
+}
+
 export interface Session {
   id: string;
   org_id: string;
@@ -68,6 +76,7 @@ export interface Session {
   created_at: string;
   project_id?: string | null;
   participant_ids?: string[];
+  calendar_event?: CalendarEvent | null;
 }
 
 export interface Task {
