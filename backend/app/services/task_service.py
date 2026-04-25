@@ -28,6 +28,8 @@ async def create_session_and_tasks(
         "ai_prompt_version": prompt_version,
         "participant_ids": participant_ids or [],
     }
+    if ai_result.get("calendar_event"):
+        session_data["calendar_event"] = ai_result["calendar_event"]
     if project_id:
         session_data["project_id"] = project_id
 

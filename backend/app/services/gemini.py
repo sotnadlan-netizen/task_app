@@ -38,9 +38,11 @@ CRITICAL RULES:
 2. Do NOT invent, imagine, or hallucinate any content whatsoever.
 3. If the audio is silent, inaudible, too noisy, or cannot be meaningfully transcribed,
    respond with exactly this JSON and nothing else:
-   {{"title": "AUDIO_UNPROCESSABLE", "summary": "", "sentiment": "neutral", "tasks": []}}
+   {{"title": "AUDIO_UNPROCESSABLE", "summary": "", "sentiment": "neutral", "tasks": [], "calendar_event": {{"is_detected": false, "title": "", "suggested_date": null, "suggested_time": null, "participants": []}}}}
 4. For EVERY task, explicitly extract and list a deadline if one was mentioned or implied.
    Set "deadline" to null if no deadline was stated or can be reasonably inferred.
+5. Detect any mention of a follow-up meeting, next scheduled call, deadline event, or concrete next step
+   that warrants a calendar entry. Populate "calendar_event" accordingly.
 
 Respond ONLY with valid JSON in this exact structure:
 {{
@@ -54,7 +56,14 @@ Respond ONLY with valid JSON in this exact structure:
       "priority": "low|medium|high|critical",
       "deadline": "string or null"
     }}
-  ]
+  ],
+  "calendar_event": {{
+    "is_detected": "boolean — true if a follow-up meeting, deadline, or next-step event was mentioned",
+    "title": "string — concise event or deadline title",
+    "suggested_date": "string in YYYYMMDD format, or null if no date was mentioned",
+    "suggested_time": "string in HHMMSS format (24-hour), or null if no time was specified",
+    "participants": ["array of strings — email addresses or names mentioned as attendees"]
+  }}
 }}"""
 
     # Strip codec params from mime_type for the File API (e.g. "audio/webm;codecs=opus" → "audio/webm")
@@ -133,4 +142,13 @@ Detect the language spoken in the meeting and respond entirely in that language.
 - If mixed, use the dominant language.
 The "sentiment" field must always be one of: positive, neutral, negative, mixed (in English, always).
 The "priority" field must always be one of: low, medium, high, critical (in English, always).
-The "deadline" field is a string in the original meeting language, or null."""
+The "deadline" field is a string in the original meeting language, or null.
+
+5. **Calendar Event**: Detect any mention of a follow-up meeting, next call, deadline, or scheduled next step.
+   If detected, populate the "calendar_event" object:
+   - is_detected: true
+   - title: A concise title for the event (in the meeting language)
+   - suggested_date: The date in YYYYMMDD format (e.g. "20260530"), or null if not specified
+   - suggested_time: The time in HHMMSS format using 24-hour clock (e.g. "140000" for 2:00 PM), or null if not specified
+   - participants: List of email addresses or names of people who should attend
+   If no such event is mentioned, set is_detected to false and all other fields to null/empty."""
