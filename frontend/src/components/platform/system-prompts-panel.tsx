@@ -77,7 +77,7 @@ function PromptFormModal({
             required
             maxLength={100}
             placeholder="e.g. Engineering Standup Prompt"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
           />
         </div>
 
@@ -91,7 +91,7 @@ function PromptFormModal({
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             placeholder="Brief description of what this prompt does"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
           />
         </div>
 
@@ -106,7 +106,7 @@ function PromptFormModal({
             minLength={10}
             rows={10}
             placeholder="Enter the full AI system prompt..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm font-mono focus:ring-2 focus:ring-violet-200 focus:border-transparent resize-y bg-white/80"
           />
         </div>
 
@@ -224,9 +224,9 @@ export function SystemPromptsPanel() {
             </Button>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-violet-50/60">
             {prompts.map((p) => (
-              <div key={p.id} className="px-6 py-4 flex items-start justify-between gap-4 hover:bg-gray-50">
+              <div key={p.id} className="px-6 py-4 flex items-start justify-between gap-4 hover:bg-white/50 transition-colors">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold text-gray-900">{p.name}</p>
@@ -242,14 +242,14 @@ export function SystemPromptsPanel() {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => { setEditing(p); setShowForm(true); }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                    className="p-1.5 rounded-xl text-gray-300 hover:text-violet-500 hover:bg-violet-50/60 transition-colors"
                     title="Edit"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setDeleting(p)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors"
                     title="Delete"
                   >
                     <Trash2 className="w-4 h-4" />

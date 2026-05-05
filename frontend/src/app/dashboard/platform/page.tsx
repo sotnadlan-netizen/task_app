@@ -61,17 +61,17 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Acme Corp" required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
@@ -114,17 +114,17 @@ function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose:
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
@@ -206,14 +206,14 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Capacity & member summary */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
             <p className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}>
               {remainingCapacity} min
             </p>
             <p className="text-xs text-gray-400">{allocatedCapacity} / {org.total_capacity_min} min allocated</p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
+          <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">Members</p>
             <p className={`text-lg font-bold ${currentMemberCount >= org.max_members ? "text-red-600" : "text-gray-800"}`}>
               {currentMemberCount} / {org.max_members}
@@ -234,13 +234,13 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
           <p className="text-xs text-gray-400 mt-1">If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80">
             <option value="admin">Admin</option>
             <option value="member">Member</option>
             <option value="participant">Participant</option>
@@ -392,11 +392,11 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <button onClick={onBack} className="p-2 rounded-2xl hover:bg-white/70 transition-colors">
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{org.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-800">{org.name}</h1>
             <p className="text-sm text-gray-500">Created {new Date(org.created_at).toLocaleDateString()}</p>
           </div>
         </div>
@@ -415,28 +415,28 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card>
+        <Card gradient="from-violet-50 to-fuchsia-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Users className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Members</p><p className="text-xl font-bold">{nonParticipants.length}</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm"><Users className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Members</p><p className="text-xl font-bold text-gray-800">{nonParticipants.length}</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-sky-50 to-blue-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center"><BarChart3 className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Sessions</p><p className="text-xl font-bold">{sessions.length}</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm"><BarChart3 className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Sessions</p><p className="text-xl font-bold text-gray-800">{sessions.length}</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-emerald-50 to-teal-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center"><ListChecks className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Tasks</p><p className="text-xl font-bold">{taskCount}</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 text-white flex items-center justify-center shadow-sm"><ListChecks className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Tasks</p><p className="text-xl font-bold text-gray-800">{taskCount}</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-amber-50 to-orange-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><Clock className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Capacity Used</p><p className="text-xl font-bold">{totalUsed}/{totalCapacity} min</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm"><Clock className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Capacity Used</p><p className="text-xl font-bold text-gray-800">{totalUsed}/{totalCapacity} min</p></div>
           </div>
         </Card>
       </div>
@@ -444,9 +444,9 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       {error && <Alert variant="error">{error}</Alert>}
 
       {/* ── Members Table (admin + member) ── */}
-      <Card padding={false}>
-        <div className="p-6 pb-0">
-          <CardHeader><CardTitle>Members &amp; Quotas</CardTitle></CardHeader>
+      <Card padding={false} gradient="from-violet-50/50 to-fuchsia-50/30">
+        <div className="p-6 pb-4 border-b border-violet-100/60">
+          <CardHeader className="mb-0"><CardTitle>Members &amp; Quotas</CardTitle></CardHeader>
         </div>
         {nonParticipants.length === 0 ? (
           <div className="px-6 pb-8 text-center py-6">
@@ -458,26 +458,26 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
+              <thead className="bg-white/40 border-b border-violet-100/60">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Used / Quota</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Quota (min)</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used / Quota</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Quota (min)</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-violet-50/60">
                 {nonParticipants.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50">
+                  <tr key={m.id} className="hover:bg-white/50 transition-colors">
                     <td className="px-6 py-3">
-                      <p className="font-medium text-gray-900">{m.profile?.full_name || m.invited_email || "—"}</p>
-                      <p className="text-xs text-gray-500">{m.profile?.email || m.invited_email}</p>
-                      {!m.user_id && <span className="text-xs text-yellow-600 font-medium">Pending invite</span>}
+                      <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
+                      <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
+                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">Pending invite</span>}
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        className="px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent">
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                         <option value="participant">Participant</option>
@@ -485,18 +485,18 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 max-w-[120px] h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-indigo-500 rounded-full"
+                        <div className="flex-1 max-w-[120px] h-2 bg-violet-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full"
                             style={{ width: `${Math.min(100, (m.used_minutes / (m.capacity_minutes || 1)) * 100)}%` }} />
                         </div>
-                        <span className="text-xs text-gray-500 tabular-nums">{m.used_minutes}/{m.capacity_minutes}</span>
+                        <span className="text-xs text-gray-400 tabular-nums">{m.used_minutes}/{m.capacity_minutes}</span>
                       </div>
                     </td>
                     <td className="px-6 py-3">
                       <input type="number" min={0}
                         value={editingQuotas[m.id] !== undefined ? editingQuotas[m.id] : m.capacity_minutes}
                         onChange={(e) => setEditingQuotas((prev) => ({ ...prev, [m.id]: Number(e.target.value) }))}
-                        className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+                        className="w-24 px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent" />
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
@@ -506,7 +506,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                           </Button>
                         )}
                         <button onClick={() => handleRemoveMember(m.id)}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Remove">
+                          className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors" title="Remove">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -520,34 +520,34 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </Card>
 
       {/* ── Participants Table ── */}
-      <Card padding={false}>
-        <div className="p-6 pb-0">
-          <CardHeader><CardTitle>Participants</CardTitle></CardHeader>
+      <Card padding={false} gradient="from-pink-50/50 to-rose-50/30">
+        <div className="p-6 pb-4 border-b border-pink-100/60">
+          <CardHeader className="mb-0"><CardTitle>Participants</CardTitle></CardHeader>
         </div>
         {participants.length === 0 ? (
           <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No participants in this organization.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
+              <thead className="bg-white/40 border-b border-pink-100/60">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Participant</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Status</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Status</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-pink-50/60">
                 {participants.map((m) => (
-                  <tr key={m.id} className="hover:bg-gray-50">
+                  <tr key={m.id} className="hover:bg-white/50 transition-colors">
                     <td className="px-6 py-3">
-                      <p className="font-medium text-gray-900">{m.profile?.full_name || m.invited_email || "—"}</p>
-                      <p className="text-xs text-gray-500">{m.profile?.email || m.invited_email}</p>
-                      {!m.user_id && <span className="text-xs text-yellow-600 font-medium">Pending invite</span>}
+                      <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
+                      <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
+                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">Pending invite</span>}
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="px-2 py-1 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        className="px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent">
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                         <option value="participant">Participant</option>
@@ -558,7 +558,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     </td>
                     <td className="px-6 py-3">
                       <button onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Remove">
+                        className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors" title="Remove">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -571,18 +571,18 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </Card>
 
       {/* Recent Sessions */}
-      <Card padding={false}>
-        <div className="p-6 pb-0">
-          <CardHeader><CardTitle>Recent Sessions</CardTitle></CardHeader>
+      <Card padding={false} gradient="from-sky-50/50 to-blue-50/30">
+        <div className="p-6 pb-4 border-b border-sky-100/60">
+          <CardHeader className="mb-0"><CardTitle>Recent Sessions</CardTitle></CardHeader>
         </div>
         {sessions.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-gray-400">No sessions yet.</p>
+          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No sessions yet.</p>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-sky-50/60">
             {sessions.map((s) => (
-              <div key={s.id} className="px-6 py-4 hover:bg-gray-50">
+              <div key={s.id} className="px-6 py-4 hover:bg-white/50 transition-colors">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-medium text-gray-900">{s.title || "Untitled Session"}</h4>
+                  <h4 className="text-sm font-semibold text-gray-800">{s.title || "Untitled Session"}</h4>
                   <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString()}</span>
                 </div>
                 <p className="text-xs text-gray-500 line-clamp-2">{s.summary || "No summary."}</p>
@@ -659,7 +659,7 @@ export default function PlatformPage() {
   if (detailLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -679,7 +679,7 @@ export default function PlatformPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">דף בית — ניהול פלטפורמה</h1>
+          <h1 className="text-2xl font-bold text-gray-800">דף בית — ניהול פלטפורמה</h1>
           <p className="text-sm text-gray-500">הגדרת ארגונים וניטור גלובלי.</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
@@ -689,36 +689,36 @@ export default function PlatformPage() {
 
       {/* Global Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card>
+        <Card gradient="from-violet-50 to-fuchsia-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center"><Building2 className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Organizations</p><p className="text-xl font-bold">{organizations.length}</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm"><Building2 className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Organizations</p><p className="text-xl font-bold text-gray-800">{organizations.length}</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-sky-50 to-blue-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center"><Clock className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Total Capacity</p><p className="text-xl font-bold">{totalCapacity} min</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm"><Clock className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Total Capacity</p><p className="text-xl font-bold text-gray-800">{totalCapacity} min</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-amber-50 to-orange-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center"><Activity className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Used</p><p className="text-xl font-bold">{totalUsed} min</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm"><Activity className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Used</p><p className="text-xl font-bold text-gray-800">{totalUsed} min</p></div>
           </div>
         </Card>
-        <Card>
+        <Card gradient="from-pink-50 to-rose-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center"><Users className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Utilization</p><p className="text-xl font-bold">{totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%</p></div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 text-white flex items-center justify-center shadow-sm"><Users className="w-5 h-5" /></div>
+            <div><p className="text-sm text-gray-500">Utilization</p><p className="text-xl font-bold text-gray-800">{totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%</p></div>
           </div>
         </Card>
       </div>
 
       {/* Org Table */}
-      <Card padding={false}>
-        <div className="p-6 pb-0">
-          <CardHeader><CardTitle>All Organizations</CardTitle></CardHeader>
+      <Card padding={false} gradient="from-violet-50/50 to-fuchsia-50/30">
+        <div className="p-6 pb-4 border-b border-violet-100/60">
+          <CardHeader className="mb-0"><CardTitle>All Organizations</CardTitle></CardHeader>
         </div>
         {loading ? (
           <div className="px-6 pb-6 text-center py-8">
@@ -726,7 +726,7 @@ export default function PlatformPage() {
           </div>
         ) : organizations.length === 0 ? (
           <div className="px-6 pb-8 text-center py-8">
-            <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <Building2 className="w-10 h-10 text-violet-200 mx-auto mb-3" />
             <p className="text-sm text-gray-400">No organizations yet.</p>
             <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4 mr-2" />Create first organization
@@ -735,39 +735,39 @@ export default function PlatformPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
+              <thead className="bg-white/40 border-b border-violet-100/60">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Organization</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Capacity</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Used</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Utilization</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Created</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Organization</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Capacity</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Utilization</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Created</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-violet-50/60">
                 {organizations.map((org) => {
                   const utilization = org.total_capacity_min > 0
                     ? Math.round((org.used_capacity_min / org.total_capacity_min) * 100) : 0;
                   return (
-                    <tr key={org.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-3 font-medium text-gray-900">{org.name}</td>
-                      <td className="px-6 py-3 text-gray-600">{org.total_capacity_min} min</td>
-                      <td className="px-6 py-3 text-gray-600">{org.used_capacity_min} min</td>
+                    <tr key={org.id} className="hover:bg-white/50 transition-colors">
+                      <td className="px-6 py-3 font-semibold text-gray-800">{org.name}</td>
+                      <td className="px-6 py-3 text-gray-500">{org.total_capacity_min} min</td>
+                      <td className="px-6 py-3 text-gray-500">{org.used_capacity_min} min</td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 max-w-[100px] h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${utilization}%` }} />
+                          <div className="flex-1 max-w-[100px] h-2 bg-violet-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full" style={{ width: `${utilization}%` }} />
                           </div>
                           <Badge variant={utilization > 80 ? "danger" : utilization > 50 ? "warning" : "success"}>
                             {utilization}%
                           </Badge>
                         </div>
                       </td>
-                      <td className="px-6 py-3 text-gray-500">{new Date(org.created_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-3 text-gray-400">{new Date(org.created_at).toLocaleDateString()}</td>
                       <td className="px-6 py-3">
                         <button onClick={() => loadOrgDetail(org)}
-                          className="flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+                          className="flex items-center gap-1 text-violet-500 hover:text-violet-700 text-sm font-medium transition-colors">
                           Manage<ChevronRight className="w-4 h-4" />
                         </button>
                       </td>

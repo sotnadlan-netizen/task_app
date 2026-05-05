@@ -101,20 +101,20 @@ function CalendarModal({
         <div className="flex items-center justify-between">
           <button
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-xl hover:bg-violet-50 transition-colors"
             aria-label="חודש הבא"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 text-gray-500" />
           </button>
           <span className="font-semibold text-gray-800">
             {currentMonth.toLocaleString("he-IL", { month: "long", year: "numeric" })}
           </span>
           <button
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-xl hover:bg-violet-50 transition-colors"
             aria-label="חודש קודם"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 text-gray-500" />
           </button>
         </div>
 
@@ -138,17 +138,17 @@ function CalendarModal({
               <button
                 key={day}
                 onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                className={`relative py-2 rounded-lg text-sm text-center transition-colors ${
+                className={`relative py-2 rounded-2xl text-sm text-center transition-all ${
                   isSelected
-                    ? "bg-indigo-600 text-white"
+                    ? "bg-gradient-to-br from-violet-400 to-pink-400 text-white shadow-sm"
                     : hasSessions
-                      ? "bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold"
-                      : "hover:bg-gray-100 text-gray-700"
+                      ? "bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold"
+                      : "hover:bg-white/60 text-gray-600"
                 }`}
               >
                 {day}
                 {hasSessions && !isSelected && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-indigo-400" />
+                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-violet-400" />
                 )}
               </button>
             );
@@ -156,8 +156,8 @@ function CalendarModal({
         </div>
 
         {selectedDay && (
-          <div className="border-t border-gray-100 pt-3 space-y-2">
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+          <div className="border-t border-violet-50 pt-3 space-y-2">
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
               {selectedDaySessions.length > 0
                 ? `פגישות — ${new Date(selectedDay).toLocaleDateString("he-IL")}`
                 : "אין פגישות ביום זה"}
@@ -169,11 +169,11 @@ function CalendarModal({
                   onSelectSession(s);
                   onClose();
                 }}
-                className="w-full text-right p-2.5 rounded-lg bg-gray-50 hover:bg-indigo-50 border border-transparent hover:border-indigo-200 text-sm transition-colors"
+                className="w-full text-right p-2.5 rounded-2xl bg-violet-50/60 hover:bg-violet-100/60 border border-transparent hover:border-violet-200 text-sm transition-all"
               >
-                <p className="font-medium text-gray-900">{s.title || "פגישה ללא שם"}</p>
+                <p className="font-medium text-gray-800">{s.title || "פגישה ללא שם"}</p>
                 {s.summary && (
-                  <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{s.summary}</p>
+                  <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">{s.summary}</p>
                 )}
               </button>
             ))}
@@ -243,7 +243,7 @@ function AddParticipantModal({
             placeholder="user@example.com"
             required
             dir="ltr"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
           />
           <p className="text-xs text-gray-400 mt-1">
             אם המשתמש טרם נכנס למערכת, הוא יקושר אוטומטית בהתחברות הראשונה.
@@ -426,7 +426,7 @@ export default function MemberPage() {
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">דף בית</h1>
+        <h1 className="text-2xl font-bold text-gray-800">דף בית</h1>
         <Button
           size="sm"
           variant="secondary"
@@ -439,38 +439,38 @@ export default function MemberPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
+        <Card gradient="from-violet-50 to-fuchsia-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm">
               <BarChart3 className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">פגישות</p>
-              <p className="text-xl font-bold">{allSessions.length}</p>
+              <p className="text-xl font-bold text-gray-800">{allSessions.length}</p>
             </div>
           </div>
         </Card>
 
-        <Card>
+        <Card gradient="from-sky-50 to-blue-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm">
               <ListChecks className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">סה״כ משימות</p>
-              <p className="text-xl font-bold">{taskCountTotal}</p>
+              <p className="text-xl font-bold text-gray-800">{taskCountTotal}</p>
             </div>
           </div>
         </Card>
 
-        <Card>
+        <Card gradient="from-amber-50 to-orange-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm">
               <Clock className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">נותר</p>
-              <p className="text-xl font-bold">
+              <p className="text-xl font-bold text-gray-800">
                 {capacity?.remaining_minutes ?? "—"} דק׳
               </p>
             </div>
@@ -483,9 +483,9 @@ export default function MemberPage() {
 
       {/* Meetings Table */}
       {allSessions.length > 0 && (
-        <Card padding={false}>
-          <div className="p-5 pb-3 flex items-center justify-between">
-            <CardHeader>
+        <Card padding={false} gradient="from-sky-50 to-blue-50">
+          <div className="p-5 pb-3 flex items-center justify-between border-b border-sky-100">
+            <CardHeader className="mb-0">
               <CardTitle>פגישות אחרונות</CardTitle>
             </CardHeader>
             <div className="flex items-center gap-2">
@@ -493,7 +493,7 @@ export default function MemberPage() {
                 <select
                   value={meetingProjectFilter}
                   onChange={(e) => { setMeetingProjectFilter(e.target.value); setMeetingPage(0); }}
-                  className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-2.5 py-1.5 rounded-2xl border border-sky-100 text-xs text-gray-600 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
                 >
                   <option value="">כל הפרויקטים</option>
                   {Object.entries(projects).map(([id, name]) => (
@@ -503,14 +503,14 @@ export default function MemberPage() {
               )}
               <button
                 onClick={() => setShowCalendar(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-100 hover:bg-white/60 text-xs text-gray-500 transition-colors bg-white/40"
               >
                 <CalendarDays className="w-3.5 h-3.5" />
                 לוח שנה
               </button>
               <button
                 onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs text-gray-600 transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-100 hover:bg-white/60 text-xs text-gray-500 transition-colors bg-white/40"
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 {meetingSort === "time" ? "לפי פרויקט" : "לפי זמן"}
@@ -518,70 +518,58 @@ export default function MemberPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
-                <tr>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">תאריך</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">כותרת</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">פרויקט</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">התקדמות</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {pagedMeetings.map((s) => {
-                  const tc = taskCounts[s.id];
-                  return (
-                    <tr key={s.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedSession(s)}>
-                      <td className="px-5 py-2.5 text-gray-500 text-xs whitespace-nowrap">
-                        {new Date(s.created_at).toLocaleDateString("he-IL")}
-                      </td>
-                      <td className="px-5 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">
-                        {s.title || "פגישה ללא שם"}
-                      </td>
-                      <td className="px-5 py-2.5 text-xs text-gray-500">
-                        {s.project_id && projects[s.project_id] ? (
-                          <span className="flex items-center gap-1">
-                            <FolderOpen className="w-3 h-3 text-indigo-400" />
-                            {projects[s.project_id]}
-                          </span>
-                        ) : (
-                          <span className="text-gray-300">—</span>
-                        )}
-                      </td>
-                      <td className="px-5 py-2.5">
-                        {tc ? (
-                          <Badge variant={tc.done === tc.total ? "success" : "default"}>
-                            {tc.done}/{tc.total} ✓
-                          </Badge>
-                        ) : (
-                          <span className="text-gray-300 text-xs">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="divide-y divide-sky-50">
+            {pagedMeetings.map((s) => {
+              const tc = taskCounts[s.id];
+              return (
+                <div key={s.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/50 transition-colors cursor-pointer group" onClick={() => setSelectedSession(s)}>
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <span className="text-white font-bold text-xs">{(s.title || "פ")[0]}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-800 truncate group-hover:text-violet-600 transition-colors">
+                      {s.title || "פגישה ללא שם"}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {s.project_id && projects[s.project_id] ? (
+                        <span className="flex items-center gap-1 text-xs text-gray-400">
+                          <FolderOpen className="w-3 h-3 text-gray-300" />
+                          {projects[s.project_id]} · {new Date(s.created_at).toLocaleDateString("he-IL")}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString("he-IL")}</span>
+                      )}
+                    </div>
+                  </div>
+                  {tc ? (
+                    <Badge variant={tc.done === tc.total ? "success" : "default"}>
+                      {tc.done}/{tc.total} ✓
+                    </Badge>
+                  ) : (
+                    <span className="text-gray-300 text-xs">—</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {meetingTotalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100">
+            <div className="flex items-center justify-between px-5 py-3 border-t border-sky-50">
               <span className="text-xs text-gray-400">{meetingPage + 1} / {meetingTotalPages}</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setMeetingPage((p) => Math.max(0, p - 1))}
                   disabled={meetingPage === 0}
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                  className="p-1.5 rounded-xl bg-white shadow-sm border border-sky-100 hover:border-sky-200 disabled:opacity-30 transition-all"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
                 </button>
                 <button
                   onClick={() => setMeetingPage((p) => Math.min(meetingTotalPages - 1, p + 1))}
                   disabled={meetingPage >= meetingTotalPages - 1}
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                  className="p-1.5 rounded-xl bg-white shadow-sm border border-sky-100 hover:border-sky-200 disabled:opacity-30 transition-all"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
                 </button>
               </div>
             </div>
@@ -591,9 +579,9 @@ export default function MemberPage() {
 
       {/* Tasks Table */}
       {allTasks.length > 0 && (
-        <Card padding={false}>
-          <div className="p-5 pb-3 flex items-center justify-between">
-            <CardHeader>
+        <Card padding={false} gradient="from-amber-50 to-orange-50">
+          <div className="p-5 pb-3 flex items-center justify-between border-b border-amber-100">
+            <CardHeader className="mb-0">
               <CardTitle>משימות אחרונות</CardTitle>
             </CardHeader>
             <div className="flex items-center gap-2">
@@ -601,7 +589,7 @@ export default function MemberPage() {
                 <select
                   value={taskProjectFilter}
                   onChange={(e) => { setTaskProjectFilter(e.target.value); setTaskPage(0); }}
-                  className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-600 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-2.5 py-1.5 rounded-2xl border border-amber-100 text-xs text-gray-600 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
                 >
                   <option value="">כל הפרויקטים</option>
                   {Object.entries(projects).map(([id, name]) => (
@@ -621,10 +609,10 @@ export default function MemberPage() {
                   <button
                     key={s}
                     onClick={() => { setTaskSort(s); setTaskPage(0); }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
                       taskSort === s
-                        ? "bg-indigo-600 text-white border-indigo-600"
-                        : "text-gray-600 border-gray-200 hover:bg-gray-50"
+                        ? "bg-gradient-to-br from-violet-400 to-pink-400 text-white border-transparent shadow-sm"
+                        : "text-gray-500 border-amber-100 bg-white/40 hover:bg-white/60 hover:text-amber-600"
                     }`}
                   >
                     {labels[s]}
@@ -635,75 +623,64 @@ export default function MemberPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
-                <tr>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">כותרת</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">פרויקט</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">סטטוס</th>
-                  <th className="text-right px-5 py-2.5 font-medium text-gray-500 text-xs">עדיפות</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {pagedTasks.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">
-                      <span className={t.status === "done" ? "line-through text-gray-400" : ""}>
-                        {t.title}
-                      </span>
-                    </td>
-                    <td className="px-5 py-2.5 text-xs text-gray-500">
-                      {t.project_id && projects[t.project_id] ? (
-                        <span className="flex items-center gap-1">
-                          <FolderOpen className="w-3 h-3 text-indigo-400" />
-                          {projects[t.project_id]}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <Badge
-                        variant={
-                          t.status === "done"
-                            ? "success"
-                            : t.status === "in_progress"
-                              ? "info"
-                              : "default"
-                        }
-                      >
-                        {statusLabels[t.status] ?? t.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-2.5">
-                      <Badge variant={priorityColors[t.priority]}>
-                        {priorityLabels[t.priority] ?? t.priority}
-                      </Badge>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-amber-50">
+            {pagedTasks.map((t) => (
+              <div key={t.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/50 transition-colors group">
+                <div className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0
+                  ${t.status === "done" ? "bg-emerald-100" : t.status === "in_progress" ? "bg-amber-100" : "bg-slate-100"}`}>
+                  {t.status === "done"
+                    ? <span className="text-emerald-500 text-xs font-bold">✓</span>
+                    : t.status === "in_progress"
+                      ? <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
+                      : <span className="w-2.5 h-2.5 rounded-full border-2 border-slate-300" />
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold truncate ${t.status === "done" ? "line-through text-gray-300" : "text-gray-800"}`}>
+                    {t.title}
+                  </p>
+                  {t.project_id && projects[t.project_id] ? (
+                    <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
+                      <FolderOpen className="w-3 h-3 text-gray-300" />
+                      {projects[t.project_id]}
+                    </span>
+                  ) : null}
+                </div>
+                <Badge
+                  variant={
+                    t.status === "done"
+                      ? "success"
+                      : t.status === "in_progress"
+                        ? "warning"
+                        : "default"
+                  }
+                >
+                  {statusLabels[t.status] ?? t.status}
+                </Badge>
+                <Badge variant={priorityColors[t.priority]}>
+                  {priorityLabels[t.priority] ?? t.priority}
+                </Badge>
+              </div>
+            ))}
           </div>
 
           {taskTotalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-2.5 border-t border-gray-100">
+            <div className="flex items-center justify-between px-5 py-3 border-t border-amber-50">
               <span className="text-xs text-gray-400">{taskPage + 1} / {taskTotalPages}</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => setTaskPage((p) => Math.max(0, p - 1))}
                   disabled={taskPage === 0}
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                  className="p-1.5 rounded-xl bg-white shadow-sm border border-amber-100 hover:border-amber-200 disabled:opacity-30 transition-all"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
                 </button>
                 <button
                   onClick={() => setTaskPage((p) => Math.min(taskTotalPages - 1, p + 1))}
                   disabled={taskPage >= taskTotalPages - 1}
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-40"
+                  className="p-1.5 rounded-xl bg-white shadow-sm border border-amber-100 hover:border-amber-200 disabled:opacity-30 transition-all"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
                 </button>
               </div>
             </div>
@@ -739,9 +716,9 @@ export default function MemberPage() {
           title="מחיקת פגישה"
         >
           <div className="space-y-4" dir="rtl">
-            <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start gap-3 p-3 bg-red-50/60 border border-red-100 rounded-2xl">
               <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-red-800">
+              <div className="text-sm text-red-700">
                 <p className="font-semibold mb-1">
                   האם למחוק את הפגישה &quot;{confirmDeleteSession.title || "פגישה ללא שם"}&quot;?
                 </p>

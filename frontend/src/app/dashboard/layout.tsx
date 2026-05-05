@@ -22,7 +22,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -31,7 +31,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     <OrganizationProvider>
       <RealtimeProvider>
         <NotificationLoader />
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
           <GlobalNav />
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {children}
