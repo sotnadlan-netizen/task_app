@@ -94,10 +94,10 @@ export function PromptSelector() {
         <div className="space-y-2 mb-4">
           {/* "None" option — use local prompt_versions */}
           <label
-            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+            className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all
               ${selected === null
-                ? "border-indigo-500 bg-indigo-50"
-                : "border-gray-200 hover:bg-gray-50"}`}
+                ? "border-violet-300 bg-violet-50/60"
+                : "border-violet-100 hover:bg-white/60"}`}
           >
             <input
               type="radio"
@@ -118,10 +118,10 @@ export function PromptSelector() {
           {prompts.map((p) => (
             <label
               key={p.id}
-              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors
+              className={`flex items-start gap-3 p-3 rounded-2xl border cursor-pointer transition-all
                 ${selected === p.id
-                  ? "border-indigo-500 bg-indigo-50"
-                  : "border-gray-200 hover:bg-gray-50"}`}
+                  ? "border-violet-300 bg-violet-50/60"
+                  : "border-violet-100 hover:bg-white/60"}`}
             >
               <input
                 type="radio"
@@ -132,7 +132,7 @@ export function PromptSelector() {
               />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                  <Sparkles className="w-3.5 h-3.5 text-violet-400 shrink-0" />
                   {p.name}
                   {selected === p.id && <Badge variant="success">Active</Badge>}
                 </p>

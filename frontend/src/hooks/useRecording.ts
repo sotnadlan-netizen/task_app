@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   appendEncryptedChunk,
   clearSession,
@@ -8,9 +8,6 @@ import {
   decryptAndMergeChunks,
   exportKeyToBase64,
   generateEncryptionKey,
-  getUnfinishedSessions,
-  importKeyFromBase64,
-  loadSessionKey,
   storeSessionKey,
 } from "@/lib/indexeddb";
 import { api } from "@/lib/api";
@@ -24,11 +21,6 @@ interface RecordingState {
   error: string | null;
 }
 
-interface CrashRecovery {
-  sessionKey: string;
-  exists: boolean;
-}
-
 export function useRecording() {
   const { session } = useSupabase();
   const { currentOrg, capacity } = useOrganization();
@@ -40,7 +32,6 @@ export function useRecording() {
     error: null,
   });
   const [processing, setProcessing] = useState(false);
-  const [crashRecovery, setCrashRecovery] = useState<CrashRecovery | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -50,37 +41,9 @@ export function useRecording() {
 
   // In-memory encryption key for the active recording session
   const cryptoKeyRef = useRef<CryptoKey | null>(null);
-  // Imported key for crash-recovery decryption (kept separate from active key)
-  const recoveryKeyRef = useRef<CryptoKey | null>(null);
 
   // Track all pending encrypted IndexedDB writes so stopRecording can await them
   const pendingWritesRef = useRef<Promise<void>[]>([]);
-
-  // ── Crash recovery check on mount ───────────────────────────────────────────
-  useEffect(() => {
-    async function checkCrashRecovery() {
-      try {
-        const sessions = await getUnfinishedSessions();
-        for (const sessionKey of sessions) {
-          const base64Key = loadSessionKey(sessionKey);
-          if (!base64Key) {
-            // Tab was closed — key is gone, data is cryptographically unrecoverable.
-            // Delete the useless ciphertext immediately.
-            await clearSession(sessionKey);
-            continue;
-          }
-          // Key exists in sessionStorage → we can decrypt and offer recovery
-          const key = await importKeyFromBase64(base64Key);
-          recoveryKeyRef.current = key;
-          setCrashRecovery({ sessionKey, exists: true });
-          break; // Handle one at a time; remaining will be checked next mount
-        }
-      } catch {
-        // IndexedDB or Web Crypto unavailable — silent fail
-      }
-    }
-    checkCrashRecovery();
-  }, []);
 
   // ── Timer helpers ────────────────────────────────────────────────────────────
   const startTimer = useCallback(() => {
@@ -211,65 +174,10 @@ export function useRecording() {
     }
   }, [currentOrg, session, state.duration, stopTimer]);
 
-  // ── Crash recovery: decrypt and upload ──────────────────────────────────────
-  const recoverCrashedSession = useCallback(async () => {
-    if (!crashRecovery || !recoveryKeyRef.current) return;
-
-    setProcessing(true);
-    const { sessionKey } = crashRecovery;
-
-    try {
-      const blob = await decryptAndMergeChunks(
-        sessionKey,
-        recoveryKeyRef.current,
-        "audio/webm" // default; original mimeType not persisted across crash
-      );
-      if (!blob) throw new Error("No recoverable audio found");
-
-      const formData = new FormData();
-      formData.append("audio", blob, "recovered-recording.webm");
-      formData.append("org_id", currentOrg?.id || "");
-      formData.append("recovered", "true");
-
-      const token = session?.access_token;
-      if (!token) throw new Error("Not authenticated");
-
-      await api.processAudio(formData, token);
-
-      // ── Aggressive cleanup ───────────────────────────────────────────────────
-      await clearSession(sessionKey);
-      clearSessionKey(sessionKey);
-      recoveryKeyRef.current = null;
-      setCrashRecovery(null);
-    } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        error: err instanceof Error ? err.message : "Failed to recover audio",
-      }));
-    } finally {
-      setProcessing(false);
-    }
-  }, [crashRecovery, currentOrg, session]);
-
-  // ── Crash recovery: discard ──────────────────────────────────────────────────
-  const discardCrashedSession = useCallback(async () => {
-    if (!crashRecovery) return;
-    const { sessionKey } = crashRecovery;
-
-    // Aggressive cleanup: delete ciphertext + key — data is permanently gone
-    await clearSession(sessionKey);
-    clearSessionKey(sessionKey);
-    recoveryKeyRef.current = null;
-    setCrashRecovery(null);
-  }, [crashRecovery]);
-
   return {
     ...state,
     processing,
-    crashRecovery,
     startRecording,
     stopRecording,
-    recoverCrashedSession,
-    discardCrashedSession,
   };
 }

@@ -110,7 +110,7 @@ function AddMemberModal({
         {/* Capacity & member summary — only for non-participants */}
         {!isParticipant && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
+            <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
               <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
               <p
                 className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}
@@ -121,7 +121,7 @@ function AddMemberModal({
                 {allocatedCapacity} / {currentOrg.total_capacity_min} min allocated
               </p>
             </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
+            <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
               <p className="text-xs text-gray-500 mb-1">Members</p>
               <p
                 className={`text-lg font-bold ${currentMemberCount >= currentOrg.max_members ? "text-red-600" : "text-gray-800"}`}
@@ -156,7 +156,7 @@ function AddMemberModal({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="user@example.com"
             required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
           />
           <p className="text-xs text-gray-400 mt-1">
             If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.
@@ -168,7 +168,7 @@ function AddMemberModal({
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
           >
             <option value="admin">Admin</option>
             <option value="member">Member</option>
@@ -387,32 +387,32 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-900">דף בית — ניהול ארגון</h1>
+      <h1 className="text-2xl font-bold text-gray-800">דף בית — ניהול ארגון</h1>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
+        <Card gradient="from-violet-50 to-fuchsia-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm">
               <Clock className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Minutes Used</p>
-              <p className="text-xl font-bold">
+              <p className="text-xl font-bold text-gray-800">
                 {totalUsed} / {totalCapacity}
               </p>
             </div>
           </div>
         </Card>
 
-        <Card>
+        <Card gradient="from-sky-50 to-blue-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm">
               <Users className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Members</p>
-              <p className="text-xl font-bold">
+              <p className="text-xl font-bold text-gray-800">
                 {nonParticipants.length}
                 {currentOrg && (
                   <span className="text-sm font-normal text-gray-400 ml-1">
@@ -424,14 +424,14 @@ export default function AdminPage() {
           </div>
         </Card>
 
-        <Card>
+        <Card gradient="from-amber-50 to-orange-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
               <p className="text-sm text-gray-500">Org Capacity</p>
-              <p className="text-xl font-bold">
+              <p className="text-xl font-bold text-gray-800">
                 {currentOrg?.total_capacity_min ?? "—"} min
               </p>
             </div>
@@ -442,9 +442,9 @@ export default function AdminPage() {
       {error && <Alert variant="error">{error}</Alert>}
 
       {/* ── Members Table (admin + member roles) ── */}
-      <Card padding={false}>
-        <div className="p-6 pb-4 flex items-center justify-between">
-          <CardHeader>
+      <Card padding={false} gradient="from-violet-50/60 to-fuchsia-50/40">
+        <div className="p-6 pb-4 flex items-center justify-between border-b border-violet-100/60">
+          <CardHeader className="mb-0">
             <CardTitle>Members &amp; Quotas</CardTitle>
           </CardHeader>
           <Button size="sm" onClick={() => setShowAddModal(true)}>
@@ -460,16 +460,16 @@ export default function AdminPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
+              <thead className="bg-white/40 border-b border-violet-100/60">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Member</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Used / Quota</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Quota (min)</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used / Quota</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Quota (min)</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-violet-50/60">
                 {nonParticipants.map((m) => (
                   <MemberRow
                     key={m.id}
@@ -500,9 +500,9 @@ export default function AdminPage() {
       </Card>
 
       {/* ── Participants Table ── */}
-      <Card padding={false}>
-        <div className="p-6 pb-4 flex items-center justify-between">
-          <CardHeader>
+      <Card padding={false} gradient="from-pink-50/60 to-rose-50/40">
+        <div className="p-6 pb-4 flex items-center justify-between border-b border-pink-100/60">
+          <CardHeader className="mb-0">
             <CardTitle>Participants</CardTitle>
           </CardHeader>
           <Button
@@ -522,15 +522,15 @@ export default function AdminPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-y border-gray-200">
+              <thead className="bg-white/40 border-b border-pink-100/60">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Participant</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-500">Status</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
+                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Status</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-pink-50/60">
                 {participants.map((m) => (
                   <MemberRow
                     key={m.id}
@@ -613,14 +613,14 @@ function MemberRow({
   showCapacity: boolean;
 }) {
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-white/50 transition-colors">
       {/* Member info */}
       <td className="px-6 py-3">
         <div>
-          <p className="font-medium text-gray-900">
+          <p className="font-medium text-gray-800">
             {m.profile?.full_name || m.invited_email || "—"}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-400">
             {m.profile?.email || m.invited_email}
             {!m.profile && m.invited_email && (
               <span className="ml-1 text-amber-500">(pending)</span>
@@ -640,7 +640,7 @@ function MemberRow({
                 [m.id]: e.target.value as UserRole,
               }))
             }
-            className="px-2 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            className="px-2 py-1 text-xs border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
           >
             <option value="admin">Admin</option>
             <option value="member">Member</option>
@@ -663,9 +663,9 @@ function MemberRow({
         <>
           <td className="px-6 py-3">
             <div className="flex items-center gap-2">
-              <div className="flex-1 max-w-[120px] h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="flex-1 max-w-[120px] h-2 bg-violet-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-indigo-500 rounded-full transition-all"
+                  className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (m.used_minutes / (m.capacity_minutes || 1)) * 100)}%`,
                   }}
@@ -690,8 +690,8 @@ function MemberRow({
                   [m.id]: Number(e.target.value),
                 }))
               }
-              className="w-24 px-2 py-1 text-sm border border-gray-300 rounded-lg
-                focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              className="w-24 px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80
+                focus:ring-2 focus:ring-violet-200 focus:border-transparent"
             />
           </td>
         </>
@@ -715,7 +715,7 @@ function MemberRow({
           )}
           <button
             onClick={onRemove}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors"
             title="Remove"
           >
             <Trash2 className="w-4 h-4" />

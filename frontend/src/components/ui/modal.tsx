@@ -27,7 +27,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
@@ -35,18 +35,18 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       aria-modal="true"
       aria-label={title}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      <div className="bg-gradient-to-br from-white/95 to-violet-50/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-violet-100/60">
+          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1.5 rounded-xl hover:bg-violet-100/60 transition-colors"
             aria-label="Close dialog"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
-        <div className="p-4">{children}</div>
+        <div className="p-5">{children}</div>
       </div>
     </div>
   );

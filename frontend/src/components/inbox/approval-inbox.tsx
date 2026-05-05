@@ -98,7 +98,7 @@ export function ApprovalInbox() {
           No pending edit requests.
         </div>
       ) : (
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-violet-50/60">
           {pendingTasks.map((pt) => (
             <div key={pt.id} className="px-6 py-4">
               <div className="flex items-start justify-between gap-3 mb-2">
@@ -113,7 +113,7 @@ export function ApprovalInbox() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm bg-gray-50 rounded-lg px-3 py-2 mb-3">
+              <div className="flex items-center gap-2 text-sm bg-violet-50/60 rounded-2xl px-3 py-2 mb-3">
                 <Badge variant="default">{pt.field_changed}</Badge>
                 <span className="text-gray-500 line-through">
                   {pt.old_value || "—"}

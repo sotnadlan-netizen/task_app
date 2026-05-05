@@ -25,7 +25,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased bg-gray-50 text-gray-900`}>
+      <body className={`${inter.className} antialiased text-gray-800`}>
         {children}
       </body>
     </html>
