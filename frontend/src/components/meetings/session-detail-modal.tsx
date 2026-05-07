@@ -65,6 +65,8 @@ export function SessionDetailModal({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [expandedTaskIds, setExpandedTaskIds] = useState<Set<string>>(new Set());
+  const [togglingTaskId, setTogglingTaskId] = useState<string | null>(null);
 
   // Meeting edit state
   const [showEditProject, setShowEditProject] = useState(false);
@@ -221,6 +223,28 @@ export function SessionDetailModal({
       setFormError(err instanceof Error ? err.message : "שגיאה במחיקת משימה");
     } finally {
       setDeletingTaskId(null);
+    }
+  };
+
+  const toggleExpanded = (taskId: string) => {
+    setExpandedTaskIds((prev) => {
+      const next = new Set(prev);
+      next.has(taskId) ? next.delete(taskId) : next.add(taskId);
+      return next;
+    });
+  };
+
+  const handleToggleDone = async (t: Task) => {
+    if (t.is_locked || togglingTaskId) return;
+    const newStatus = t.status === "done" ? "todo" : "done";
+    setTogglingTaskId(t.id);
+    try {
+      const updated = await api.updateTask(t.id, { status: newStatus }, token) as Task;
+      setTasks((prev) => prev.map((task) => (task.id === t.id ? { ...task, ...updated } : task)));
+    } catch {
+      // silently ignore — status badge still shows truth
+    } finally {
+      setTogglingTaskId(null);
     }
   };
 
@@ -559,49 +583,92 @@ export function SessionDetailModal({
                           <Button size="sm" variant="ghost" onClick={() => setEditingTaskId(null)}>ביטול</Button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="flex items-start gap-2">
-                        <div className="flex gap-1 flex-shrink-0">
-                          {!t.is_locked && (
-                            <>
-                              <button
-                                onClick={() => startEdit(t)}
-                                className="p-1 rounded-lg hover:bg-violet-100/60 transition-colors"
-                                aria-label="ערוך משימה"
-                              >
-                                <Pencil className="w-3.5 h-3.5 text-gray-400" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTask(t.id)}
-                                disabled={isDeleting}
-                                className="p-1 rounded-lg hover:bg-red-100/60 transition-colors disabled:opacity-40"
-                                aria-label="מחק משימה"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-start justify-between gap-2 flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            <Badge variant={priorityColors[t.priority]}>
-                              {priorityLabels[t.priority] ?? t.priority}
-                            </Badge>
-                            <Badge variant={t.status === "done" ? "success" : t.status === "in_progress" ? "info" : "default"}>
-                              {statusLabels[t.status] ?? t.status}
-                            </Badge>
-                          </div>
-                          <div className="flex-1 min-w-0 text-right">
-                            <p className={`font-medium ${t.status === "done" ? "text-green-700 line-through" : "text-gray-900"}`}>
-                              {t.title}
-                            </p>
-                            {t.description && (
-                              <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{t.description}</p>
+                    ) : (() => {
+                      const isExpanded = expandedTaskIds.has(t.id);
+                      const isDone = t.status === "done";
+                      const isToggling = togglingTaskId === t.id;
+                      return (
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox */}
+                          <button
+                            onClick={() => handleToggleDone(t)}
+                            disabled={t.is_locked || isToggling}
+                            className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                              isDone
+                                ? "bg-emerald-500 border-emerald-500"
+                                : "border-gray-300 hover:border-indigo-400"
+                            } disabled:opacity-40`}
+                            aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
+                          >
+                            {isDone && (
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
+                                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </button>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            {/* Title row — clickable to expand */}
+                            <button
+                              onClick={() => toggleExpanded(t.id)}
+                              className="w-full text-right flex items-start justify-between gap-2 group"
+                            >
+                              <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
+                                <Badge variant={priorityColors[t.priority]}>
+                                  {priorityLabels[t.priority] ?? t.priority}
+                                </Badge>
+                              </div>
+                              <span className={`flex-1 text-sm font-medium text-right leading-snug ${
+                                isDone ? "line-through text-gray-400" : "text-gray-900"
+                              }`}>
+                                {t.title}
+                              </span>
+                            </button>
+
+                            {/* Expanded detail */}
+                            {isExpanded && (
+                              <div className="mt-2 space-y-2 text-right">
+                                {t.description && (
+                                  <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">
+                                    {t.description}
+                                  </p>
+                                )}
+                                {t.deadline && (
+                                  <p className="text-xs text-indigo-600 font-medium">⏰ {t.deadline}</p>
+                                )}
+                                <div className="flex items-center justify-between gap-2 pt-1">
+                                  <div className="flex gap-1">
+                                    {!t.is_locked && (
+                                      <>
+                                        <button
+                                          onClick={() => startEdit(t)}
+                                          className="p-1 rounded-lg hover:bg-violet-100/60 transition-colors"
+                                          aria-label="ערוך משימה"
+                                        >
+                                          <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteTask(t.id)}
+                                          disabled={isDeleting}
+                                          className="p-1 rounded-lg hover:bg-red-100/60 transition-colors disabled:opacity-40"
+                                          aria-label="מחק משימה"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                  <Badge variant={t.status === "done" ? "success" : t.status === "in_progress" ? "info" : "default"}>
+                                    {statusLabels[t.status] ?? t.status}
+                                  </Badge>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 );
               })}
