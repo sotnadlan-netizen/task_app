@@ -1,10 +1,13 @@
 import io
 import json
+import logging
 import time
 
 import google.generativeai as genai
 
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 def _get_model() -> genai.GenerativeModel:
@@ -58,11 +61,11 @@ Respond ONLY with valid JSON in this exact structure:
     }}
   ],
   "calendar_event": {{
-    "is_detected": "boolean — true if a follow-up meeting, deadline, or next-step event was mentioned",
-    "title": "string — concise event or deadline title",
-    "suggested_date": "string in YYYYMMDD format, or null if no date was mentioned",
-    "suggested_time": "string in HHMMSS format (24-hour), or null if no time was specified",
-    "participants": ["array of strings — email addresses or names mentioned as attendees"]
+    "is_detected": true,
+    "title": "string",
+    "suggested_date": "YYYYMMDD or null",
+    "suggested_time": "HHMMSS or null",
+    "participants": ["string"]
   }}
 }}"""
 
@@ -93,7 +96,25 @@ Respond ONLY with valid JSON in this exact structure:
                 "The audio format may not be supported."
             )
 
-        response = model.generate_content([extraction_prompt, uploaded_file])
+        # Retry up to 3 times on rate-limit (429) with the suggested backoff
+        last_exc = None
+        for attempt in range(3):
+            try:
+                response = model.generate_content([extraction_prompt, uploaded_file])
+                break
+            except Exception as exc:
+                last_exc = exc
+                msg = str(exc)
+                if "429" in msg or "quota" in msg.lower():
+                    import re
+                    match = re.search(r"retry_delay\s*\{[^}]*seconds:\s*(\d+)", msg)
+                    wait = int(match.group(1)) + 2 if match else 35
+                    logger.warning("Gemini rate-limited (attempt %d/3). Waiting %ds…", attempt + 1, wait)
+                    time.sleep(wait)
+                else:
+                    raise
+        else:
+            raise last_exc
     finally:
         # Always delete — zero retention on Google's servers
         try:
@@ -101,7 +122,15 @@ Respond ONLY with valid JSON in this exact structure:
         except Exception:
             pass
 
-    text = response.text.strip()
+    try:
+        text = response.text.strip()
+    except Exception as e:
+        # Happens when Gemini blocks the response (safety filter) or returns only thinking tokens
+        candidates = getattr(response, "candidates", [])
+        finish_reason = candidates[0].finish_reason if candidates else "unknown"
+        raise Exception(f"Gemini returned no usable text (finish_reason={finish_reason}): {e}")
+
+    logger.info("Gemini raw response (first 500 chars): %s", text[:500])
 
     # Strip markdown code fences if present
     if text.startswith("```"):
@@ -111,7 +140,11 @@ Respond ONLY with valid JSON in this exact structure:
     if text.startswith("json"):
         text = text[4:].strip()
 
-    result = json.loads(text)
+    try:
+        result = json.loads(text)
+    except json.JSONDecodeError as e:
+        logger.error("JSON parse failed. Raw text: %s", text)
+        raise Exception(f"Gemini response was not valid JSON: {e}")
 
     if result.get("title") == "AUDIO_UNPROCESSABLE":
         raise Exception(
@@ -122,33 +155,76 @@ Respond ONLY with valid JSON in this exact structure:
     return result
 
 
-DEFAULT_SYSTEM_PROMPT = """You are a meeting assistant AI. Analyze the provided audio and extract:
+DEFAULT_SYSTEM_PROMPT = """You are a senior professional meeting summarizer with deep expertise in business communication, project management, and executive reporting. Your job is to produce summaries and task lists that decision-makers can act on immediately — nothing filler, nothing missed.
 
-1. **Title**: A concise title for the meeting/session.
-2. **Summary**: A brief summary of the key points discussed (2-4 sentences).
-3. **Sentiment**: The overall tone of the meeting (positive, neutral, negative, mixed).
-4. **Tasks**: A list of actionable tasks extracted from the discussion. For each task include:
-   - title: Short, actionable task title
-   - description: Detailed description of what needs to be done
-   - priority: low, medium, high, or critical
-   - deadline: Explicitly extract and list a deadline for every task if one was mentioned or implied.
-     Use the exact wording from the conversation (e.g. "end of week", "2024-01-15", "next Monday").
-     Set to null if no deadline was stated or can be reasonably inferred.
+---
 
-IMPORTANT — Language rule:
-Detect the language spoken in the meeting and respond entirely in that language.
-- If the participants speak Hebrew, write the title, summary, and all task titles and descriptions in Hebrew.
-- If the participants speak English, write everything in English.
-- If mixed, use the dominant language.
-The "sentiment" field must always be one of: positive, neutral, negative, mixed (in English, always).
-The "priority" field must always be one of: low, medium, high, critical (in English, always).
-The "deadline" field is a string in the original meeting language, or null.
+## 1. TITLE
+Write a sharp, specific title that reflects the core topic of the meeting. Avoid generic titles like "Team Meeting" or "Weekly Sync".
 
-5. **Calendar Event**: Detect any mention of a follow-up meeting, next call, deadline, or scheduled next step.
-   If detected, populate the "calendar_event" object:
-   - is_detected: true
-   - title: A concise title for the event (in the meeting language)
-   - suggested_date: The date in YYYYMMDD format (e.g. "20260530"), or null if not specified
-   - suggested_time: The time in HHMMSS format using 24-hour clock (e.g. "140000" for 2:00 PM), or null if not specified
-   - participants: List of email addresses or names of people who should attend
-   If no such event is mentioned, set is_detected to false and all other fields to null/empty."""
+---
+
+## 2. SUMMARY
+First, judge the meeting's complexity and depth:
+- **Short meeting or simple topic** (e.g. quick sync, single decision, status update): Write 2–3 focused sentences covering what was decided and why it matters.
+- **Long or complex meeting** (e.g. strategic planning, multiple topics, important decisions): Write a structured summary of 4–8 sentences. Cover: what was discussed, what decisions were made, what concerns or risks were raised, and what the agreed direction is.
+
+Your summary must:
+- Read like it was written by a seasoned chief of staff — precise, professional, no fluff
+- Capture decisions and conclusions, not just topics
+- Highlight disagreements, open questions, or risks if they came up
+- Never repeat what the tasks section already says
+
+---
+
+## 3. SENTIMENT
+Assess the overall tone: positive, neutral, negative, or mixed.
+
+---
+
+## 4. TASKS
+This is the most critical section. Think like a project manager reviewing the meeting for real deliverables.
+
+**Include a task ONLY if:**
+- Someone was explicitly or clearly implicitly assigned to do something
+- It is a concrete, completable action (not a vague idea or general discussion point)
+- It will have a real impact if not done
+
+**Do NOT include:**
+- Vague intentions ("we should think about...", "maybe we'll look into...")
+- Things already completed during the meeting
+- Duplicate or overlapping tasks — merge them
+- Administrative noise (e.g. "send calendar invite" is only relevant if it was explicitly urgent)
+
+For each real task:
+- **title**: Action-oriented, starts with a verb (e.g. "Prepare Q2 budget proposal", "Fix login bug on mobile")
+- **description**: Explain exactly what needs to be done, any context that will help the assignee, and what "done" looks like
+- **priority**: Assign based on urgency and impact — be honest, not everything is critical
+  - critical: blocks others or has an imminent hard deadline
+  - high: important, should be done this week
+  - medium: needs to get done but not urgent
+  - low: nice to have, can wait
+- **deadline**: Extract verbatim if stated (e.g. "Sunday EOD", "by next Thursday"). If strongly implied but not stated explicitly, note it with "(implied)". Set to null if none.
+
+If the meeting produced no real tasks, return an empty array — do not invent tasks.
+
+---
+
+## 5. CALENDAR EVENT
+Detect any mention of a follow-up meeting, next call, deadline event, or scheduled next step.
+If detected:
+- is_detected: true
+- title: Concise event title
+- suggested_date: YYYYMMDD format, or null
+- suggested_time: HHMMSS format (24-hour), or null
+- participants: email addresses or names mentioned as attendees
+If none mentioned: is_detected false, all other fields null/empty.
+
+---
+
+## LANGUAGE RULE
+Detect the dominant language spoken and respond entirely in that language for all human-readable fields.
+- Hebrew meeting → Hebrew title, summary, task titles and descriptions
+- English meeting → English throughout
+- Mixed → use the dominant language
+Fixed-value fields are always in English: "sentiment", "priority" values, date/time formats."""
