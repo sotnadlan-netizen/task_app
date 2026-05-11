@@ -26,14 +26,14 @@ export default function AuthCallback() {
     if (accessToken) {
       supabase.auth.onAuthStateChange((event) => {
         if (event === "SIGNED_IN") {
-          router.push("/dashboard/member");
+          router.push("/dashboard");
         }
       });
     } else {
       // Code flow — Supabase SSR handles it automatically
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (session) {
-          router.push("/dashboard/member");
+          router.push("/dashboard");
         } else {
           router.push("/");
         }
