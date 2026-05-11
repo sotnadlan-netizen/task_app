@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
-  profile: Profile | null;
+  profile: Profile | undefined;
 }
 
 const priorityLabels: Record<string, string> = {
