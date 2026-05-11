@@ -79,6 +79,7 @@ export function SessionDetailModal({
   const [meetingError, setMeetingError] = useState<string | null>(null);
   const [participantSearch, setParticipantSearch] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -155,7 +156,7 @@ export function SessionDetailModal({
         { email: emailToInvite, role: "participant" },
         token
       ) as OrgMembership;
-      setMembers((prev) => [...prev, { ...newMember, profile: null }]);
+      setMembers((prev) => [...prev, { ...newMember, profile: undefined }]);
       // Use membership ID — always available regardless of login status
       setEditParticipantIds((prev) => [...prev, newMember.id]);
       setInviteSuccess(emailToInvite);
