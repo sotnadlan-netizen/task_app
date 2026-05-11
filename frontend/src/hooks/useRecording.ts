@@ -130,7 +130,7 @@ export function useRecording() {
     // 2. Wait for all pending IndexedDB writes — guarantees every chunk is persisted
     //    before we attempt to read them back for decryption + merge
     await new Promise<void>((resolve) => {
-      mediaRecorder.addEventListener("stop", resolve, { once: true });
+      mediaRecorder.addEventListener("stop", () => resolve(), { once: true });
       mediaRecorder.stop();
     });
     await Promise.all(pendingWritesRef.current);
