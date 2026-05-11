@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 import type { OrgMembership, Profile } from "@/types";
 
 interface MemberWithProfile extends OrgMembership {
-  profile: Profile | null;
+  profile: Profile | undefined;
 }
 
 function formatDuration(seconds: number): string {
