@@ -33,6 +33,7 @@ export function useRecording() {
   });
   const [processing, setProcessing] = useState(false);
 
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -72,6 +73,7 @@ export function useRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      setMediaStream(stream);
 
       const sessionKey = `recording_${Date.now()}`;
       sessionKeyRef.current = sessionKey;
@@ -171,12 +173,14 @@ export function useRecording() {
       }));
     } finally {
       setProcessing(false);
+      setMediaStream(null);
     }
   }, [currentOrg, session, state.duration, stopTimer]);
 
   return {
     ...state,
     processing,
+    mediaStream,
     startRecording,
     stopRecording,
   };

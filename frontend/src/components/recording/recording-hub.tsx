@@ -7,6 +7,7 @@ import { useOrganization } from "@/providers/organization-provider";
 import { useSupabase } from "@/providers/supabase-provider";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { AudioWaveform } from "@/components/recording/audio-waveform";
 import { Mic, Square, Clock, FolderOpen, Users, Plus, X } from "lucide-react";
 import { api } from "@/lib/api";
 import type { OrgMembership, Profile } from "@/types";
@@ -29,6 +30,7 @@ export function RecordingHub() {
     duration,
     error,
     processing,
+    mediaStream,
     startRecording,
     stopRecording,
   } = useRecording();
@@ -98,7 +100,7 @@ export function RecordingHub() {
     : 0;
 
   return (
-    <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.07)] overflow-hidden">
+    <div className="glass-panel bg-white rounded-3xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.07)] overflow-hidden">
 
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-gray-100">
@@ -110,7 +112,7 @@ export function RecordingHub() {
             <h2 className="text-lg font-bold text-gray-800">מרכז הקלטה</h2>
           </div>
           {capacity && (
-            <span className="inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 rounded-full px-3 py-1 text-xs font-semibold border border-violet-100">
+            <span className="capacity-chip inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 rounded-full px-3 py-1 text-xs font-semibold border border-violet-100">
               <Clock className="w-3.5 h-3.5" />
               {capacity.remaining_minutes} דק׳ נותרות
             </span>
@@ -251,8 +253,17 @@ export function RecordingHub() {
         </div>
       )}
 
+      {/* Audio Waveform — visible while recording or processing */}
+      <div className="px-6 pb-2">
+        <AudioWaveform
+          mediaStream={mediaStream}
+          isRecording={isRecording}
+          processing={processing}
+        />
+      </div>
+
       {/* Recording Interface */}
-      <div className="flex flex-col items-center py-10 px-6 gap-5">
+      <div className="flex flex-col items-center py-8 px-6 gap-5">
         {/* Timer */}
         {isRecording && (
           <motion.div
@@ -295,7 +306,7 @@ export function RecordingHub() {
               className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-violet-300 ${
                 capacity?.is_blocked
                   ? "bg-gray-200 cursor-not-allowed"
-                  : "bg-gradient-to-br from-violet-500 to-pink-500 shadow-[0_4px_24px_rgba(139,92,246,0.45)]"
+                  : "record-btn-idle bg-gradient-to-br from-violet-500 to-pink-500 shadow-[0_4px_24px_rgba(139,92,246,0.45)]"
               }`}
               aria-label="התחל הקלטה"
             >
@@ -346,11 +357,11 @@ export function RecordingHub() {
       {/* Processing Indicator */}
       {processing && (
         <div className="flex items-center justify-center gap-3 py-5 border-t border-gray-100">
-          <svg className="animate-spin h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24">
+          <svg className="ai-processing-spinner animate-spin h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="text-sm text-violet-600 font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
+          <span className="ai-processing-text text-sm text-violet-600 font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
         </div>
       )}
     </div>

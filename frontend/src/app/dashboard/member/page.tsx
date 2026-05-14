@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTypewriter } from "@/hooks/useTypewriter";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
@@ -291,6 +292,12 @@ function AddParticipantModal({
   );
 }
 
+// ─── Task Title with optional typewriter animation ───────────────────────────
+function TaskTitle({ title, animate }: { title: string; animate: boolean }) {
+  const displayed = useTypewriter(animate ? title : "", 22);
+  return <>{animate ? displayed || " " : title}</>;
+}
+
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({
   icon,
@@ -306,7 +313,7 @@ function StatCard({
   return (
     <motion.div
       variants={fadeUp}
-      className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] hover:-translate-y-0.5"
+      className="glass-panel bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] hover:-translate-y-0.5"
     >
       <div className={`w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
         {icon}
@@ -388,6 +395,10 @@ export default function MemberPage() {
   const [taskPage, setTaskPage] = useState(0);
   const [taskProjectFilter, setTaskProjectFilter] = useState<string>("");
 
+  // Typewriter: track which task IDs were seen on initial load vs. arrived via realtime
+  const initialTaskIdsRef = useRef<Set<string> | null>(null);
+  const [newTaskIds, setNewTaskIds] = useState<Set<string>>(new Set());
+
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
@@ -456,6 +467,26 @@ export default function MemberPage() {
     const unsub = subscribe("sessions", () => loadStats());
     return unsub;
   }, [subscribe, loadStats]);
+
+  // Detect tasks that arrived after initial page load (for typewriter effect)
+  useEffect(() => {
+    if (allTasks.length === 0) return;
+    if (initialTaskIdsRef.current === null) {
+      // First load — record these IDs as "already seen"
+      initialTaskIdsRef.current = new Set(allTasks.map((t) => t.id));
+      return;
+    }
+    const fresh = allTasks
+      .filter((t) => !initialTaskIdsRef.current!.has(t.id))
+      .map((t) => t.id);
+    if (fresh.length > 0) {
+      const freshSet = new Set(fresh);
+      fresh.forEach((id) => initialTaskIdsRef.current!.add(id));
+      setNewTaskIds(freshSet);
+      const timeout = setTimeout(() => setNewTaskIds(new Set()), fresh.length * 1200 + 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [allTasks]);
 
   const handleDeleteSession = async () => {
     if (!confirmDeleteSession) return;
@@ -589,7 +620,7 @@ export default function MemberPage() {
           initial="hidden"
           animate="show"
           transition={{ delay: 0.28 }}
-          className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
+          className="glass-panel bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
         >
           {/* Section header */}
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
@@ -691,7 +722,7 @@ export default function MemberPage() {
           initial="hidden"
           animate="show"
           transition={{ delay: 0.34 }}
-          className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
+          className="glass-panel bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
         >
           {/* Section header */}
           <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
@@ -768,7 +799,7 @@ export default function MemberPage() {
                   <p className={`text-sm font-semibold truncate ${
                     t.status === "done" ? "line-through text-gray-300" : "text-gray-800"
                   }`}>
-                    {t.title}
+                    <TaskTitle title={t.title} animate={newTaskIds.has(t.id)} />
                   </p>
                   {t.project_id && projects[t.project_id] && (
                     <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
