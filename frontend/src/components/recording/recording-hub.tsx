@@ -278,7 +278,7 @@ export function RecordingHub() {
           {/* Animated pulse ring while recording */}
           {isRecording && !shouldReduceMotion && (
             <motion.div
-              className="absolute rounded-full bg-red-400/20"
+              className="absolute rounded-full bg-red-400/20 pointer-events-none"
               style={{ width: 100, height: 100 }}
               animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
@@ -292,7 +292,7 @@ export function RecordingHub() {
               whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
               whileTap={shouldReduceMotion ? {} : { scale: 0.93 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              className={`w-20 h-20 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-violet-300 ${
+              className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-violet-300 ${
                 capacity?.is_blocked
                   ? "bg-gray-200 cursor-not-allowed"
                   : "bg-gradient-to-br from-violet-500 to-pink-500 shadow-[0_4px_24px_rgba(139,92,246,0.45)]"
@@ -307,7 +307,8 @@ export function RecordingHub() {
               whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
               whileTap={shouldReduceMotion ? {} : { scale: 0.93 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shadow-[0_4px_24px_rgba(239,68,68,0.35)] focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-red-300"
+              type="button"
+              className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shadow-[0_4px_24px_rgba(239,68,68,0.35)] focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-red-300"
               aria-label="עצור הקלטה"
             >
               <Square className="w-8 h-8 text-white" />
