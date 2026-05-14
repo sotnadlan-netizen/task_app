@@ -48,6 +48,7 @@ export function GlobalNav() {
   const isOnAdminView = pathname.startsWith("/dashboard/admin");
   const isOnMemberView = pathname.startsWith("/dashboard/member");
 
+
   // Build nav links based on role
   const navLinks = [
     {
@@ -176,7 +177,7 @@ export function GlobalNav() {
 
             {/* Admin ↔ Member toggle for admin-role users */}
             {!isPlatformAdmin && currentRole === "admin" && (
-              <div className="hidden sm:flex items-center bg-white/60 border border-violet-100 rounded-2xl p-1 gap-1">
+              <div className="flex items-center bg-white/60 border border-violet-100 rounded-2xl p-1 gap-1">
                 <button
                   onClick={() => router.push("/dashboard/member")}
                   className={`px-3 py-1 text-xs font-medium rounded-xl transition-all ${

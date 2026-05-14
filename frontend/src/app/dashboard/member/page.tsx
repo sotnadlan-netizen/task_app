@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
 import { RecordingHub } from "@/components/recording/recording-hub";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
@@ -19,7 +19,6 @@ import {
   Clock,
   ListChecks,
   UserPlus,
-  Users,
   Trash2,
   CalendarDays,
   ChevronLeft,
@@ -57,6 +56,34 @@ type TaskSort = "time" | "project" | "status" | "urgency";
 
 const priorityOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 const statusOrder: Record<string, number> = { todo: 0, in_progress: 1, done: 2 };
+
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "בוקר טוב";
+  if (h < 17) return "צהריים טובים";
+  return "ערב טוב";
+}
+
+// ─── Framer Motion Variants ───────────────────────────────────────────────────
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" as const } },
+};
+
+const listVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+
+const listItem = {
+  hidden: { opacity: 0, x: -10 },
+  show: { opacity: 1, x: 0, transition: { duration: 0.22 } },
+};
 
 // ─── Calendar Modal ───────────────────────────────────────────────────────────
 function CalendarModal({
@@ -243,7 +270,7 @@ function AddParticipantModal({
             placeholder="user@example.com"
             required
             dir="ltr"
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-gray-50"
           />
           <p className="text-xs text-gray-400 mt-1">
             אם המשתמש טרם נכנס למערכת, הוא יקושר אוטומטית בהתחברות הראשונה.
@@ -264,18 +291,87 @@ function AddParticipantModal({
   );
 }
 
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({
+  icon,
+  iconBg,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  label: string;
+  value: string | number;
+}) {
+  return (
+    <motion.div
+      variants={fadeUp}
+      className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] hover:-translate-y-0.5"
+    >
+      <div className={`w-11 h-11 rounded-2xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs font-medium text-gray-500 mb-0.5">{label}</p>
+        <p className="text-2xl font-bold text-gray-800 leading-none">{value}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Pagination Bar ───────────────────────────────────────────────────────────
+function PaginationBar({
+  page,
+  totalPages,
+  onPrev,
+  onNext,
+  borderColor = "border-gray-100",
+}: {
+  page: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+  borderColor?: string;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className={`flex items-center justify-between px-5 py-3 border-t ${borderColor}`}>
+      <span className="text-xs text-gray-400">{page + 1} / {totalPages}</span>
+      <div className="flex gap-1">
+        <button
+          onClick={onPrev}
+          disabled={page === 0}
+          className="p-1.5 rounded-xl bg-white shadow-sm border border-gray-200 hover:border-gray-300 disabled:opacity-30 transition-all"
+          aria-label="עמוד קודם"
+        >
+          <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
+        </button>
+        <button
+          onClick={onNext}
+          disabled={page >= totalPages - 1}
+          className="p-1.5 rounded-xl bg-white shadow-sm border border-gray-200 hover:border-gray-300 disabled:opacity-30 transition-all"
+          aria-label="עמוד הבא"
+        >
+          <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Member Page ──────────────────────────────────────────────────────────────
 export default function MemberPage() {
   const { supabase, session } = useSupabase();
   const { currentOrg, capacity, currentRole, loading: orgLoading } = useOrganization();
   const { subscribe } = useRealtime();
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
 
   const [allSessions, setAllSessions] = useState<Session[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [taskCountTotal, setTaskCountTotal] = useState(0);
   const [taskCounts, setTaskCounts] = useState<Record<string, { total: number; done: number }>>({});
-  const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
+  const [projects, setProjects] = useState<Record<string, string>>({});
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -284,12 +380,10 @@ export default function MemberPage() {
   const [deletingSession, setDeletingSession] = useState(false);
   const [deleteSessionError, setDeleteSessionError] = useState<string | null>(null);
 
-  // Meeting table state
   const [meetingSort, setMeetingSort] = useState<MeetingSort>("time");
   const [meetingPage, setMeetingPage] = useState(0);
   const [meetingProjectFilter, setMeetingProjectFilter] = useState<string>("");
 
-  // Task table state
   const [taskSort, setTaskSort] = useState<TaskSort>("time");
   const [taskPage, setTaskPage] = useState(0);
   const [taskProjectFilter, setTaskProjectFilter] = useState<string>("");
@@ -379,7 +473,6 @@ export default function MemberPage() {
     }
   };
 
-  // Sorted/filtered/paginated meetings
   const sortedMeetings = useMemo(() => {
     let copy = meetingProjectFilter
       ? allSessions.filter((s) => s.project_id === meetingProjectFilter)
@@ -397,7 +490,6 @@ export default function MemberPage() {
   const meetingTotalPages = Math.ceil(sortedMeetings.length / ITEMS_PER_PAGE);
   const pagedMeetings = sortedMeetings.slice(meetingPage * ITEMS_PER_PAGE, (meetingPage + 1) * ITEMS_PER_PAGE);
 
-  // Sorted/filtered/paginated tasks
   const sortedTasks = useMemo(() => {
     let copy = taskProjectFilter
       ? allTasks.filter((t) => t.project_id === taskProjectFilter)
@@ -422,78 +514,92 @@ export default function MemberPage() {
   if (orgLoading || currentRole === "participant") return null;
 
   const token = session?.access_token || "";
+  const hasProjects = Object.keys(projects).length > 0;
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">דף בית</h1>
+
+      {/* ── Welcome Header ─────────────────────────────────────────────────── */}
+      <motion.div
+        initial={shouldReduceMotion ? {} : { opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex items-end justify-between gap-4"
+      >
+        <div>
+          <p className="text-xs font-medium text-gray-400 mb-1">
+            {new Date().toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+          </p>
+          <h1 className="text-2xl font-bold text-gray-800">{getGreeting()} 👋</h1>
+          {currentOrg && (
+            <p className="text-sm text-gray-500 mt-0.5">{currentOrg.name}</p>
+          )}
+        </div>
         <Button
           size="sm"
           variant="secondary"
           onClick={() => setShowAddParticipant(true)}
         >
-          <UserPlus className="w-4 h-4 ml-1" />
+          <UserPlus className="w-4 h-4 ml-1.5" />
           הוסף משתתף
         </Button>
-      </div>
+      </motion.div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card gradient="from-violet-50 to-fuchsia-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm">
-              <BarChart3 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">פגישות</p>
-              <p className="text-xl font-bold text-gray-800">{allSessions.length}</p>
-            </div>
-          </div>
-        </Card>
+      {/* ── Stats Row ──────────────────────────────────────────────────────── */}
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+      >
+        <StatCard
+          icon={<BarChart3 className="w-5 h-5 text-violet-600" />}
+          iconBg="bg-violet-100"
+          label="פגישות"
+          value={allSessions.length}
+        />
+        <StatCard
+          icon={<ListChecks className="w-5 h-5 text-sky-600" />}
+          iconBg="bg-sky-100"
+          label="סה״כ משימות"
+          value={taskCountTotal}
+        />
+        <StatCard
+          icon={<Clock className="w-5 h-5 text-amber-600" />}
+          iconBg="bg-amber-100"
+          label="דקות נותרות"
+          value={capacity ? `${capacity.remaining_minutes} דק׳` : "—"}
+        />
+      </motion.div>
 
-        <Card gradient="from-sky-50 to-blue-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm">
-              <ListChecks className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">סה״כ משימות</p>
-              <p className="text-xl font-bold text-gray-800">{taskCountTotal}</p>
-            </div>
-          </div>
-        </Card>
+      {/* ── Recording Hub ──────────────────────────────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        transition={{ delay: 0.2 }}
+      >
+        <RecordingHub />
+      </motion.div>
 
-        <Card gradient="from-amber-50 to-orange-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">נותר</p>
-              <p className="text-xl font-bold text-gray-800">
-                {capacity?.remaining_minutes ?? "—"} דק׳
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Recording Hub */}
-      <RecordingHub />
-
-      {/* Meetings Table */}
+      {/* ── Meetings Section ───────────────────────────────────────────────── */}
       {allSessions.length > 0 && (
-        <Card padding={false} gradient="from-sky-50 to-blue-50">
-          <div className="p-5 pb-3 flex items-center justify-between border-b border-sky-100">
-            <CardHeader className="mb-0">
-              <CardTitle>פגישות אחרונות</CardTitle>
-            </CardHeader>
-            <div className="flex items-center gap-2">
-              {Object.keys(projects).length > 0 && (
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          transition={{ delay: 0.28 }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
+        >
+          {/* Section header */}
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-base font-bold text-gray-800">פגישות אחרונות</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              {hasProjects && (
                 <select
                   value={meetingProjectFilter}
                   onChange={(e) => { setMeetingProjectFilter(e.target.value); setMeetingPage(0); }}
-                  className="px-2.5 py-1.5 rounded-2xl border border-sky-100 text-xs text-gray-600 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+                  className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                 >
                   <option value="">כל הפרויקטים</option>
                   {Object.entries(projects).map(([id, name]) => (
@@ -503,14 +609,15 @@ export default function MemberPage() {
               )}
               <button
                 onClick={() => setShowCalendar(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-100 hover:bg-white/60 text-xs text-gray-500 transition-colors bg-white/40"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
+                aria-label="פתח לוח שנה"
               >
                 <CalendarDays className="w-3.5 h-3.5" />
                 לוח שנה
               </button>
               <button
                 onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sky-100 hover:bg-white/60 text-xs text-gray-500 transition-colors bg-white/40"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
                 {meetingSort === "time" ? "לפי פרויקט" : "לפי זמן"}
@@ -518,12 +625,23 @@ export default function MemberPage() {
             </div>
           </div>
 
-          <div className="divide-y divide-sky-50">
+          {/* Rows */}
+          <motion.div
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+            className="divide-y divide-gray-50"
+          >
             {pagedMeetings.map((s) => {
               const tc = taskCounts[s.id];
               return (
-                <div key={s.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/50 transition-colors cursor-pointer group" onClick={() => setSelectedSession(s)}>
-                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 flex items-center justify-center flex-shrink-0 shadow-sm">
+                <motion.div
+                  key={s.id}
+                  variants={listItem}
+                  onClick={() => setSelectedSession(s)}
+                  className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-violet-50/30 transition-colors cursor-pointer group"
+                >
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <span className="text-white font-bold text-xs">{(s.title || "פ")[0]}</span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -542,54 +660,48 @@ export default function MemberPage() {
                     </div>
                   </div>
                   {tc ? (
-                    <Badge variant={tc.done === tc.total ? "success" : "default"}>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+                      tc.done === tc.total
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-sky-50 text-sky-700 border-sky-200"
+                    }`}>
                       {tc.done}/{tc.total} ✓
-                    </Badge>
+                    </span>
                   ) : (
                     <span className="text-gray-300 text-xs">—</span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
 
-          {meetingTotalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-sky-50">
-              <span className="text-xs text-gray-400">{meetingPage + 1} / {meetingTotalPages}</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setMeetingPage((p) => Math.max(0, p - 1))}
-                  disabled={meetingPage === 0}
-                  className="p-1.5 rounded-xl bg-white shadow-sm border border-sky-100 hover:border-sky-200 disabled:opacity-30 transition-all"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
-                </button>
-                <button
-                  onClick={() => setMeetingPage((p) => Math.min(meetingTotalPages - 1, p + 1))}
-                  disabled={meetingPage >= meetingTotalPages - 1}
-                  className="p-1.5 rounded-xl bg-white shadow-sm border border-sky-100 hover:border-sky-200 disabled:opacity-30 transition-all"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-          )}
-        </Card>
+          <PaginationBar
+            page={meetingPage}
+            totalPages={meetingTotalPages}
+            onPrev={() => setMeetingPage((p) => Math.max(0, p - 1))}
+            onNext={() => setMeetingPage((p) => Math.min(meetingTotalPages - 1, p + 1))}
+          />
+        </motion.div>
       )}
 
-      {/* Tasks Table */}
+      {/* ── Tasks Section ──────────────────────────────────────────────────── */}
       {allTasks.length > 0 && (
-        <Card padding={false} gradient="from-amber-50 to-orange-50">
-          <div className="p-5 pb-3 flex items-center justify-between border-b border-amber-100">
-            <CardHeader className="mb-0">
-              <CardTitle>משימות אחרונות</CardTitle>
-            </CardHeader>
-            <div className="flex items-center gap-2">
-              {Object.keys(projects).length > 0 && (
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="show"
+          transition={{ delay: 0.34 }}
+          className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] overflow-hidden"
+        >
+          {/* Section header */}
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-base font-bold text-gray-800">משימות אחרונות</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              {hasProjects && (
                 <select
                   value={taskProjectFilter}
                   onChange={(e) => { setTaskProjectFilter(e.target.value); setTaskPage(0); }}
-                  className="px-2.5 py-1.5 rounded-2xl border border-amber-100 text-xs text-gray-600 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+                  className="px-2.5 py-1.5 rounded-xl border border-gray-200 text-xs text-gray-600 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
                 >
                   <option value="">כל הפרויקטים</option>
                   {Object.entries(projects).map(([id, name]) => (
@@ -597,98 +709,104 @@ export default function MemberPage() {
                   ))}
                 </select>
               )}
-              <div className="flex items-center gap-1.5">
-              {(["time", "project", "status", "urgency"] as TaskSort[]).map((s) => {
-                const labels: Record<TaskSort, string> = {
-                  time: "זמן",
-                  project: "פרויקט",
-                  status: "סטטוס",
-                  urgency: "דחיפות",
-                };
-                return (
-                  <button
-                    key={s}
-                    onClick={() => { setTaskSort(s); setTaskPage(0); }}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
-                      taskSort === s
-                        ? "bg-gradient-to-br from-violet-400 to-pink-400 text-white border-transparent shadow-sm"
-                        : "text-gray-500 border-amber-100 bg-white/40 hover:bg-white/60 hover:text-amber-600"
-                    }`}
-                  >
-                    {labels[s]}
-                  </button>
-                );
-              })}
+              <div className="flex items-center gap-1">
+                {(["time", "project", "status", "urgency"] as TaskSort[]).map((s) => {
+                  const labels: Record<TaskSort, string> = {
+                    time: "זמן",
+                    project: "פרויקט",
+                    status: "סטטוס",
+                    urgency: "דחיפות",
+                  };
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => { setTaskSort(s); setTaskPage(0); }}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-medium transition-all border focus:outline-none focus:ring-2 focus:ring-violet-400 ${
+                        taskSort === s
+                          ? "bg-gradient-to-br from-violet-500 to-pink-500 text-white border-transparent shadow-sm"
+                          : "text-gray-500 border-gray-200 bg-gray-50 hover:bg-gray-100 hover:text-gray-700"
+                      }`}
+                    >
+                      {labels[s]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          <div className="divide-y divide-amber-50">
+          {/* Rows */}
+          <motion.div
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+            className="divide-y divide-gray-50"
+          >
             {pagedTasks.map((t) => (
-              <div key={t.id} className="px-5 py-3.5 flex items-center gap-3 hover:bg-white/50 transition-colors group">
-                <div className={`w-8 h-8 rounded-2xl flex items-center justify-center flex-shrink-0
-                  ${t.status === "done" ? "bg-emerald-100" : t.status === "in_progress" ? "bg-amber-100" : "bg-slate-100"}`}>
+              <motion.div
+                key={t.id}
+                variants={listItem}
+                className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-gray-50/60 transition-colors group"
+              >
+                {/* Status indicator */}
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                  t.status === "done"
+                    ? "bg-emerald-50 border border-emerald-200"
+                    : t.status === "in_progress"
+                      ? "bg-amber-50 border border-amber-200"
+                      : "bg-gray-50 border border-gray-200"
+                }`}>
                   {t.status === "done"
                     ? <span className="text-emerald-500 text-xs font-bold">✓</span>
                     : t.status === "in_progress"
                       ? <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                      : <span className="w-2.5 h-2.5 rounded-full border-2 border-slate-300" />
+                      : <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300" />
                   }
                 </div>
+
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate ${t.status === "done" ? "line-through text-gray-300" : "text-gray-800"}`}>
+                  <p className={`text-sm font-semibold truncate ${
+                    t.status === "done" ? "line-through text-gray-300" : "text-gray-800"
+                  }`}>
                     {t.title}
                   </p>
-                  {t.project_id && projects[t.project_id] ? (
+                  {t.project_id && projects[t.project_id] && (
                     <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                       <FolderOpen className="w-3 h-3 text-gray-300" />
                       {projects[t.project_id]}
                     </span>
-                  ) : null}
+                  )}
                 </div>
-                <Badge
-                  variant={
-                    t.status === "done"
-                      ? "success"
-                      : t.status === "in_progress"
-                        ? "warning"
-                        : "default"
-                  }
-                >
+
+                {/* Status badge */}
+                <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border ${
+                  t.status === "done"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : t.status === "in_progress"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : "bg-gray-100 text-gray-500 border-gray-200"
+                }`}>
                   {statusLabels[t.status] ?? t.status}
-                </Badge>
+                </span>
+
+                {/* Priority */}
                 <Badge variant={priorityColors[t.priority]}>
                   {priorityLabels[t.priority] ?? t.priority}
                 </Badge>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
 
-          {taskTotalPages > 1 && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-amber-50">
-              <span className="text-xs text-gray-400">{taskPage + 1} / {taskTotalPages}</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setTaskPage((p) => Math.max(0, p - 1))}
-                  disabled={taskPage === 0}
-                  className="p-1.5 rounded-xl bg-white shadow-sm border border-amber-100 hover:border-amber-200 disabled:opacity-30 transition-all"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-500" />
-                </button>
-                <button
-                  onClick={() => setTaskPage((p) => Math.min(taskTotalPages - 1, p + 1))}
-                  disabled={taskPage >= taskTotalPages - 1}
-                  className="p-1.5 rounded-xl bg-white shadow-sm border border-amber-100 hover:border-amber-200 disabled:opacity-30 transition-all"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 text-gray-500" />
-                </button>
-              </div>
-            </div>
-          )}
-        </Card>
+          <PaginationBar
+            page={taskPage}
+            totalPages={taskTotalPages}
+            onPrev={() => setTaskPage((p) => Math.max(0, p - 1))}
+            onNext={() => setTaskPage((p) => Math.min(taskTotalPages - 1, p + 1))}
+          />
+        </motion.div>
       )}
 
-      {/* Session Detail Modal */}
+      {/* ── Session Detail Modal ───────────────────────────────────────────── */}
       {selectedSession && (
         <SessionDetailModal
           session={selectedSession}
@@ -708,7 +826,7 @@ export default function MemberPage() {
         />
       )}
 
-      {/* Confirm Delete Session Modal */}
+      {/* ── Confirm Delete Modal ───────────────────────────────────────────── */}
       {confirmDeleteSession && (
         <Modal
           open
@@ -734,19 +852,11 @@ export default function MemberPage() {
             )}
 
             <div className="flex gap-3 justify-start">
-              <Button
-                variant="danger"
-                onClick={handleDeleteSession}
-                loading={deletingSession}
-              >
+              <Button variant="danger" onClick={handleDeleteSession} loading={deletingSession}>
                 <Trash2 className="w-4 h-4 ml-1" />
                 מחק לצמיתות
               </Button>
-              <Button
-                variant="secondary"
-                onClick={() => setConfirmDeleteSession(null)}
-                disabled={deletingSession}
-              >
+              <Button variant="secondary" onClick={() => setConfirmDeleteSession(null)} disabled={deletingSession}>
                 ביטול
               </Button>
             </div>
@@ -754,7 +864,7 @@ export default function MemberPage() {
         </Modal>
       )}
 
-      {/* Calendar Modal */}
+      {/* ── Calendar Modal ─────────────────────────────────────────────────── */}
       {showCalendar && (
         <CalendarModal
           sessions={allSessions}
@@ -763,7 +873,7 @@ export default function MemberPage() {
         />
       )}
 
-      {/* Add Participant Modal */}
+      {/* ── Add Participant Modal ──────────────────────────────────────────── */}
       <AddParticipantModal
         open={showAddParticipant}
         onClose={() => setShowAddParticipant(false)}
