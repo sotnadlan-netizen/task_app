@@ -120,7 +120,11 @@ export function useRecording() {
   }, [capacity, startTimer]);
 
   // ── Stop recording ───────────────────────────────────────────────────────────
-  const stopRecording = useCallback(async (opts?: { projectId?: string; participantIds?: string[] }) => {
+  const stopRecording = useCallback(async (opts?: {
+    projectId?: string;
+    participantIds?: string[];
+    onSuccess?: (sessionId: string) => void;
+  }) => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
@@ -160,7 +164,8 @@ export function useRecording() {
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      await api.processAudio(formData, token);
+      const result = await api.processAudio(formData, token) as { session_id?: string };
+      if (result?.session_id) opts?.onSuccess?.(result.session_id);
 
       // ── Aggressive cleanup: zero trace on the client device ──────────────────
       await clearSession(sessionKey);

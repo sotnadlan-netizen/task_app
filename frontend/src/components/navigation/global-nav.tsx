@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { NavWave } from "@/components/navigation/nav-wave";
 
 export function GlobalNav() {
   const { user, signOut } = useSupabase();
@@ -106,6 +107,8 @@ export function GlobalNav() {
               </div>
               <span className="hidden sm:inline">TaskOrch</span>
             </Link>
+
+            <NavWave />
 
             {/* Platform Admin Badge */}
             {isPlatformAdmin && (

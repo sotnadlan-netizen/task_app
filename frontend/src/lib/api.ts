@@ -209,6 +209,6 @@ export const api = {
       "/api/projects", { method: "POST", body: JSON.stringify(data), token }
     ),
 
-  updateSession: (sessionId: string, data: { project_id?: string; participant_ids?: string[] }, token: string) =>
+  updateSession: (sessionId: string, data: { project_id?: string; participant_ids?: string[]; summary?: string }, token: string) =>
     request(`/api/sessions/${sessionId}`, { method: "PATCH", body: JSON.stringify(data), token }),
 };

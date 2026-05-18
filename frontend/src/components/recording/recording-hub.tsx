@@ -22,7 +22,11 @@ function formatDuration(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-export function RecordingHub() {
+interface RecordingHubProps {
+  onSessionReady?: (sessionId: string) => void;
+}
+
+export function RecordingHub({ onSessionReady }: RecordingHubProps) {
   const { session: authSession } = useSupabase();
   const { capacity, currentOrg } = useOrganization();
   const {
@@ -90,6 +94,7 @@ export function RecordingHub() {
     await stopRecording({
       projectId: selectedProjectId || undefined,
       participantIds: selectedParticipantIds,
+      onSuccess: onSessionReady,
     });
   };
 

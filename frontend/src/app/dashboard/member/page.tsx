@@ -1,56 +1,41 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useTypewriter } from "@/hooks/useTypewriter";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
 import { RecordingHub } from "@/components/recording/recording-hub";
+import { SessionResultsOverlay } from "@/components/recording/session-results-overlay";
+import { ProcessingBar } from "@/components/recording/processing-bar";
+import { BentoCard, type BentoCardData } from "@/components/recording/bento-card";
+import { NavWave } from "@/components/navigation/nav-wave";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { api } from "@/lib/api";
 import type { Session, Task, OrgMembership, Profile } from "@/types";
 import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
+import { DashboardCalendar } from "@/components/calendar/dashboard-calendar";
+import { UnscheduledTaskRail } from "@/components/calendar/unscheduled-task-rail";
 import {
   BarChart3,
   Clock,
   ListChecks,
   UserPlus,
   Trash2,
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
   FolderOpen,
+  Settings2,
 } from "lucide-react";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile | undefined;
 }
 
-const priorityLabels: Record<string, string> = {
-  low: "נמוכה",
-  medium: "בינונית",
-  high: "גבוהה",
-  critical: "קריטית",
-};
-
-const statusLabels: Record<string, string> = {
-  todo: "לביצוע",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
-
-const priorityColors = {
-  low: "default" as const,
-  medium: "info" as const,
-  high: "warning" as const,
-  critical: "danger" as const,
-};
 
 type MeetingSort = "time" | "project";
 type TaskSort = "time" | "project" | "status" | "urgency";
@@ -85,132 +70,6 @@ const listItem = {
   hidden: { opacity: 0, x: -10 },
   show: { opacity: 1, x: 0, transition: { duration: 0.22 } },
 };
-
-// ─── Calendar Modal ───────────────────────────────────────────────────────────
-function CalendarModal({
-  sessions,
-  onClose,
-  onSelectSession,
-}: {
-  sessions: Session[];
-  onClose: () => void;
-  onSelectSession: (s: Session) => void;
-}) {
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-
-  const sessionsByDay = useMemo(() => {
-    const map: Record<string, Session[]> = {};
-    sessions.forEach((s) => {
-      const day = new Date(s.created_at).toISOString().split("T")[0];
-      if (!map[day]) map[day] = [];
-      map[day].push(s);
-    });
-    return map;
-  }, [sessions]);
-
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
-
-  const dayHeaders = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
-  const selectedDaySessions = selectedDay ? sessionsByDay[selectedDay] || [] : [];
-
-  return (
-    <Modal open onClose={onClose} title="לוח שנה — פגישות">
-      <div className="space-y-4" dir="rtl">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={nextMonth}
-            className="p-1.5 rounded-xl hover:bg-violet-50 transition-colors"
-            aria-label="חודש הבא"
-          >
-            <ChevronRight className="w-4 h-4 text-gray-500" />
-          </button>
-          <span className="font-semibold text-gray-800">
-            {currentMonth.toLocaleString("he-IL", { month: "long", year: "numeric" })}
-          </span>
-          <button
-            onClick={prevMonth}
-            className="p-1.5 rounded-xl hover:bg-violet-50 transition-colors"
-            aria-label="חודש קודם"
-          >
-            <ChevronLeft className="w-4 h-4 text-gray-500" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 text-center">
-          {dayHeaders.map((d) => (
-            <div key={d} className="text-xs font-medium text-gray-400 py-1">
-              {d}
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1">
-          {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-            <div key={`empty-${i}`} />
-          ))}
-          {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-            const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-            const hasSessions = !!sessionsByDay[dateStr];
-            const isSelected = selectedDay === dateStr;
-            return (
-              <button
-                key={day}
-                onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                className={`relative py-2 rounded-2xl text-sm text-center transition-all ${
-                  isSelected
-                    ? "bg-gradient-to-br from-violet-400 to-pink-400 text-white shadow-sm"
-                    : hasSessions
-                      ? "bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold"
-                      : "hover:bg-white/60 text-gray-600"
-                }`}
-              >
-                {day}
-                {hasSessions && !isSelected && (
-                  <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-violet-400" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {selectedDay && (
-          <div className="border-t border-violet-50 pt-3 space-y-2">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
-              {selectedDaySessions.length > 0
-                ? `פגישות — ${new Date(selectedDay).toLocaleDateString("he-IL")}`
-                : "אין פגישות ביום זה"}
-            </p>
-            {selectedDaySessions.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => {
-                  onSelectSession(s);
-                  onClose();
-                }}
-                className="w-full text-right p-2.5 rounded-2xl bg-violet-50/60 hover:bg-violet-100/60 border border-transparent hover:border-violet-200 text-sm transition-all"
-              >
-                <p className="font-medium text-gray-800">{s.title || "פגישה ללא שם"}</p>
-                {s.summary && (
-                  <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">{s.summary}</p>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-}
 
 // ─── Add Participant Modal ────────────────────────────────────────────────────
 function AddParticipantModal({
@@ -290,12 +149,6 @@ function AddParticipantModal({
       </form>
     </Modal>
   );
-}
-
-// ─── Task Title with optional typewriter animation ───────────────────────────
-function TaskTitle({ title, animate }: { title: string; animate: boolean }) {
-  const displayed = useTypewriter(animate ? title : "", 22);
-  return <>{animate ? displayed || " " : title}</>;
 }
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
@@ -382,7 +235,6 @@ export default function MemberPage() {
 
   const [showAddParticipant, setShowAddParticipant] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [showCalendar, setShowCalendar] = useState(false);
   const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
   const [deletingSession, setDeletingSession] = useState(false);
   const [deleteSessionError, setDeleteSessionError] = useState<string | null>(null);
@@ -395,9 +247,13 @@ export default function MemberPage() {
   const [taskPage, setTaskPage] = useState(0);
   const [taskProjectFilter, setTaskProjectFilter] = useState<string>("");
 
-  // Typewriter: track which task IDs were seen on initial load vs. arrived via realtime
-  const initialTaskIdsRef = useRef<Set<string> | null>(null);
-  const [newTaskIds, setNewTaskIds] = useState<Set<string>>(new Set());
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+
+  // Processing bar (background) + results overlay
+  const [processingBarOpen, setProcessingBarOpen] = useState(false);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlaySession, setOverlaySession] = useState<Session | null>(null);
+  const [overlayTasks, setOverlayTasks] = useState<Task[]>([]);
 
   const ITEMS_PER_PAGE = 5;
 
@@ -464,29 +320,14 @@ export default function MemberPage() {
   }, [loadStats]);
 
   useEffect(() => {
-    const unsub = subscribe("sessions", () => loadStats());
-    return unsub;
+    const unsubSessions = subscribe("sessions", () => loadStats());
+    const unsubTasks = subscribe("tasks", () => loadStats());
+    return () => {
+      unsubSessions();
+      unsubTasks();
+    };
   }, [subscribe, loadStats]);
 
-  // Detect tasks that arrived after initial page load (for typewriter effect)
-  useEffect(() => {
-    if (allTasks.length === 0) return;
-    if (initialTaskIdsRef.current === null) {
-      // First load — record these IDs as "already seen"
-      initialTaskIdsRef.current = new Set(allTasks.map((t) => t.id));
-      return;
-    }
-    const fresh = allTasks
-      .filter((t) => !initialTaskIdsRef.current!.has(t.id))
-      .map((t) => t.id);
-    if (fresh.length > 0) {
-      const freshSet = new Set(fresh);
-      fresh.forEach((id) => initialTaskIdsRef.current!.add(id));
-      setNewTaskIds(freshSet);
-      const timeout = setTimeout(() => setNewTaskIds(new Set()), fresh.length * 1200 + 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [allTasks]);
 
   const handleDeleteSession = async () => {
     if (!confirmDeleteSession) return;
@@ -503,6 +344,39 @@ export default function MemberPage() {
       setDeletingSession(false);
     }
   };
+
+  const handleSessionClick = useCallback(async (s: Session) => {
+    setProcessingBarOpen(true);
+    const { data } = await supabase
+      .from("tasks")
+      .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
+      .eq("session_id", s.id)
+      .order("created_at");
+    setProcessingBarOpen(false);
+    setOverlaySession(s);
+    setOverlayTasks((data as Task[]) ?? []);
+    setOverlayOpen(true);
+  }, [supabase]);
+
+  const handleSessionReady = useCallback(async (sessionId: string) => {
+    // Show the small background bar while fetching — don't block the whole page
+    setProcessingBarOpen(true);
+
+    const [sessionRes, tasksRes] = await Promise.all([
+      supabase.from("sessions").select("*").eq("id", sessionId).single(),
+      supabase
+        .from("tasks")
+        .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
+        .eq("session_id", sessionId)
+        .order("created_at"),
+    ]);
+
+    // Data ready — close the bar and open the full overlay
+    setProcessingBarOpen(false);
+    setOverlaySession(sessionRes.data as Session ?? null);
+    setOverlayTasks((tasksRes.data as Task[]) ?? []);
+    setOverlayOpen(true);
+  }, [supabase]);
 
   const sortedMeetings = useMemo(() => {
     let copy = meetingProjectFilter
@@ -558,9 +432,12 @@ export default function MemberPage() {
         className="flex items-end justify-between gap-4"
       >
         <div>
-          <p className="text-xs font-medium text-gray-400 mb-1">
-            {new Date().toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <NavWave />
+            <p className="text-xs font-medium text-gray-400">
+              {new Date().toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            </p>
+          </div>
           <h1 className="text-2xl font-bold text-gray-800">{getGreeting()} 👋</h1>
           {currentOrg && (
             <p className="text-sm text-gray-500 mt-0.5">{currentOrg.name}</p>
@@ -610,7 +487,37 @@ export default function MemberPage() {
         animate="show"
         transition={{ delay: 0.2 }}
       >
-        <RecordingHub />
+        <RecordingHub onSessionReady={handleSessionReady} />
+      </motion.div>
+
+      {/* ── Calendar (meetings + scheduled tasks) ──────────────────────────── */}
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        transition={{ delay: 0.24 }}
+        className="space-y-4"
+      >
+        <UnscheduledTaskRail
+          tasks={allTasks}
+          token={token}
+          onTaskUpdate={(updated) =>
+            setAllTasks((prev) =>
+              prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+            )
+          }
+        />
+        <DashboardCalendar
+          sessions={allSessions}
+          tasks={allTasks}
+          token={token}
+          onMeetingClick={handleSessionClick}
+          onTaskUpdate={(updated) =>
+            setAllTasks((prev) =>
+              prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t))
+            )
+          }
+        />
       </motion.div>
 
       {/* ── Meetings Section ───────────────────────────────────────────────── */}
@@ -639,14 +546,6 @@ export default function MemberPage() {
                 </select>
               )}
               <button
-                onClick={() => setShowCalendar(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
-                aria-label="פתח לוח שנה"
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                לוח שנה
-              </button>
-              <button
                 onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-xs text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-400"
               >
@@ -669,7 +568,7 @@ export default function MemberPage() {
                 <motion.div
                   key={s.id}
                   variants={listItem}
-                  onClick={() => setSelectedSession(s)}
+                  onClick={() => handleSessionClick(s)}
                   className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-violet-50/30 transition-colors cursor-pointer group"
                 >
                   <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -701,6 +600,14 @@ export default function MemberPage() {
                   ) : (
                     <span className="text-gray-300 text-xs">—</span>
                   )}
+                  {/* Edit / detail access */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedSession(s); }}
+                    className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity p-1 rounded-lg hover:bg-gray-100 flex-shrink-0"
+                    aria-label="פרטי פגישה"
+                  >
+                    <Settings2 className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
                 </motion.div>
               );
             })}
@@ -767,66 +674,33 @@ export default function MemberPage() {
           </div>
 
           {/* Rows */}
-          <motion.div
-            variants={listVariants}
-            initial="hidden"
-            animate="show"
-            className="divide-y divide-gray-50"
-          >
-            {pagedTasks.map((t) => (
-              <motion.div
-                key={t.id}
-                variants={listItem}
-                className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-gray-50/60 transition-colors group"
-              >
-                {/* Status indicator */}
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                  t.status === "done"
-                    ? "bg-emerald-50 border border-emerald-200"
-                    : t.status === "in_progress"
-                      ? "bg-amber-50 border border-amber-200"
-                      : "bg-gray-50 border border-gray-200"
-                }`}>
-                  {t.status === "done"
-                    ? <span className="text-emerald-500 text-xs font-bold">✓</span>
-                    : t.status === "in_progress"
-                      ? <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                      : <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300" />
-                  }
+          <div>
+            {pagedTasks.map((t, i) => {
+              const card: BentoCardData = {
+                id: t.id,
+                type: "task",
+                index: i + 1,
+                title: t.title,
+                content: t.description || "",
+                priority: t.priority,
+                status: t.status,
+                taskDescription: t.description,
+                sessionId: t.session_id ?? undefined,
+                projectName: t.project_id && projects[t.project_id] ? projects[t.project_id] : undefined,
+              };
+              return (
+                <div key={t.id} className={i < pagedTasks.length - 1 ? "border-b border-gray-50" : ""}>
+                  <BentoCard
+                    card={card}
+                    expandedId={expandedTaskId}
+                    onExpand={setExpandedTaskId}
+                    entryDelay={i * 0.04}
+                    onDelete={() => setAllTasks((prev) => prev.filter((x) => x.id !== t.id))}
+                  />
                 </div>
-
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate ${
-                    t.status === "done" ? "line-through text-gray-300" : "text-gray-800"
-                  }`}>
-                    <TaskTitle title={t.title} animate={newTaskIds.has(t.id)} />
-                  </p>
-                  {t.project_id && projects[t.project_id] && (
-                    <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
-                      <FolderOpen className="w-3 h-3 text-gray-300" />
-                      {projects[t.project_id]}
-                    </span>
-                  )}
-                </div>
-
-                {/* Status badge */}
-                <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-medium border ${
-                  t.status === "done"
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : t.status === "in_progress"
-                      ? "bg-amber-50 text-amber-700 border-amber-200"
-                      : "bg-gray-100 text-gray-500 border-gray-200"
-                }`}>
-                  {statusLabels[t.status] ?? t.status}
-                </span>
-
-                {/* Priority */}
-                <Badge variant={priorityColors[t.priority]}>
-                  {priorityLabels[t.priority] ?? t.priority}
-                </Badge>
-              </motion.div>
-            ))}
-          </motion.div>
+              );
+            })}
+          </div>
 
           <PaginationBar
             page={taskPage}
@@ -835,6 +709,25 @@ export default function MemberPage() {
             onNext={() => setTaskPage((p) => Math.min(taskTotalPages - 1, p + 1))}
           />
         </motion.div>
+      )}
+
+      {/* ── Background processing indicator ──────────────────────────────── */}
+      <AnimatePresence>
+        {processingBarOpen && <ProcessingBar />}
+      </AnimatePresence>
+
+      {/* ── Session Results Overlay ────────────────────────────────────────── */}
+      {overlayOpen && (
+        <SessionResultsOverlay
+          session={overlaySession}
+          tasks={overlayTasks}
+          onClose={() => {
+            setOverlayOpen(false);
+            setOverlaySession(null);
+            setOverlayTasks([]);
+            setProcessingBarOpen(false);
+          }}
+        />
       )}
 
       {/* ── Session Detail Modal ───────────────────────────────────────────── */}
@@ -893,15 +786,6 @@ export default function MemberPage() {
             </div>
           </div>
         </Modal>
-      )}
-
-      {/* ── Calendar Modal ─────────────────────────────────────────────────── */}
-      {showCalendar && (
-        <CalendarModal
-          sessions={allSessions}
-          onClose={() => setShowCalendar(false)}
-          onSelectSession={(s) => setSelectedSession(s)}
-        />
       )}
 
       {/* ── Add Participant Modal ──────────────────────────────────────────── */}

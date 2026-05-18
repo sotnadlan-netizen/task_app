@@ -168,3 +168,65 @@ html.dark .capacity-chip {
     display: none !important;
   }
 }
+
+/* ── Carbon Mint Theme ─────────────────────────────────────────────────────── */
+.carbon-mint {
+  --cm-bg: #2D3436;
+  --cm-surface: #1E2426;
+  --cm-accent: #8B5CF6;
+  --cm-accent-2: #06B6D4;
+  --cm-accent-dim: rgba(139, 92, 246, 0.12);
+  --cm-accent-border: rgba(139, 92, 246, 0.32);
+  --cm-text: #E8F0EE;
+  --cm-text-muted: #5A6B68;
+  --cm-danger: #EF4444;
+  --cm-warning: #F59E0B;
+  --cm-info: #06B6D4;
+  background-color: var(--cm-bg);
+  color: var(--cm-text);
+}
+
+/* Card base */
+.cm-card {
+  background-color: var(--cm-surface);
+  border: 1px solid var(--cm-accent-border);
+  border-radius: 2px;
+  position: relative;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+/* L-bracket corner marker (bottom-left) */
+.cm-card::before {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  border-left: 1.5px solid #8B5CF6;
+  border-bottom: 1.5px solid #8B5CF6;
+  opacity: 0.35;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+
+.cm-card:hover {
+  border-color: rgba(139, 92, 246, 0.75);
+  box-shadow: 0 0 28px rgba(124, 58, 237, 0.18), 0 0 0 1px rgba(139, 92, 246, 0.06) inset;
+}
+
+.cm-card:hover::before {
+  opacity: 1;
+}
+
+/* Blinking cursor for processing state */
+@keyframes cm-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.cm-cursor {
+  display: inline-block;
+  animation: cm-blink 1s step-end infinite;
+  color: #8B5CF6;
+}
