@@ -33,6 +33,7 @@ export function useRecording() {
   });
   const [processing, setProcessing] = useState(false);
 
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -72,6 +73,7 @@ export function useRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
+      setMediaStream(stream);
 
       const sessionKey = `recording_${Date.now()}`;
       sessionKeyRef.current = sessionKey;
@@ -118,7 +120,11 @@ export function useRecording() {
   }, [capacity, startTimer]);
 
   // ── Stop recording ───────────────────────────────────────────────────────────
-  const stopRecording = useCallback(async (opts?: { projectId?: string; participantIds?: string[] }) => {
+  const stopRecording = useCallback(async (opts?: {
+    projectId?: string;
+    participantIds?: string[];
+    onSuccess?: (sessionId: string) => void;
+  }) => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
@@ -158,7 +164,8 @@ export function useRecording() {
       const token = session?.access_token;
       if (!token) throw new Error("Not authenticated");
 
-      await api.processAudio(formData, token);
+      const result = await api.processAudio(formData, token) as { session_id?: string };
+      if (result?.session_id) opts?.onSuccess?.(result.session_id);
 
       // ── Aggressive cleanup: zero trace on the client device ──────────────────
       await clearSession(sessionKey);
@@ -171,12 +178,14 @@ export function useRecording() {
       }));
     } finally {
       setProcessing(false);
+      setMediaStream(null);
     }
   }, [currentOrg, session, state.duration, stopTimer]);
 
   return {
     ...state,
     processing,
+    mediaStream,
     startRecording,
     stopRecording,
   };

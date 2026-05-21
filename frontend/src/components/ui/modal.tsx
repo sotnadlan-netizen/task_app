@@ -35,15 +35,15 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       aria-modal="true"
       aria-label={title}
     >
-      <div className="bg-gradient-to-br from-white/95 to-violet-50/80 backdrop-blur-xl rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.12)] border border-white w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-violet-100/60">
-          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
+      <div className="bg-white rounded-lg shadow-[0_8px_40px_rgba(0,0,0,0.18)] border border-[#dddbda] w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#dddbda] bg-[#fafaf9] rounded-t-lg">
+          <h2 className="text-[16px] font-bold text-[#080707]">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl hover:bg-violet-100/60 transition-colors"
+            className="p-1.5 rounded hover:bg-[#dddbda]/60 transition-colors"
             aria-label="Close dialog"
           >
-            <X className="w-5 h-5 text-gray-400" />
+            <X className="w-5 h-5 text-[#706e6b]" />
           </button>
         </div>
         <div className="p-5">{children}</div>

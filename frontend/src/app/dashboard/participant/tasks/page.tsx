@@ -1,11 +1,18 @@
 "use client";
 
 import { TaskList } from "@/components/tasks/task-list";
+import { PageHeader } from "@/components/ui/lightning";
+import { ListChecks } from "lucide-react";
 
 export default function ParticipantTasksPage() {
   return (
-    <div className="space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-900">משימות</h1>
+    <div className="space-y-5" dir="rtl">
+      <PageHeader
+        icon={<ListChecks className="w-5 h-5 text-white" />}
+        eyebrow="Participant"
+        title="משימות"
+        breadcrumb={["דף בית", "משימות"]}
+      />
       <TaskList readonly />
     </div>
   );

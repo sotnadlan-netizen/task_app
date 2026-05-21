@@ -91,6 +91,7 @@ export interface Task {
   external_sync_id: string | null;
   is_locked: boolean;
   deadline: string | null;
+  scheduled_at: string | null;
   created_at: string;
   project_id?: string | null;
   assignee?: Profile;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { SupabaseProvider, useSupabase } from "@/providers/supabase-provider";
 import { OrganizationProvider } from "@/providers/organization-provider";
 import { RealtimeProvider } from "@/providers/realtime-provider";
@@ -12,6 +12,11 @@ import { NotificationLoader } from "@/components/inbox/notification-loader";
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useSupabase();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // The member home route renders the full-bleed Lightning console (its own
+  // header replaces the GlobalNav). All other routes keep the shared chrome.
+  const fullBleed = pathname === "/dashboard/member";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -22,7 +27,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   if (loading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-[#0070d2] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -31,13 +36,20 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     <OrganizationProvider>
       <RealtimeProvider>
         <NotificationLoader />
-        <div className="min-h-screen">
-          <GlobalNav />
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {fullBleed ? (
+          <div className="min-h-screen">
             {children}
-          </main>
-          <AccessibilityWidget />
-        </div>
+            <AccessibilityWidget />
+          </div>
+        ) : (
+          <div className="min-h-screen">
+            <GlobalNav />
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+              {children}
+            </main>
+            <AccessibilityWidget />
+          </div>
+        )}
       </RealtimeProvider>
     </OrganizationProvider>
   );

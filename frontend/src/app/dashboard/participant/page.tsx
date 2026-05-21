@@ -2,21 +2,20 @@
 
 import { TaskList } from "@/components/tasks/task-list";
 import { useOrganization } from "@/providers/organization-provider";
+import { PageHeader } from "@/components/ui/lightning";
+import { ListChecks } from "lucide-react";
 
 export default function ParticipantPage() {
   const { currentOrg } = useOrganization();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">My Tasks</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {currentOrg
-            ? `Viewing tasks for ${currentOrg.name}`
-            : "Select an organization to view tasks"}
-        </p>
-      </div>
-
+    <div className="space-y-5" dir="rtl">
+      <PageHeader
+        icon={<ListChecks className="w-5 h-5 text-white" />}
+        eyebrow="Participant"
+        title="המשימות שלי"
+        breadcrumb={[currentOrg?.name || "Organization", "משימות"]}
+      />
       <TaskList readonly />
     </div>
   );

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Alert } from "@/components/ui/alert";
+import { PageHeader, KpiTile } from "@/components/ui/lightning";
 import type { Organization, OrgMembership, Profile, Session, UserRole } from "@/types";
 import {
   Building2, Clock, Users, Activity, Plus, ChevronRight,
@@ -61,17 +62,17 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Acme Corp" required
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
@@ -114,17 +115,17 @@ function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose:
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
@@ -206,14 +207,14 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Capacity & member summary */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
+          <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
             <p className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}>
               {remainingCapacity} min
             </p>
             <p className="text-xs text-gray-400">{allocatedCapacity} / {org.total_capacity_min} min allocated</p>
           </div>
-          <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
+          <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">Members</p>
             <p className={`text-lg font-bold ${currentMemberCount >= org.max_members ? "text-red-600" : "text-gray-800"}`}>
               {currentMemberCount} / {org.max_members}
@@ -234,13 +235,13 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" required
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80" />
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
           <p className="text-xs text-gray-400 mt-1">If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.</p>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80">
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white">
             <option value="admin">Admin</option>
             <option value="member">Member</option>
             <option value="participant">Participant</option>
@@ -254,7 +255,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
           <input type="number" min={0} max={remainingCapacity} value={capacity}
             onChange={(e) => setCapacity(Number(e.target.value))}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:border-transparent
-              ${capacity > remainingCapacity ? "border-red-400 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"}`} />
+              ${capacity > remainingCapacity ? "border-red-400 focus:ring-red-500" : "border-[#dddbda] focus:ring-[#0070d2]/40"}`} />
           {capacity > remainingCapacity && (
             <p className="text-xs text-red-500 mt-1">Exceeds available capacity by {capacity - remainingCapacity} min</p>
           )}
@@ -388,16 +389,21 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="bg-white rounded border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] px-5 py-3 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button onClick={onBack} className="p-2 rounded-2xl hover:bg-white/70 transition-colors">
+          <button onClick={onBack} className="p-2 rounded hover:bg-[#f3f3f3] transition-colors">
             <ChevronLeft className="w-5 h-5 text-gray-500" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">{org.name}</h1>
-            <p className="text-sm text-gray-500">Created {new Date(org.created_at).toLocaleDateString()}</p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">Organization</p>
+              <h1 className="text-[20px] font-bold text-[#080707] leading-tight">{org.name}</h1>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -414,38 +420,18 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </div>
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card gradient="from-violet-50 to-fuchsia-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm"><Users className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Members</p><p className="text-xl font-bold text-gray-800">{nonParticipants.length}</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-sky-50 to-blue-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm"><BarChart3 className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Sessions</p><p className="text-xl font-bold text-gray-800">{sessions.length}</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-emerald-50 to-teal-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-400 text-white flex items-center justify-center shadow-sm"><ListChecks className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Tasks</p><p className="text-xl font-bold text-gray-800">{taskCount}</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-amber-50 to-orange-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm"><Clock className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Capacity Used</p><p className="text-xl font-bold text-gray-800">{totalUsed}/{totalCapacity} min</p></div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <KpiTile label="Members" value={nonParticipants.length} icon={<Users className="w-5 h-5" />} />
+        <KpiTile label="Sessions" value={sessions.length} icon={<BarChart3 className="w-5 h-5" />} />
+        <KpiTile label="Tasks" value={taskCount} icon={<ListChecks className="w-5 h-5" />} />
+        <KpiTile label="Capacity Used" value={`${totalUsed}/${totalCapacity}`} suffix="min" icon={<Clock className="w-5 h-5" />} />
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
 
       {/* ── Members Table (admin + member) ── */}
-      <Card padding={false} gradient="from-violet-50/50 to-fuchsia-50/30">
-        <div className="p-6 pb-4 border-b border-violet-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 border-b border-[#dddbda]">
           <CardHeader className="mb-0"><CardTitle>Members &amp; Quotas</CardTitle></CardHeader>
         </div>
         {nonParticipants.length === 0 ? (
@@ -458,7 +444,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/40 border-b border-violet-100/60">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
@@ -467,9 +453,9 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-violet-50/60">
+              <tbody className="divide-y divide-[#dddbda]">
                 {nonParticipants.map((m) => (
-                  <tr key={m.id} className="hover:bg-white/50 transition-colors">
+                  <tr key={m.id} className="hover:bg-[#fafaf9] transition-colors">
                     <td className="px-6 py-3">
                       <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
                       <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
@@ -477,7 +463,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent">
+                        className="px-2 py-1 text-sm border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent">
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                         <option value="participant">Participant</option>
@@ -485,8 +471,8 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 max-w-[120px] h-2 bg-violet-100 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full"
+                        <div className="flex-1 max-w-[120px] h-2 bg-[#ecf5fe] rounded-full overflow-hidden">
+                          <div className="h-full bg-gradient-to-r from-[#0070d2] to-[#1ab9ff] rounded-full"
                             style={{ width: `${Math.min(100, (m.used_minutes / (m.capacity_minutes || 1)) * 100)}%` }} />
                         </div>
                         <span className="text-xs text-gray-400 tabular-nums">{m.used_minutes}/{m.capacity_minutes}</span>
@@ -496,7 +482,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                       <input type="number" min={0}
                         value={editingQuotas[m.id] !== undefined ? editingQuotas[m.id] : m.capacity_minutes}
                         onChange={(e) => setEditingQuotas((prev) => ({ ...prev, [m.id]: Number(e.target.value) }))}
-                        className="w-24 px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent" />
+                        className="w-24 px-2 py-1 text-sm border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent" />
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-2">
@@ -506,7 +492,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                           </Button>
                         )}
                         <button onClick={() => handleRemoveMember(m.id)}
-                          className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors" title="Remove">
+                          className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors" title="Remove">
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -520,8 +506,8 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </Card>
 
       {/* ── Participants Table ── */}
-      <Card padding={false} gradient="from-pink-50/50 to-rose-50/30">
-        <div className="p-6 pb-4 border-b border-pink-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 border-b border-[#dddbda]">
           <CardHeader className="mb-0"><CardTitle>Participants</CardTitle></CardHeader>
         </div>
         {participants.length === 0 ? (
@@ -529,7 +515,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/40 border-b border-pink-100/60">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
@@ -537,9 +523,9 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-pink-50/60">
+              <tbody className="divide-y divide-[#dddbda]">
                 {participants.map((m) => (
-                  <tr key={m.id} className="hover:bg-white/50 transition-colors">
+                  <tr key={m.id} className="hover:bg-[#fafaf9] transition-colors">
                     <td className="px-6 py-3">
                       <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
                       <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
@@ -547,7 +533,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
-                        className="px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent">
+                        className="px-2 py-1 text-sm border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent">
                         <option value="admin">Admin</option>
                         <option value="member">Member</option>
                         <option value="participant">Participant</option>
@@ -571,16 +557,16 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </Card>
 
       {/* Recent Sessions */}
-      <Card padding={false} gradient="from-sky-50/50 to-blue-50/30">
-        <div className="p-6 pb-4 border-b border-sky-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 border-b border-[#dddbda]">
           <CardHeader className="mb-0"><CardTitle>Recent Sessions</CardTitle></CardHeader>
         </div>
         {sessions.length === 0 ? (
           <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No sessions yet.</p>
         ) : (
-          <div className="divide-y divide-sky-50/60">
+          <div className="divide-y divide-[#dddbda]">
             {sessions.map((s) => (
-              <div key={s.id} className="px-6 py-4 hover:bg-white/50 transition-colors">
+              <div key={s.id} className="px-6 py-4 hover:bg-[#fafaf9] transition-colors">
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="text-sm font-semibold text-gray-800">{s.title || "Untitled Session"}</h4>
                   <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString()}</span>
@@ -659,7 +645,7 @@ export default function PlatformPage() {
   if (detailLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full" />
+        <div className="animate-spin w-8 h-8 border-4 border-[#0070d2] border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -676,48 +662,30 @@ export default function PlatformPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">דף בית — ניהול פלטפורמה</h1>
-          <p className="text-sm text-gray-500">הגדרת ארגונים וניטור גלובלי.</p>
-        </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />New Organization
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        icon={<Activity className="w-5 h-5 text-white" />}
+        eyebrow="Platform Console"
+        title="ניהול פלטפורמה"
+        breadcrumb={["Platform", "ניהול"]}
+        actions={
+          <Button size="sm" onClick={() => setShowCreateModal(true)}>
+            <Plus className="w-4 h-4 ml-1" />New Organization
+          </Button>
+        }
+      />
 
       {/* Global Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <Card gradient="from-violet-50 to-fuchsia-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm"><Building2 className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Organizations</p><p className="text-xl font-bold text-gray-800">{organizations.length}</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-sky-50 to-blue-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm"><Clock className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Total Capacity</p><p className="text-xl font-bold text-gray-800">{totalCapacity} min</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-amber-50 to-orange-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm"><Activity className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Used</p><p className="text-xl font-bold text-gray-800">{totalUsed} min</p></div>
-          </div>
-        </Card>
-        <Card gradient="from-pink-50 to-rose-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-400 to-rose-400 text-white flex items-center justify-center shadow-sm"><Users className="w-5 h-5" /></div>
-            <div><p className="text-sm text-gray-500">Utilization</p><p className="text-xl font-bold text-gray-800">{totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%</p></div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <KpiTile label="Organizations" value={organizations.length} icon={<Building2 className="w-5 h-5" />} />
+        <KpiTile label="Total Capacity" value={totalCapacity} suffix="min" icon={<Clock className="w-5 h-5" />} />
+        <KpiTile label="Used" value={totalUsed} suffix="min" icon={<Activity className="w-5 h-5" />} />
+        <KpiTile label="Utilization" value={`${totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%`} icon={<Users className="w-5 h-5" />} />
       </div>
 
       {/* Org Table */}
-      <Card padding={false} gradient="from-violet-50/50 to-fuchsia-50/30">
-        <div className="p-6 pb-4 border-b border-violet-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 border-b border-[#dddbda]">
           <CardHeader className="mb-0"><CardTitle>All Organizations</CardTitle></CardHeader>
         </div>
         {loading ? (
@@ -726,7 +694,7 @@ export default function PlatformPage() {
           </div>
         ) : organizations.length === 0 ? (
           <div className="px-6 pb-8 text-center py-8">
-            <Building2 className="w-10 h-10 text-violet-200 mx-auto mb-3" />
+            <Building2 className="w-10 h-10 text-[#b3d9f6] mx-auto mb-3" />
             <p className="text-sm text-gray-400">No organizations yet.</p>
             <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
               <Plus className="w-4 h-4 mr-2" />Create first organization
@@ -735,7 +703,7 @@ export default function PlatformPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/40 border-b border-violet-100/60">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Organization</th>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Capacity</th>
@@ -745,19 +713,19 @@ export default function PlatformPage() {
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-violet-50/60">
+              <tbody className="divide-y divide-[#dddbda]">
                 {organizations.map((org) => {
                   const utilization = org.total_capacity_min > 0
                     ? Math.round((org.used_capacity_min / org.total_capacity_min) * 100) : 0;
                   return (
-                    <tr key={org.id} className="hover:bg-white/50 transition-colors">
+                    <tr key={org.id} className="hover:bg-[#fafaf9] transition-colors">
                       <td className="px-6 py-3 font-semibold text-gray-800">{org.name}</td>
                       <td className="px-6 py-3 text-gray-500">{org.total_capacity_min} min</td>
                       <td className="px-6 py-3 text-gray-500">{org.used_capacity_min} min</td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="flex-1 max-w-[100px] h-2 bg-violet-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full" style={{ width: `${utilization}%` }} />
+                          <div className="flex-1 max-w-[100px] h-2 bg-[#ecf5fe] rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-[#0070d2] to-[#1ab9ff] rounded-full" style={{ width: `${utilization}%` }} />
                           </div>
                           <Badge variant={utilization > 80 ? "danger" : utilization > 50 ? "warning" : "success"}>
                             {utilization}%
@@ -767,7 +735,7 @@ export default function PlatformPage() {
                       <td className="px-6 py-3 text-gray-400">{new Date(org.created_at).toLocaleDateString()}</td>
                       <td className="px-6 py-3">
                         <button onClick={() => loadOrgDetail(org)}
-                          className="flex items-center gap-1 text-violet-500 hover:text-violet-700 text-sm font-medium transition-colors">
+                          className="flex items-center gap-1 text-[#0070d2] hover:text-[#005fb2] text-sm font-medium transition-colors">
                           Manage<ChevronRight className="w-4 h-4" />
                         </button>
                       </td>
