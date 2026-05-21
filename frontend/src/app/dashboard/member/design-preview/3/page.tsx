@@ -3,259 +3,490 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  BarChart3, Clock, ListChecks, Mic, MicOff, ChevronLeft, ChevronRight,
-  Sparkles, TrendingUp, CheckCheck, FolderOpen,
+  Search, Bell, Settings, ChevronDown, ChevronLeft, ChevronRight, Star,
+  Mic, MicOff, Plus, Download, RefreshCw, Filter, Columns3, MoreHorizontal,
+  TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
+  Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2,
+  ExternalLink, HelpCircle, Edit3,
 } from "lucide-react";
 
 // ── Mock data ─────────────────────────────────────────────────────────────────
 const SESSIONS = [
-  { id: "1", title: "Sprint Planning Q2", project: "מוצר", date: "2026-05-04", tasks: 6, done: 4 },
-  { id: "2", title: "סיכום לקוח — Acme", project: "מכירות", date: "2026-05-03", tasks: 3, done: 1 },
-  { id: "3", title: "Design Review", project: "עיצוב", date: "2026-05-01", tasks: 5, done: 5 },
-  { id: "4", title: "Retrospective", project: "מוצר", date: "2026-04-28", tasks: 2, done: 0 },
-  { id: "5", title: "Kick-off — פרויקט חדש", project: "מכירות", date: "2026-04-25", tasks: 8, done: 3 },
+  { id: "S-00471", title: "Sprint Planning Q2", project: "מוצר", date: "2026-05-04", tasks: 6, done: 4, owner: "שלו ק.", duration: "47 דק׳", sentiment: 0.84, stage: "פעיל" },
+  { id: "S-00470", title: "סיכום לקוח — Acme", project: "מכירות", date: "2026-05-03", tasks: 3, done: 1, owner: "עומר ו.", duration: "32 דק׳", sentiment: 0.62, stage: "פעיל" },
+  { id: "S-00469", title: "Design Review", project: "עיצוב", date: "2026-05-01", tasks: 5, done: 5, owner: "נועה ב.", duration: "58 דק׳", sentiment: 0.91, stage: "סגור" },
+  { id: "S-00468", title: "Retrospective", project: "מוצר", date: "2026-04-28", tasks: 2, done: 0, owner: "שלו ק.", duration: "24 דק׳", sentiment: 0.41, stage: "פעיל" },
+  { id: "S-00467", title: "Kick-off — Project Globex", project: "מכירות", date: "2026-04-25", tasks: 8, done: 3, owner: "עומר ו.", duration: "63 דק׳", sentiment: 0.78, stage: "פעיל" },
 ];
 
 const TASKS = [
-  { id: "1", title: "עדכן את תיעוד ה-API", project: "מוצר", status: "in_progress", priority: "high" },
-  { id: "2", title: "שלח הצעת מחיר ל-Acme", project: "מכירות", status: "todo", priority: "critical" },
-  { id: "3", title: "בנה מסך אונבורדינג", project: "עיצוב", status: "done", priority: "medium" },
-  { id: "4", title: "תיקון באג בטעינת נתונים", project: "מוצר", status: "todo", priority: "high" },
-  { id: "5", title: "כתוב בדיקות integration", project: "מוצר", status: "in_progress", priority: "low" },
+  { id: "T-1023", title: "עדכן את תיעוד ה-API", project: "מוצר", status: "in_progress", priority: "high", assignee: "שלו ק.", due: "2026-05-10" },
+  { id: "T-1022", title: "שלח הצעת מחיר ל-Acme", project: "מכירות", status: "todo", priority: "critical", assignee: "עומר ו.", due: "2026-05-08" },
+  { id: "T-1021", title: "בנה מסך אונבורדינג", project: "עיצוב", status: "done", priority: "medium", assignee: "נועה ב.", due: "2026-05-01" },
+  { id: "T-1020", title: "תיקון באג בטעינת נתונים", project: "מוצר", status: "todo", priority: "high", assignee: "שלו ק.", due: "2026-05-12" },
 ];
 
-const statusBadge: Record<string, { bg: string; text: string; label: string }> = {
-  todo: { bg: "bg-slate-100", text: "text-slate-600", label: "לביצוע" },
-  in_progress: { bg: "bg-amber-100", text: "text-amber-700", label: "בתהליך" },
-  done: { bg: "bg-emerald-100", text: "text-emerald-700", label: "הושלם" },
+const priorityColor: Record<string, string> = {
+  critical: "bg-[#ba0517] text-white",
+  high: "bg-[#ea001e] text-white",
+  medium: "bg-[#fe9339] text-white",
+  low: "bg-[#0070d2] text-white",
 };
-const priorityBadge: Record<string, { bg: string; text: string; label: string }> = {
-  critical: { bg: "bg-red-500", text: "text-white", label: "קריטית" },
-  high: { bg: "bg-orange-400", text: "text-white", label: "גבוהה" },
-  medium: { bg: "bg-blue-400", text: "text-white", label: "בינונית" },
-  low: { bg: "bg-slate-200", text: "text-slate-600", label: "נמוכה" },
+const statusColor: Record<string, string> = {
+  todo: "bg-[#dddbda] text-[#3e3e3c]",
+  in_progress: "bg-[#0070d2] text-white",
+  done: "bg-[#04844b] text-white",
 };
+const statusLabel: Record<string, string> = { todo: "Open", in_progress: "In Progress", done: "Closed" };
+const priorityLabel: Record<string, string> = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
 
-function GradientBadge({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-export default function Design3() {
+// ─────────────────────────────────────────────────────────────────────────────
+export default function SalesforceLightningPreview() {
   const [recording, setRecording] = useState(false);
-  const [taskPage, setTaskPage] = useState(0);
-  const [meetPage, setMeetPage] = useState(0);
-  const PER = 3;
-  const pagedTasks = TASKS.slice(taskPage * PER, (taskPage + 1) * PER);
-  const pagedSessions = SESSIONS.slice(meetPage * PER, (meetPage + 1) * PER);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  const toggle = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
-      {/* Hero gradient header */}
-      <div
-        className="relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #f43f5e 0%, #f97316 50%, #eab308 100%)" }}
-      >
-        {/* Decorative circles */}
-        <div className="absolute top-0 left-0 w-64 h-64 rounded-full bg-white/10 -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-48 h-48 rounded-full bg-white/10 translate-x-1/4 translate-y-1/4" />
-
-        <div className="relative max-w-5xl mx-auto px-6 py-8">
-          {/* Nav */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-white" />
-              <span className="font-black text-white text-lg tracking-tight">TaskFlow</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/dashboard/member/design-preview" className="text-xs text-white/70 hover:text-white transition-colors border border-white/30 px-3 py-1.5 rounded-full">
-                ← סגנונות
-              </Link>
-              <div className="w-8 h-8 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center text-white font-bold text-sm">
-                ש
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" dir="rtl" style={{ fontFamily: "'Salesforce Sans', 'Segoe UI', system-ui, sans-serif" }}>
+      {/* ── Global header (Salesforce blue) ───────────────────────────────── */}
+      <header className="bg-[#16325c] text-white">
+        <div className="h-12 px-4 flex items-center gap-3">
+          {/* App launcher + logo */}
+          <button className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10">
+            {[...Array(9)].map((_, i) => <span key={i} className="w-1 h-1 rounded-full bg-white/80" />)}
+          </button>
+          <span className="text-white/40">|</span>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-black">T</div>
+            <span className="font-semibold text-[15px]">TaskFlow</span>
+            <span className="text-white/60 text-[13px]">— Member Console</span>
           </div>
 
-          {/* Title area */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-black text-white leading-tight">
-              שלום, שלו! 👋
-            </h1>
-            <p className="text-white/70 mt-1 text-sm">5 פגישות, 5 משימות פתוחות</p>
-          </div>
-
-          {/* Stats in the hero */}
-          <div className="grid grid-cols-3 gap-4 pb-8">
+          {/* Object tabs */}
+          <nav className="hidden md:flex items-center mr-6 h-12">
             {[
-              { icon: <BarChart3 className="w-5 h-5 text-rose-500" />, label: "פגישות", value: SESSIONS.length, bg: "bg-white" },
-              { icon: <ListChecks className="w-5 h-5 text-orange-400" />, label: "משימות", value: TASKS.length, bg: "bg-white" },
-              { icon: <Clock className="w-5 h-5 text-yellow-500" />, label: "נותר", value: "218 דק׳", bg: "bg-white" },
-            ].map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-2xl p-4 shadow-lg`}>
-                <div className="flex items-center gap-2 mb-1">
-                  {s.icon}
-                  <span className="text-xs text-gray-500 font-medium">{s.label}</span>
-                </div>
-                <p className="text-2xl font-black text-gray-900 tabular-nums">{s.value}</p>
-              </div>
-            ))}
+              { label: "Home", icon: Home, active: true },
+              { label: "Sessions", icon: Phone, count: 47 },
+              { label: "Tasks", icon: ListChecks, count: 124 },
+              { label: "Reports", icon: BarChart3 },
+              { label: "Projects", icon: FolderOpen, count: 4 },
+              { label: "Team", icon: Users },
+            ].map((t) => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.label}
+                  className={`h-12 px-4 flex items-center gap-1.5 text-[13px] transition-colors ${
+                    t.active ? "bg-white text-[#080707] font-semibold" : "text-white/90 hover:bg-white/10"
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {t.label}
+                  {t.count !== undefined && (
+                    <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded ${t.active ? "bg-[#0070d2] text-white" : "bg-white/15 text-white"}`}>
+                      {t.count}
+                    </span>
+                  )}
+                  <ChevronDown className="w-3 h-3" />
+                </button>
+              );
+            })}
+            <button className="h-12 px-3 flex items-center text-white/80 hover:bg-white/10">
+              <Plus className="w-4 h-4" />
+            </button>
+          </nav>
+
+          <div className="flex-1" />
+
+          {/* Right utility */}
+          <div className="flex items-center gap-1">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
+              <input
+                placeholder="Search Salesforce"
+                dir="ltr"
+                className="w-64 pr-7 pl-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
+              />
+            </div>
+            <Link href="/dashboard/member/design-preview" className="text-xs text-white/70 hover:text-white px-2 transition-colors">
+              ← Styles
+            </Link>
+            <HeaderButton><Settings className="w-4 h-4" /></HeaderButton>
+            <HeaderButton><HelpCircle className="w-4 h-4" /></HeaderButton>
+            <HeaderButton badge={3}><Bell className="w-4 h-4" /></HeaderButton>
+            <button className="ml-1 w-8 h-8 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-bold">
+              שק
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Page header ────────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-[#dddbda] px-6 pt-3 pb-2">
+        <div className="flex items-center gap-1.5 text-[11px] text-[#706e6b] mb-2">
+          <Home className="w-3 h-3" />
+          <ChevronLeft className="w-3 h-3" />
+          <span>Member Console</span>
+          <ChevronLeft className="w-3 h-3" />
+          <span className="text-[#080707] font-semibold">Home</span>
+        </div>
+        <div className="flex items-end justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center">
+              <Briefcase className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">Member Workspace</p>
+              <h1 className="text-[20px] font-bold text-[#080707] leading-tight flex items-center gap-2">
+                Home
+                <Star className="w-4 h-4 text-[#dddbda] hover:text-amber-400 cursor-pointer" />
+              </h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Btn icon={<Plus className="w-3.5 h-3.5" />}>New Session</Btn>
+            <Btn variant="secondary" icon={<Download className="w-3.5 h-3.5" />}>Export</Btn>
+            <Btn variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />}>Refresh</Btn>
+            <button className="p-2 rounded border border-[#dddbda] hover:bg-[#f3f3f3]">
+              <MoreHorizontal className="w-3.5 h-3.5 text-[#0070d2]" />
+            </button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-6 -mt-2 py-6 space-y-6">
-        {/* Recording card */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-6 flex items-center gap-6">
-            <button
-              onClick={() => setRecording((r) => !r)}
-              className={`relative flex-shrink-0 w-20 h-20 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300
-                ${recording
-                  ? "bg-red-500 shadow-red-200 scale-95"
-                  : "shadow-rose-200 hover:scale-105"
-                }`}
-              style={!recording ? { background: "linear-gradient(135deg, #f43f5e, #f97316)" } : {}}
-            >
-              {recording ? <MicOff className="w-9 h-9 text-white" /> : <Mic className="w-9 h-9 text-white" />}
-              {recording && (
-                <span className="absolute top-1 right-1 w-3 h-3 rounded-full bg-white border border-red-300 animate-ping" />
-              )}
-            </button>
-            <div className="flex-1 space-y-2">
-              <div>
-                <h2 className="font-black text-gray-900 text-lg">
-                  {recording ? "מקליט..." : "הקלטת פגישה"}
-                </h2>
-                <p className="text-sm text-gray-400">
-                  {recording ? "לחץ עצור בסיום — AI יחלץ משימות אוטומטית" : "לחץ להתחיל. AI יתמלל ויחלץ משימות."}
+      {/* ── Body ────────────────────────────────────────────────────────────── */}
+      <main className="max-w-[1600px] mx-auto px-6 py-5 space-y-5">
+        {/* KPI tiles */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiTile label="Sessions This Month" value="47" trend="+12%" trendUp icon={<Phone className="w-5 h-5" />} />
+          <KpiTile label="Open Tasks" value="124" trend="+8%" trendUp icon={<ListChecks className="w-5 h-5" />} />
+          <KpiTile label="Capacity Remaining" value="218" suffix="min" trend="72%" icon={<BarChart3 className="w-5 h-5" />} />
+          <KpiTile label="Avg Sentiment" value="+0.74" trend="positive" trendUp icon={<TrendingUp className="w-5 h-5" />} />
+        </section>
+
+        {/* Two-column body: recording + list */}
+        <section className="grid grid-cols-12 gap-5">
+          {/* Quick Action card */}
+          <div className="col-span-12 lg:col-span-4 space-y-3">
+            <Card>
+              <CardHeader icon={<Mic className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title="Quick Action" sub="Capture a new Session" />
+              <div className="p-4 space-y-3">
+                <p className="text-[12px] text-[#3e3e3c] leading-relaxed">
+                  לחיצה על &quot;Start Recording&quot; תפתח רשומת Session חדשה. ה-AI יחלץ Tasks אוטומטית בסיום.
                 </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-300"
-                    style={{
-                      width: "75%",
-                      background: "linear-gradient(90deg, #f43f5e, #f97316)",
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-bold text-gray-500">218 / 290 דק׳</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Meetings */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100">
-          <div className="px-6 py-5 flex items-center justify-between border-b border-gray-50">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-rose-500" />
-              <h2 className="font-black text-gray-900">פגישות אחרונות</h2>
-            </div>
-            <GradientBadge className="bg-rose-100 text-rose-600">{SESSIONS.length}</GradientBadge>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {pagedSessions.map((s, idx) => (
-              <div key={s.id} className="px-6 py-4 flex items-center gap-4 hover:bg-orange-50/40 cursor-pointer transition-colors group">
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-                  style={{ background: `linear-gradient(135deg, ${["#f43f5e","#f97316","#eab308","#22c55e","#3b82f6"][idx % 5]}, ${["#f97316","#eab308","#22c55e","#3b82f6","#8b5cf6"][idx % 5]})` }}
+                <button
+                  onClick={() => setRecording((r) => !r)}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded font-semibold text-[14px] transition-colors ${
+                    recording
+                      ? "bg-[#c23934] text-white hover:bg-[#a61a14]"
+                      : "bg-[#0070d2] text-white hover:bg-[#005fb2]"
+                  }`}
                 >
-                  {s.title[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 truncate group-hover:text-rose-600 transition-colors">{s.title}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <FolderOpen className="w-3 h-3 text-gray-300" />
-                    <span className="text-xs text-gray-400">{s.project} · {s.date}</span>
-                  </div>
-                </div>
-                <GradientBadge
-                  className={s.done === s.tasks ? "bg-emerald-100 text-emerald-600" : "bg-gray-100 text-gray-500"}
-                >
-                  {s.done}/{s.tasks} ✓
-                </GradientBadge>
-              </div>
-            ))}
-          </div>
-          {SESSIONS.length > PER && (
-            <div className="px-6 py-3 border-t border-gray-50 flex items-center justify-between">
-              <span className="text-xs text-gray-400">{meetPage + 1} / {Math.ceil(SESSIONS.length / PER)}</span>
-              <div className="flex gap-1">
-                <button onClick={() => setMeetPage((p) => Math.max(0, p - 1))} disabled={meetPage === 0}
-                  className="p-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-30 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+                  {recording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  {recording ? "Stop Recording" : "Start Recording"}
                 </button>
-                <button onClick={() => setMeetPage((p) => Math.min(Math.ceil(SESSIONS.length / PER) - 1, p + 1))}
-                  disabled={meetPage >= Math.ceil(SESSIONS.length / PER) - 1}
-                  className="p-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-30 transition-colors">
-                  <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Tasks */}
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-100">
-          <div className="px-6 py-5 flex items-center justify-between border-b border-gray-50">
-            <div className="flex items-center gap-2">
-              <CheckCheck className="w-5 h-5 text-orange-500" />
-              <h2 className="font-black text-gray-900">משימות</h2>
-            </div>
-            <div className="flex gap-2">
-              {["זמן", "דחיפות", "סטטוס"].map((l) => (
-                <button key={l}
-                  className="px-3 py-1 rounded-full text-xs font-bold border border-gray-100 text-gray-400 hover:text-gray-700 hover:border-gray-300 transition-colors">
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {pagedTasks.map((t) => {
-              const s = statusBadge[t.status];
-              const p = priorityBadge[t.priority];
-              return (
-                <div key={t.id} className="px-6 py-4 flex items-center gap-3 hover:bg-orange-50/30 transition-colors cursor-pointer">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${p.bg}`}>
-                    <span className={`text-xs font-black ${p.text}`}>{p.label[0]}</span>
+                <div className="rounded border border-[#dddbda] p-3 space-y-1.5 bg-[#fafaf9]">
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[#706e6b]">Capacity</span>
+                    <span className="font-mono font-semibold text-[#080707]">218 / 300 min</span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm font-bold truncate ${t.status === "done" ? "line-through text-gray-300" : "text-gray-900"}`}>
-                      {t.title}
-                    </p>
-                    <span className="text-xs text-gray-400">{t.project}</span>
+                  <div className="h-1.5 rounded-full bg-[#dddbda] overflow-hidden">
+                    <div className="h-full w-[72%] rounded-full bg-[#0070d2]" />
                   </div>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${s.bg} ${s.text}`}>{s.label}</span>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${p.bg} ${p.text}`}>{p.label}</span>
                 </div>
-              );
-            })}
-          </div>
-          {TASKS.length > PER && (
-            <div className="px-6 py-3 border-t border-gray-50 flex items-center justify-between">
-              <span className="text-xs text-gray-400">{taskPage + 1} / {Math.ceil(TASKS.length / PER)}</span>
-              <div className="flex gap-1">
-                <button onClick={() => setTaskPage((p) => Math.max(0, p - 1))} disabled={taskPage === 0}
-                  className="p-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-30 transition-colors">
-                  <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-                </button>
-                <button onClick={() => setTaskPage((p) => Math.min(Math.ceil(TASKS.length / PER) - 1, p + 1))}
-                  disabled={taskPage >= Math.ceil(TASKS.length / PER) - 1}
-                  className="p-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-30 transition-colors">
-                  <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
-                </button>
               </div>
-            </div>
-          )}
-        </div>
+            </Card>
+
+            <Card>
+              <CardHeader icon={<Edit3 className="w-4 h-4 text-white" />} iconBg="bg-[#04844b]" title="Recent Tasks" sub="4 of 124" />
+              <ul className="divide-y divide-[#dddbda]">
+                {TASKS.map((t) => (
+                  <li key={t.id} className="px-3 py-2.5 flex items-center gap-2 hover:bg-[#f3f3f3] cursor-pointer">
+                    <span className="text-[11px] font-mono text-[#0070d2] hover:underline w-14">{t.id}</span>
+                    <p className={`flex-1 text-[13px] truncate ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</p>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${priorityColor[t.priority]}`}>
+                      {priorityLabel[t.priority]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="px-3 py-2 border-t border-[#dddbda] text-center">
+                <button className="text-[12px] text-[#0070d2] hover:underline font-semibold">View All</button>
+              </div>
+            </Card>
+          </div>
+
+          {/* Sessions List View */}
+          <div className="col-span-12 lg:col-span-8">
+            <Card>
+              <div className="border-b border-[#dddbda] px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#080707]">
+                    <Phone className="w-4 h-4 text-[#0070d2]" />
+                    Sessions
+                    <span className="text-[#706e6b] font-normal text-[12px]">· Recently Viewed ▾</span>
+                  </div>
+                  <span className="text-[11px] text-[#706e6b]">5 items · Updated 2 min ago</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Btn variant="secondary" small><Filter className="w-3 h-3 ml-1" />Filter</Btn>
+                  <Btn variant="secondary" small><Columns3 className="w-3 h-3 ml-1" />Columns</Btn>
+                  <Btn variant="secondary" small>List View Settings</Btn>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-[13px]">
+                  <thead className="bg-[#fafaf9] text-[#3e3e3c]">
+                    <tr className="border-b border-[#dddbda]">
+                      <Th width="w-10">
+                        <button onClick={() => setSelected(selected.length === SESSIONS.length ? [] : SESSIONS.map(s => s.id))}>
+                          {selected.length === SESSIONS.length ? (
+                            <CheckSquare className="w-4 h-4 text-[#0070d2]" />
+                          ) : (
+                            <Square className="w-4 h-4 text-[#706e6b]" />
+                          )}
+                        </button>
+                      </Th>
+                      <Th sortable>Session ID</Th>
+                      <Th sortable>Title</Th>
+                      <Th sortable>Project</Th>
+                      <Th sortable>Owner</Th>
+                      <Th sortable>Date</Th>
+                      <Th sortable className="text-center">Tasks</Th>
+                      <Th sortable className="text-center">Sentiment</Th>
+                      <Th sortable>Stage</Th>
+                      <Th width="w-10"></Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SESSIONS.map((s) => {
+                      const isSelected = selected.includes(s.id);
+                      return (
+                        <tr
+                          key={s.id}
+                          className={`border-b border-[#dddbda] cursor-pointer transition-colors ${
+                            isSelected ? "bg-[#ecf5fe]" : "hover:bg-[#fafaf9]"
+                          }`}
+                        >
+                          <Td>
+                            <button onClick={() => toggle(s.id)}>
+                              {isSelected ? <CheckSquare className="w-4 h-4 text-[#0070d2]" /> : <Square className="w-4 h-4 text-[#706e6b]" />}
+                            </button>
+                          </Td>
+                          <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{s.id}</a></Td>
+                          <Td className="font-semibold text-[#080707]">{s.title}</Td>
+                          <Td>
+                            <span className="inline-flex items-center gap-1 text-[12px] text-[#0070d2]">
+                              <FolderOpen className="w-3 h-3" />
+                              {s.project}
+                            </span>
+                          </Td>
+                          <Td>
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-5 h-5 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-[9px] font-bold">{s.owner[0]}</span>
+                              <span className="text-[12px]">{s.owner}</span>
+                            </div>
+                          </Td>
+                          <Td className="text-[12px] text-[#3e3e3c]">{s.date}</Td>
+                          <Td className="text-center">
+                            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                              s.done === s.tasks ? "bg-[#cfeac4] text-[#04844b]" : "bg-[#dceffb] text-[#0070d2]"
+                            }`}>
+                              {s.done}/{s.tasks}
+                            </span>
+                          </Td>
+                          <Td className="text-center">
+                            <SentimentBar value={s.sentiment} />
+                          </Td>
+                          <Td>
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${
+                              s.stage === "פעיל" ? "text-[#04844b]" : "text-[#706e6b]"
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${s.stage === "פעיל" ? "bg-[#04844b]" : "bg-[#706e6b]"}`} />
+                              {s.stage}
+                            </span>
+                          </Td>
+                          <Td>
+                            <button className="p-1 rounded hover:bg-[#dddbda]">
+                              <ChevronDown className="w-3.5 h-3.5 text-[#706e6b]" />
+                            </button>
+                          </Td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="px-4 py-2.5 border-t border-[#dddbda] flex items-center justify-between text-[12px] text-[#706e6b]">
+                <span>1 - 5 of 47</span>
+                <div className="flex items-center gap-2">
+                  <button disabled className="p-1.5 rounded border border-[#dddbda] disabled:opacity-40">
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-semibold text-[#080707]">Page 1 of 10</span>
+                  <button className="p-1.5 rounded border border-[#dddbda] hover:bg-[#f3f3f3]">
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </Card>
+
+            {/* Related list — Tasks */}
+            <Card className="mt-4">
+              <CardHeader icon={<ListChecks className="w-4 h-4 text-white" />} iconBg="bg-[#fe9339]" title="Open Tasks" sub={`${TASKS.filter(t => t.status !== "done").length} items`}>
+                <button className="text-[11px] text-[#0070d2] hover:underline font-semibold">View All</button>
+              </CardHeader>
+              <table className="w-full text-[13px]">
+                <thead className="bg-[#fafaf9] text-[#3e3e3c]">
+                  <tr className="border-b border-[#dddbda]">
+                    <Th sortable>Task ID</Th>
+                    <Th sortable>Subject</Th>
+                    <Th sortable>Status</Th>
+                    <Th sortable>Priority</Th>
+                    <Th sortable>Assignee</Th>
+                    <Th sortable>Due Date</Th>
+                    <Th></Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {TASKS.map((t) => (
+                    <tr key={t.id} className="border-b border-[#dddbda] hover:bg-[#fafaf9]">
+                      <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{t.id}</a></Td>
+                      <Td className={`font-semibold ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</Td>
+                      <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${statusColor[t.status]}`}>{statusLabel[t.status]}</span></Td>
+                      <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${priorityColor[t.priority]}`}>{priorityLabel[t.priority]}</span></Td>
+                      <Td className="text-[12px]">{t.assignee}</Td>
+                      <Td className="text-[12px] text-[#3e3e3c]">{t.due}</Td>
+                      <Td>
+                        <div className="flex gap-0.5">
+                          <button className="p-1 rounded hover:bg-[#dddbda]"><Pencil className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                          <button className="p-1 rounded hover:bg-[#dddbda]"><ExternalLink className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                          <button className="p-1 rounded hover:bg-[#dddbda]"><Trash2 className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                        </div>
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </div>
+        </section>
       </main>
+    </div>
+  );
+}
+
+// ── Subcomponents ─────────────────────────────────────────────────────────────
+function HeaderButton({ children, badge }: { children: React.ReactNode; badge?: number }) {
+  return (
+    <button className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center text-white">
+      {children}
+      {badge && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
+          {badge}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function CardHeader({
+  icon, iconBg, title, sub, children,
+}: { icon: React.ReactNode; iconBg: string; title: string; sub?: string; children?: React.ReactNode }) {
+  return (
+    <div className="border-b border-[#dddbda] px-4 py-2.5 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <div className={`w-7 h-7 rounded ${iconBg} flex items-center justify-center flex-shrink-0`}>{icon}</div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-semibold text-[#080707] truncate">{title}</p>
+          {sub && <p className="text-[11px] text-[#706e6b] truncate">{sub}</p>}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Th({ children, sortable, width, className = "" }: { children?: React.ReactNode; sortable?: boolean; width?: string; className?: string }) {
+  return (
+    <th className={`text-right px-3 py-2 text-[11px] font-semibold uppercase tracking-wide ${width || ""} ${className}`}>
+      <div className={`flex items-center gap-1 ${className.includes("text-center") ? "justify-center" : ""}`}>
+        {children}
+        {sortable && <ChevronsUpDown className="w-3 h-3 text-[#706e6b]" />}
+      </div>
+    </th>
+  );
+}
+
+function Td({ children, className = "" }: { children?: React.ReactNode; className?: string }) {
+  return <td className={`px-3 py-2.5 ${className}`}>{children}</td>;
+}
+
+function Btn({
+  children, variant = "primary", icon, small,
+}: { children: React.ReactNode; variant?: "primary" | "secondary"; icon?: React.ReactNode; small?: boolean }) {
+  const base = "rounded font-semibold transition-colors inline-flex items-center";
+  const size = small ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[13px]";
+  const styles =
+    variant === "primary"
+      ? "bg-white text-[#0070d2] border border-[#dddbda] hover:bg-[#f4f6f9]"
+      : "bg-white text-[#0070d2] border border-[#dddbda] hover:bg-[#f4f6f9]";
+  return (
+    <button className={`${base} ${size} ${styles}`}>
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function KpiTile({
+  label, value, suffix, trend, trendUp, icon,
+}: { label: string; value: string; suffix?: string; trend?: string; trendUp?: boolean; icon: React.ReactNode }) {
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[11px] uppercase tracking-wide font-semibold text-[#706e6b]">{label}</p>
+        <div className="w-8 h-8 rounded bg-[#ecf5fe] text-[#0070d2] flex items-center justify-center">{icon}</div>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[28px] font-bold text-[#080707] leading-none">{value}</span>
+        {suffix && <span className="text-[12px] text-[#706e6b]">{suffix}</span>}
+      </div>
+      {trend && (
+        <div className={`flex items-center gap-1 mt-2 text-[11px] font-semibold ${
+          trendUp ? "text-[#04844b]" : "text-[#706e6b]"
+        }`}>
+          {trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+          <span>{trend}</span>
+          <span className="text-[#706e6b] font-normal">vs last week</span>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function SentimentBar({ value }: { value: number }) {
+  const pct = Math.round(value * 100);
+  const color = value >= 0.7 ? "bg-[#04844b]" : value >= 0.5 ? "bg-[#fe9339]" : "bg-[#c23934]";
+  return (
+    <div className="inline-flex items-center gap-1.5">
+      <div className="w-16 h-1.5 rounded-full bg-[#dddbda] overflow-hidden">
+        <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10px] font-mono text-[#3e3e3c]">{value.toFixed(2)}</span>
     </div>
   );
 }

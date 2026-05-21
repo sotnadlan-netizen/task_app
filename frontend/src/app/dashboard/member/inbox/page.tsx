@@ -1,14 +1,18 @@
 "use client";
 
 import { ApprovalInbox } from "@/components/inbox/approval-inbox";
+import { PageHeader } from "@/components/ui/lightning";
+import { Inbox } from "lucide-react";
 
 export default function InboxPage() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-800">Approval Inbox</h1>
-      <p className="text-sm text-gray-500">
-        Review and approve or reject task edit requests from Participants.
-      </p>
+    <div className="space-y-5" dir="rtl">
+      <PageHeader
+        icon={<Inbox className="w-5 h-5 text-white" />}
+        eyebrow="Member Console"
+        title="תיבת אישורים"
+        breadcrumb={["דף בית", "אישורים"]}
+      />
       <ApprovalInbox />
     </div>
   );

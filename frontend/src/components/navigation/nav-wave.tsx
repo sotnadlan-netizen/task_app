@@ -41,8 +41,8 @@ export function NavWave() {
     >
       <defs>
         <linearGradient id="nav-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="rgba(139,92,246,1)" />
-          <stop offset="100%" stopColor="rgba(6,182,212,0.85)" />
+          <stop offset="0%" stopColor="rgba(0,112,210,1)" />
+          <stop offset="100%" stopColor="rgba(26,185,255,0.85)" />
         </linearGradient>
         <filter id="nav-wave-glow" x="-20%" y="-100%" width="140%" height="300%">
           <feGaussianBlur stdDeviation="1.5" result="blur" />

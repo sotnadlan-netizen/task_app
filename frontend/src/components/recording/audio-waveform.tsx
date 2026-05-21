@@ -64,17 +64,17 @@ export function AudioWaveform({ mediaStream, isRecording, processing }: Props) {
       const data = new Uint8Array(bins);
       analyser.getByteTimeDomainData(data);
 
-      // Violet → cyan gradient stroke
+      // Salesforce blue → cyan gradient stroke
       const grad = ctx2d.createLinearGradient(0, 0, W, 0);
-      grad.addColorStop(0,   "rgba(124, 58, 237, 0.95)");
-      grad.addColorStop(0.5, "rgba(139, 92, 246, 1)");
-      grad.addColorStop(1,   "rgba(6, 182, 212, 0.90)");
+      grad.addColorStop(0,   "rgba(0, 95, 178, 0.95)");
+      grad.addColorStop(0.5, "rgba(0, 112, 210, 1)");
+      grad.addColorStop(1,   "rgba(26, 185, 255, 0.90)");
 
       ctx2d.strokeStyle = grad;
       ctx2d.lineWidth = 2.5;
       ctx2d.lineJoin = "round";
       ctx2d.lineCap = "round";
-      ctx2d.shadowColor = "rgba(124, 58, 237, 0.55)";
+      ctx2d.shadowColor = "rgba(0, 112, 210, 0.55)";
       ctx2d.shadowBlur = 14;
 
       const amp = ampRef.current.value;

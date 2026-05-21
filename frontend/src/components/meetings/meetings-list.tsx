@@ -167,7 +167,7 @@ export function MeetingsList() {
               <select
                 value={projectFilter}
                 onChange={(e) => { setProjectFilter(e.target.value); setPage(0); }}
-                className="px-2.5 py-1.5 rounded-2xl border border-violet-100 text-xs text-gray-600 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+                className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#3e3e3c] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
               >
                 <option value="">כל הפרויקטים</option>
                 {Object.entries(projects).map(([id, name]) => (
@@ -177,7 +177,7 @@ export function MeetingsList() {
             )}
             <button
               onClick={() => { setSortMode(sortMode === "time" ? "project" : "time"); setPage(0); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border border-violet-100 hover:bg-violet-50/60 text-xs text-gray-600 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#dddbda] hover:bg-[#fafaf9] text-xs text-[#3e3e3c] transition-colors"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
               {sortMode === "time" ? "מיין לפי פרויקט" : "מיין לפי זמן"}
@@ -193,7 +193,7 @@ export function MeetingsList() {
           <>
             <div className="overflow-x-auto">
               <table className="w-full text-sm" dir="rtl">
-                <thead className="bg-white/40 border-y border-violet-100/60">
+                <thead className="bg-[#fafaf9] border-y border-[#dddbda]">
                   <tr>
                     <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">תאריך</th>
                     <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">כותרת</th>
@@ -203,14 +203,14 @@ export function MeetingsList() {
                     <th className="px-5 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-violet-50/60">
+                <tbody className="divide-y divide-[#dddbda]">
                   {paged.map((s) => {
                     const tc = taskCounts[s.id];
                     const durationMin = s.duration_seconds ? Math.round(s.duration_seconds / 60) : null;
                     return (
                       <tr
                         key={s.id}
-                        className="hover:bg-white/50 cursor-pointer transition-colors"
+                        className="hover:bg-[#fafaf9] cursor-pointer transition-colors"
                         onClick={() => setSelectedSession(s)}
                       >
                         <td className="px-5 py-3 text-gray-500 text-xs whitespace-nowrap">
@@ -225,7 +225,7 @@ export function MeetingsList() {
                         <td className="px-5 py-3 text-gray-500 text-xs">
                           {s.project_id && projects[s.project_id] ? (
                             <span className="flex items-center gap-1">
-                              <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                              <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" />
                               {projects[s.project_id]}
                             </span>
                           ) : (
@@ -254,7 +254,7 @@ export function MeetingsList() {
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => { setConfirmDelete(s); setDeleteError(null); }}
-                            className="p-1.5 rounded-xl hover:bg-red-50/60 transition-colors text-gray-300 hover:text-red-500"
+                            className="p-1.5 rounded hover:bg-[#fde9e7] transition-colors text-gray-300 hover:text-[#c23934]"
                             aria-label="מחק פגישה"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -269,7 +269,7 @@ export function MeetingsList() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-violet-100/60" dir="rtl">
+              <div className="flex items-center justify-between px-5 py-3 border-t border-[#dddbda]" dir="rtl">
                 <span className="text-xs text-gray-500">
                   עמוד {page + 1} מתוך {totalPages}
                 </span>
@@ -277,7 +277,7 @@ export function MeetingsList() {
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="p-1.5 rounded-xl hover:bg-violet-50/60 disabled:opacity-40 transition-colors"
+                    className="p-1.5 rounded hover:bg-[#fafaf9] disabled:opacity-40 transition-colors"
                     aria-label="עמוד הבא"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -285,7 +285,7 @@ export function MeetingsList() {
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
-                    className="p-1.5 rounded-xl hover:bg-violet-50/60 disabled:opacity-40 transition-colors"
+                    className="p-1.5 rounded hover:bg-[#fafaf9] disabled:opacity-40 transition-colors"
                     aria-label="עמוד קודם"
                   >
                     <ChevronLeft className="w-4 h-4" />

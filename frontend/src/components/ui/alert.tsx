@@ -4,10 +4,10 @@ import { AlertTriangle, Info, CheckCircle, XCircle } from "lucide-react";
 type AlertVariant = "info" | "success" | "warning" | "error";
 
 const variantStyles: Record<AlertVariant, string> = {
-  info: "bg-blue-50/80 border-blue-100 text-blue-700",
-  success: "bg-emerald-50/80 border-emerald-100 text-emerald-700",
-  warning: "bg-amber-50/80 border-amber-100 text-amber-700",
-  error: "bg-red-50/80 border-red-100 text-red-600",
+  info: "bg-[#ecf5fe] border-[#b3d9f6] text-[#04518c]",
+  success: "bg-[#ddf0d4] border-[#a3d99b] text-[#0b6b3a]",
+  warning: "bg-[#fef0e0] border-[#fcd9a8] text-[#8a4d04]",
+  error: "bg-[#fde9e7] border-[#f5c2bd] text-[#a61a14]",
 };
 
 const icons: Record<AlertVariant, typeof Info> = {
@@ -35,7 +35,7 @@ export function Alert({
   return (
     <div
       role="alert"
-      className={`flex gap-3 p-4 rounded-2xl border ${variantStyles[variant]} ${className}`}
+      className={`flex gap-3 p-4 rounded border ${variantStyles[variant]} ${className}`}
     >
       <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
       <div>

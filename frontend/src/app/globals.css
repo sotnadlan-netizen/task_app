@@ -1,8 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdf4ff;
-  --foreground: #1f2937;
+  --background: #f3f3f3;
+  --foreground: #080707;
+
+  /* ── Salesforce Lightning palette ── */
+  --sf-navy: #16325c;
+  --sf-navy-2: #0b1b33;
+  --sf-blue: #0070d2;
+  --sf-blue-hover: #005fb2;
+  --sf-cyan: #1ab9ff;
+  --sf-bg: #f3f3f3;
+  --sf-surface: #ffffff;
+  --sf-surface-alt: #fafaf9;
+  --sf-border: #dddbda;
+  --sf-text: #080707;
+  --sf-muted: #706e6b;
+  --sf-text-2: #3e3e3c;
+  --sf-row: #ecf5fe;
+  --sf-hover: #fafaf9;
+  --sf-success: #04844b;
+  --sf-danger: #c23934;
+  --sf-warning: #fe9339;
 }
 
 @theme inline {
@@ -13,106 +32,96 @@
 }
 
 body {
-  background: linear-gradient(160deg, #fdf4ff 0%, #f0f9ff 40%, #fdf2f8 70%, #fff7ed 100%);
-  background-attachment: fixed;
+  background: var(--sf-bg);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Salesforce Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
 }
 
-/* ── Dark Mode ── */
+/* ── Dark Lightning Mode ── */
 html.dark {
-  --background: #050508;
-  --foreground: #e2e8f0;
-  --glass-bg: rgba(8, 8, 18, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.07);
-  --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  --glow-violet: 0 0 40px rgba(124, 58, 237, 0.4);
-  --glow-cyan: 0 0 24px rgba(6, 182, 212, 0.3);
+  --background: #0b1b33;
+  --foreground: #e6edf6;
+  --sf-bg: #081325;
+  --sf-surface: #11233f;
+  --sf-surface-alt: #0d1d36;
+  --sf-border: rgba(255, 255, 255, 0.10);
+  --sf-text: #e6edf6;
+  --sf-muted: #8aa0bd;
+  --sf-text-2: #b7c6dd;
+  --sf-row: rgba(26, 185, 255, 0.10);
+  --sf-hover: rgba(255, 255, 255, 0.04);
 }
 
 html.dark body {
-  background: #050508;
-  background-attachment: fixed;
-  color: #e2e8f0;
+  background: var(--sf-bg);
+  color: var(--foreground);
 }
 
-/* Nav — deep glass bar */
-html.dark nav {
-  background-color: rgba(5, 5, 12, 0.85) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+/* Nav — navy bar stays navy in both modes */
+html.dark nav.sf-nav {
+  background-color: var(--sf-navy-2) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Glass panel — applied to main section cards */
+/* Surfaces */
+html.dark .bg-white { background-color: #11233f !important; }
+html.dark .bg-white\/95 { background-color: rgba(17, 35, 63, 0.95) !important; }
+html.dark .bg-white\/90 { background-color: rgba(17, 35, 63, 0.90) !important; }
+html.dark .bg-white\/80 { background-color: rgba(17, 35, 63, 0.80) !important; }
+html.dark .bg-white\/70 { background-color: rgba(17, 35, 63, 0.70) !important; }
+html.dark .bg-white\/60 { background-color: rgba(17, 35, 63, 0.60) !important; }
+html.dark .bg-\[\#f3f3f3\] { background-color: #081325 !important; }
+html.dark .bg-\[\#fafaf9\] { background-color: #0d1d36 !important; }
+html.dark .bg-gray-50 { background-color: #0d1d36 !important; }
+html.dark .bg-gray-100 { background-color: #11233f !important; }
+html.dark .bg-\[\#ecf5fe\] { background-color: rgba(26, 185, 255, 0.12) !important; }
+
+/* Glass panel → plain dark surface */
 html.dark .glass-panel {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(24px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
-  border-color: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow) !important;
+  background-color: #11233f !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
 }
-
-/* Cards / surfaces */
-html.dark .bg-white { background-color: rgba(12, 12, 22, 0.88) !important; }
-html.dark .bg-white\/80 { background-color: rgba(12, 12, 22, 0.80) !important; }
-html.dark .bg-white\/90 { background-color: rgba(12, 12, 22, 0.90) !important; }
-html.dark .bg-white\/60 { background-color: rgba(12, 12, 22, 0.60) !important; }
-html.dark .bg-white\/70 { background-color: rgba(12, 12, 22, 0.70) !important; }
-html.dark .bg-gray-50 { background-color: rgba(6, 6, 14, 0.95) !important; }
-html.dark .bg-gray-100 { background-color: rgba(14, 14, 26, 0.9) !important; }
 
 /* Text */
-html.dark .text-gray-900 { color: #f1f5f9 !important; }
-html.dark .text-gray-800 { color: #e2e8f0 !important; }
-html.dark .text-gray-700 { color: #cbd5e1 !important; }
-html.dark .text-gray-600 { color: #94a3b8 !important; }
-html.dark .text-gray-500 { color: #64748b !important; }
-html.dark .text-gray-400 { color: #475569 !important; }
+html.dark .text-\[\#080707\] { color: #e6edf6 !important; }
+html.dark .text-gray-900 { color: #f1f5fb !important; }
+html.dark .text-gray-800 { color: #e6edf6 !important; }
+html.dark .text-gray-700 { color: #cdd9ea !important; }
+html.dark .text-gray-600 { color: #aebfd6 !important; }
+html.dark .text-\[\#3e3e3c\] { color: #b7c6dd !important; }
+html.dark .text-\[\#706e6b\] { color: #8aa0bd !important; }
+html.dark .text-gray-500 { color: #8aa0bd !important; }
+html.dark .text-gray-400 { color: #6f86a6 !important; }
 
 /* Borders */
-html.dark .border-gray-200 { border-color: rgba(255, 255, 255, 0.08) !important; }
-html.dark .border-gray-100 { border-color: rgba(255, 255, 255, 0.06) !important; }
-html.dark .border-b { border-color: rgba(255, 255, 255, 0.06) !important; }
-html.dark .border-y { border-color: rgba(255, 255, 255, 0.06) !important; }
-html.dark .border-t { border-color: rgba(255, 255, 255, 0.06) !important; }
-html.dark .divide-gray-100 > * + * { border-color: rgba(255, 255, 255, 0.05) !important; }
-html.dark .divide-y > * + * { border-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark .border-\[\#dddbda\] { border-color: rgba(255, 255, 255, 0.10) !important; }
+html.dark .border-gray-200 { border-color: rgba(255, 255, 255, 0.10) !important; }
+html.dark .border-gray-100 { border-color: rgba(255, 255, 255, 0.07) !important; }
+html.dark .border-b { border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark .border-t { border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark .divide-\[\#dddbda\] > * + * { border-color: rgba(255, 255, 255, 0.08) !important; }
+html.dark .divide-gray-100 > * + * { border-color: rgba(255, 255, 255, 0.06) !important; }
+html.dark .divide-y > * + * { border-color: rgba(255, 255, 255, 0.08) !important; }
 
 /* Form controls */
 html.dark input:not([type="range"]),
 html.dark textarea,
 html.dark select {
-  background-color: rgba(8, 8, 20, 0.9) !important;
-  border-color: rgba(124, 58, 237, 0.25) !important;
-  color: #e2e8f0 !important;
+  background-color: #0d1d36 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #e6edf6 !important;
 }
 
-/* Table */
-html.dark thead.bg-gray-50,
-html.dark .bg-gray-50.border-y { background-color: rgba(6, 6, 14, 0.95) !important; }
-html.dark .hover\:bg-gray-50:hover { background-color: rgba(14, 14, 28, 0.7) !important; }
-html.dark .hover\:bg-gray-100:hover { background-color: rgba(20, 20, 38, 0.8) !important; }
+/* Table header / hover */
+html.dark thead.bg-\[\#fafaf9\],
+html.dark .bg-\[\#fafaf9\].border-y { background-color: #0d1d36 !important; }
+html.dark .hover\:bg-\[\#fafaf9\]:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+html.dark .hover\:bg-gray-50:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+html.dark .hover\:bg-gray-100:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
 
 /* Dropdowns */
-html.dark .shadow-lg.bg-white { background-color: rgba(10, 10, 22, 0.97) !important; border-color: rgba(255, 255, 255, 0.08) !important; }
-
-/* Record button dark glow */
-html.dark .record-btn-idle {
-  box-shadow: 0 0 40px rgba(124, 58, 237, 0.5), 0 4px 24px rgba(139, 92, 246, 0.45) !important;
-}
-
-/* AI processing text — cyan accent */
-html.dark .ai-processing-text { color: #06b6d4 !important; }
-html.dark .ai-processing-spinner { color: #06b6d4 !important; }
-
-/* Violet capacity chip in dark */
-html.dark .capacity-chip {
-  background-color: rgba(124, 58, 237, 0.12) !important;
-  color: #a78bfa !important;
-  border-color: rgba(124, 58, 237, 0.2) !important;
-}
+html.dark .shadow-lg.bg-white { background-color: #11233f !important; border-color: rgba(255, 255, 255, 0.10) !important; }
 
 /* IS 5568 — High Contrast Mode */
 .high-contrast {
@@ -129,24 +138,29 @@ html.dark .capacity-chip {
   color: #ffffff !important;
 }
 
-.high-contrast .bg-gray-50 {
+.high-contrast .bg-gray-50,
+.high-contrast .bg-\[\#fafaf9\],
+.high-contrast .bg-\[\#f3f3f3\] {
   background-color: #111111 !important;
 }
 
 .high-contrast .text-gray-500,
 .high-contrast .text-gray-600,
-.high-contrast .text-gray-400 {
+.high-contrast .text-gray-400,
+.high-contrast .text-\[\#706e6b\],
+.high-contrast .text-\[\#3e3e3c\] {
   color: #cccccc !important;
 }
 
 .high-contrast .border-gray-200,
-.high-contrast .border-gray-100 {
+.high-contrast .border-gray-100,
+.high-contrast .border-\[\#dddbda\] {
   border-color: #444444 !important;
 }
 
-/* Focus indicators — WCAG 2.1 AA */
+/* Focus indicators — WCAG 2.1 AA (Lightning blue) */
 *:focus-visible {
-  outline: 3px solid #4f46e5;
+  outline: 3px solid #0070d2;
   outline-offset: 2px;
 }
 
@@ -169,57 +183,7 @@ html.dark .capacity-chip {
   }
 }
 
-/* ── Carbon Mint Theme ─────────────────────────────────────────────────────── */
-.carbon-mint {
-  --cm-bg: #2D3436;
-  --cm-surface: #1E2426;
-  --cm-accent: #8B5CF6;
-  --cm-accent-2: #06B6D4;
-  --cm-accent-dim: rgba(139, 92, 246, 0.12);
-  --cm-accent-border: rgba(139, 92, 246, 0.32);
-  --cm-text: #E8F0EE;
-  --cm-text-muted: #5A6B68;
-  --cm-danger: #EF4444;
-  --cm-warning: #F59E0B;
-  --cm-info: #06B6D4;
-  background-color: var(--cm-bg);
-  color: var(--cm-text);
-}
-
-/* Card base */
-.cm-card {
-  background-color: var(--cm-surface);
-  border: 1px solid var(--cm-accent-border);
-  border-radius: 2px;
-  position: relative;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
-}
-
-/* L-bracket corner marker (bottom-left) */
-.cm-card::before {
-  content: '';
-  position: absolute;
-  bottom: 8px;
-  left: 8px;
-  width: 10px;
-  height: 10px;
-  border-left: 1.5px solid #8B5CF6;
-  border-bottom: 1.5px solid #8B5CF6;
-  opacity: 0.35;
-  transition: opacity 0.18s ease;
-  pointer-events: none;
-}
-
-.cm-card:hover {
-  border-color: rgba(139, 92, 246, 0.75);
-  box-shadow: 0 0 28px rgba(124, 58, 237, 0.18), 0 0 0 1px rgba(139, 92, 246, 0.06) inset;
-}
-
-.cm-card:hover::before {
-  opacity: 1;
-}
-
-/* Blinking cursor for processing state */
+/* Blinking cursor for AI processing state */
 @keyframes cm-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
@@ -228,5 +192,5 @@ html.dark .capacity-chip {
 .cm-cursor {
   display: inline-block;
   animation: cm-blink 1s step-end infinite;
-  color: #8B5CF6;
+  color: #0070d2;
 }

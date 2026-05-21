@@ -77,7 +77,7 @@ export function WaveformMorph({ shouldMorph, onMorphComplete }: Props) {
         className="font-mono text-[11px] tracking-[0.35em] uppercase select-none text-gray-400"
       >
         מנתח שיחה
-        <span className="cm-cursor mr-1.5" style={{ color: "#8B5CF6" }}>▊</span>
+        <span className="cm-cursor mr-1.5" style={{ color: "#0070d2" }}>▊</span>
       </p>
 
       {/* SVG wave */}
@@ -90,9 +90,9 @@ export function WaveformMorph({ shouldMorph, onMorphComplete }: Props) {
         >
           <defs>
             <linearGradient id="cm-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="rgba(139,92,246,1)" />
-              <stop offset="50%"  stopColor="rgba(139,92,246,1)" />
-              <stop offset="100%" stopColor="rgba(6,182,212,0.9)" />
+              <stop offset="0%"   stopColor="rgba(0,112,210,1)" />
+              <stop offset="50%"  stopColor="rgba(0,112,210,1)" />
+              <stop offset="100%" stopColor="rgba(26,185,255,0.9)" />
             </linearGradient>
             <filter id="cm-glow-wave" x="-20%" y="-80%" width="140%" height="260%">
               <feGaussianBlur stdDeviation="3.5" result="blur" />
@@ -121,7 +121,7 @@ export function WaveformMorph({ shouldMorph, onMorphComplete }: Props) {
           <motion.div
             key={i}
             className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: i === 2 ? "#06B6D4" : "#8B5CF6" }}
+            style={{ backgroundColor: i === 2 ? "#1ab9ff" : "#0070d2" }}
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.28, ease: "easeInOut" }}
           />

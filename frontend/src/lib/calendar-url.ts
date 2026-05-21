@@ -1,4 +1,28 @@
-import type { CalendarEvent } from "@/types";
+import type { CalendarEvent, Task } from "@/types";
+
+const TASK_DURATION_MINUTES = 30;
+
+export function buildGoogleCalendarUrlForTask(task: Task): string | null {
+  if (!task.scheduled_at) return null;
+  const start = new Date(task.scheduled_at);
+  if (isNaN(start.getTime())) return null;
+  const end = new Date(start.getTime() + TASK_DURATION_MINUTES * 60_000);
+
+  const fmt = (d: Date) =>
+    `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}` +
+    `T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+
+  const params = new URLSearchParams();
+  params.set("text", task.title);
+  if (task.description) params.set("details", task.description);
+  params.set("dates", `${fmt(start)}/${fmt(end)}`);
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&${params.toString()}`;
+}
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
 
 export function buildGoogleCalendarUrl(event: CalendarEvent): string {
   const base = "https://calendar.google.com/calendar/render?action=TEMPLATE";

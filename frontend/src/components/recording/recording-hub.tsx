@@ -105,19 +105,19 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
     : 0;
 
   return (
-    <div className="glass-panel bg-white rounded-3xl border border-gray-100 shadow-[0_4px_24px_rgba(0,0,0,0.07)] overflow-hidden">
+    <div className="glass-panel bg-white rounded-lg border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] overflow-hidden">
 
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+      <div className="px-6 pt-6 pb-4 border-b border-[#dddbda]">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-sm">
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center shadow-sm">
               <Mic className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
             </div>
-            <h2 className="text-lg font-bold text-gray-800">מרכז הקלטה</h2>
+            <h2 className="text-lg font-bold text-[#080707]">מרכז הקלטה</h2>
           </div>
           {capacity && (
-            <span className="capacity-chip inline-flex items-center gap-1.5 bg-violet-50 text-violet-700 rounded-full px-3 py-1 text-xs font-semibold border border-violet-100">
+            <span className="capacity-chip inline-flex items-center gap-1.5 bg-[#ecf5fe] text-[#0070d2] rounded px-3 py-1 text-xs font-semibold border border-[#b3d9f6]">
               <Clock className="w-3.5 h-3.5" />
               {capacity.remaining_minutes} דק׳ נותרות
             </span>
@@ -129,7 +129,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
           <div className="space-y-2">
             <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
               <motion.div
-                className="h-full bg-gradient-to-r from-violet-500 to-pink-500 rounded-full"
+                className="h-full bg-gradient-to-r from-[#0070d2] to-[#1ab9ff] rounded-full"
                 initial={{ width: shouldReduceMotion ? `${capacityPct}%` : "0%" }}
                 animate={{ width: `${capacityPct}%` }}
                 transition={{ duration: 0.9, ease: "easeOut", delay: 0.4 }}
@@ -166,7 +166,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
           {/* Project selection */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
-              <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+              <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" />
               פרויקט
             </label>
             {!showNewProjectInput ? (
@@ -180,7 +180,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                     setSelectedProjectId(e.target.value);
                   }
                 }}
-                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent transition-all"
+                className="w-full px-3 py-2.5 bg-white border border-[#dddbda] rounded text-sm text-[#080707] focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent transition-all"
                 disabled={loadingMeta}
               >
                 <option value="">ללא פרויקט</option>
@@ -194,16 +194,16 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                 <button
                   type="button"
                   onClick={() => { setShowNewProjectInput(false); setNewProjectName(""); }}
-                  className="p-2 rounded-xl hover:bg-gray-100 transition-colors flex-shrink-0"
+                  className="p-2 rounded hover:bg-gray-100 transition-colors flex-shrink-0"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-4 h-4 text-[#706e6b]" />
                 </button>
                 <input
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
                   placeholder="שם פרויקט חדש"
-                  className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent"
+                  className="flex-1 px-3 py-2.5 bg-white border border-[#dddbda] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent"
                   onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
                   autoFocus
                 />
@@ -218,7 +218,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
           {/* Participants */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
-              <Users className="w-3.5 h-3.5 text-violet-400" />
+              <Users className="w-3.5 h-3.5 text-[#0070d2]" />
               משתתפים
             </label>
             {loadingMeta ? (
@@ -234,14 +234,14 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                       key={m.id}
                       type="button"
                       onClick={() => toggleParticipant(m.user_id!)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium border transition-all ${
                         isSelected
-                          ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-violet-300 hover:text-violet-600"
+                          ? "bg-[#0070d2] text-white border-[#0070d2] shadow-sm"
+                          : "bg-white text-[#3e3e3c] border-[#dddbda] hover:border-[#0070d2] hover:text-[#0070d2]"
                       }`}
                     >
                       <div className={`w-4 h-4 rounded-full flex items-center justify-center font-bold text-[9px] flex-shrink-0 ${
-                        isSelected ? "bg-white/20 text-white" : "bg-violet-100 text-violet-600"
+                        isSelected ? "bg-white/20 text-white" : "bg-[#ecf5fe] text-[#0070d2]"
                       }`}>
                         {name.charAt(0).toUpperCase()}
                       </div>
@@ -308,10 +308,10 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
               whileHover={shouldReduceMotion ? {} : { scale: 1.06 }}
               whileTap={shouldReduceMotion ? {} : { scale: 0.93 }}
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-violet-300 ${
+              className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-[#0070d2]/40 ${
                 capacity?.is_blocked
                   ? "bg-gray-200 cursor-not-allowed"
-                  : "record-btn-idle bg-gradient-to-br from-violet-500 to-pink-500 shadow-[0_4px_24px_rgba(139,92,246,0.45)]"
+                  : "record-btn-idle bg-gradient-to-br from-[#0070d2] to-[#1ab9ff] shadow-[0_4px_24px_rgba(0,112,210,0.45)]"
               }`}
               aria-label="התחל הקלטה"
             >
@@ -345,13 +345,13 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
           <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap justify-center" dir="rtl">
             {selectedProjectId && (
               <span className="flex items-center gap-1">
-                <FolderOpen className="w-3.5 h-3.5 text-violet-400" />
+                <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" />
                 {projects.find((p) => p.id === selectedProjectId)?.name}
               </span>
             )}
             {selectedParticipantIds.length > 0 && (
               <span className="flex items-center gap-1">
-                <Users className="w-3.5 h-3.5 text-violet-400" />
+                <Users className="w-3.5 h-3.5 text-[#0070d2]" />
                 {selectedParticipantIds.length} משתתפים
               </span>
             )}
@@ -362,11 +362,11 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
       {/* Processing Indicator */}
       {processing && (
         <div className="flex items-center justify-center gap-3 py-5 border-t border-gray-100">
-          <svg className="ai-processing-spinner animate-spin h-5 w-5 text-violet-500" fill="none" viewBox="0 0 24 24">
+          <svg className="ai-processing-spinner animate-spin h-5 w-5 text-[#0070d2]" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="ai-processing-text text-sm text-violet-600 font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
+          <span className="ai-processing-text text-sm text-[#0070d2] font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
         </div>
       )}
     </div>

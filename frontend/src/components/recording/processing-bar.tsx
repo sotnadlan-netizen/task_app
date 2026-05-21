@@ -35,7 +35,7 @@ export function ProcessingBar() {
 
   return (
     <motion.div
-      className="fixed bottom-6 left-6 z-[150] bg-white border border-violet-200/60 rounded-2xl shadow-xl flex items-center gap-4 px-5 py-3"
+      className="fixed bottom-6 left-6 z-[150] bg-white border border-[#dddbda] rounded-lg shadow-xl flex items-center gap-4 px-5 py-3"
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -50,8 +50,8 @@ export function ProcessingBar() {
       >
         <defs>
           <linearGradient id="pb-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(139,92,246,1)" />
-            <stop offset="100%" stopColor="rgba(6,182,212,0.9)" />
+            <stop offset="0%" stopColor="rgba(0,112,210,1)" />
+            <stop offset="100%" stopColor="rgba(26,185,255,0.9)" />
           </linearGradient>
           <filter id="pb-glow" x="-20%" y="-100%" width="140%" height="300%">
             <feGaussianBlur stdDeviation="2.5" result="blur" />
@@ -82,7 +82,7 @@ export function ProcessingBar() {
               <motion.span
                 key={i}
                 className="w-1 h-1 rounded-full"
-                style={{ backgroundColor: i === 2 ? "#06B6D4" : "#8B5CF6" }}
+                style={{ backgroundColor: i === 2 ? "#1ab9ff" : "#0070d2" }}
                 animate={{ opacity: [0.3, 1, 0.3] }}
                 transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
               />

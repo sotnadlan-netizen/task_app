@@ -115,9 +115,9 @@ export function PromptEditor() {
         value={promptText}
         onChange={(e) => setPromptText(e.target.value)}
         rows={10}
-        className="w-full px-4 py-3 text-sm border border-violet-100 rounded-2xl
-          focus:ring-2 focus:ring-violet-200 focus:border-transparent
-          font-mono resize-y bg-white/80"
+        className="w-full px-4 py-3 text-sm border border-[#dddbda] rounded
+          focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent
+          font-mono resize-y bg-white"
         placeholder="Enter your AI system prompt..."
       />
 
@@ -130,7 +130,7 @@ export function PromptEditor() {
 
       {/* Version History Panel */}
       {showHistory && versions.length > 0 && (
-        <div className="mt-4 border-t border-violet-100/60 pt-4">
+        <div className="mt-4 border-t border-[#dddbda] pt-4">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">
             Version History
           </h4>
@@ -138,7 +138,7 @@ export function PromptEditor() {
             {versions.map((v) => (
               <div
                 key={v.id}
-                className="flex items-center justify-between p-3 rounded-2xl bg-violet-50/40 hover:bg-violet-50/70 transition-colors"
+                className="flex items-center justify-between p-3 rounded bg-[#fafaf9] hover:bg-[#ecf5fe] transition-colors"
               >
                 <div>
                   <div className="flex items-center gap-2">

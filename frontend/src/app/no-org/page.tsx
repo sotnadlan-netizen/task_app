@@ -9,11 +9,11 @@ function NoOrgContent() {
   const { user, signOut } = useSupabase();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f3f3f3] flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
         {/* Icon */}
-        <div className="w-20 h-20 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-          <Building2 className="w-10 h-10 text-indigo-600" />
+        <div className="w-20 h-20 bg-[#ecf5fe] rounded-lg flex items-center justify-center mx-auto mb-6">
+          <Building2 className="w-10 h-10 text-[#0070d2]" />
         </div>
 
         {/* Heading */}
@@ -30,18 +30,18 @@ function NoOrgContent() {
         </p>
 
         {/* Steps */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5 text-left mb-8 space-y-4">
+        <div className="bg-white rounded-lg border border-[#dddbda] p-5 text-left mb-8 space-y-4">
           <p className="text-sm font-semibold text-gray-700">What to do next:</p>
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
+            <div className="w-7 h-7 rounded-full bg-[#0070d2] text-white text-xs font-bold flex items-center justify-center shrink-0">1</div>
             <p className="text-sm text-gray-600 pt-0.5">Contact your organization admin and share your email address.</p>
           </div>
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
+            <div className="w-7 h-7 rounded-full bg-[#0070d2] text-white text-xs font-bold flex items-center justify-center shrink-0">2</div>
             <p className="text-sm text-gray-600 pt-0.5">Wait for them to add you to the organization with the appropriate role.</p>
           </div>
           <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
+            <div className="w-7 h-7 rounded-full bg-[#0070d2] text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
             <p className="text-sm text-gray-600 pt-0.5">Sign in again and you&apos;ll be taken to your dashboard.</p>
           </div>
         </div>

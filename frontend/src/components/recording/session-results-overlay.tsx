@@ -53,11 +53,11 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
         aria-label="תוצאות שיחה"
       >
         {/* ── Top bar ── */}
-        <div className="flex items-center justify-between px-10 py-4 border-b border-violet-200/60 flex-shrink-0">
+        <div className="flex items-center justify-between px-10 py-4 border-b border-[#dddbda] flex-shrink-0">
           {/* Close — right side in RTL */}
           <button
             onClick={onClose}
-            className="flex items-center gap-2 text-sm text-gray-400 transition-opacity hover:opacity-70 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:ring-offset-2"
+            className="flex items-center gap-2 text-sm text-gray-400 transition-opacity hover:opacity-70 focus:outline-none focus:ring-1 focus:ring-[#0070d2] focus:ring-offset-2"
             aria-label="סגור"
           >
             <X className="w-4 h-4" />
@@ -87,7 +87,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
             </span>
             <div
               className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: "#8B5CF6", boxShadow: "0 0 10px rgba(139,92,246,0.5)" }}
+              style={{ backgroundColor: "#0070d2", boxShadow: "0 0 10px rgba(0,112,210,0.5)" }}
             />
           </div>
         </div>
@@ -130,7 +130,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
         </div>
 
         {/* ── Bottom status bar ── */}
-        <div className="flex items-center justify-between px-10 py-3 border-t border-violet-200/60 flex-shrink-0">
+        <div className="flex items-center justify-between px-10 py-3 border-t border-[#dddbda] flex-shrink-0">
           <AnimatePresence>
             {session && phase === "revealed" && (
               <motion.span
@@ -158,7 +158,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="font-sans text-xs font-medium"
-                style={{ color: "#8B5CF6" }}
+                style={{ color: "#0070d2" }}
               >
                 הניתוח הושלם
               </motion.span>

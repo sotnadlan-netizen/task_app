@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOrganization } from "@/providers/organization-provider";
 import { TaskList } from "@/components/tasks/task-list";
+import { PageHeader } from "@/components/ui/lightning";
+import { ListChecks } from "lucide-react";
 
 export default function AdminTasksPage() {
   const { currentRole, loading: orgLoading } = useOrganization();
@@ -19,8 +21,13 @@ export default function AdminTasksPage() {
   if (orgLoading || currentRole !== "admin") return null;
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-900">משימות</h1>
+    <div className="space-y-5" dir="rtl">
+      <PageHeader
+        icon={<ListChecks className="w-5 h-5 text-white" />}
+        eyebrow="Organization Console"
+        title="משימות"
+        breadcrumb={["ניהול", "משימות"]}
+      />
       <TaskList />
     </div>
   );

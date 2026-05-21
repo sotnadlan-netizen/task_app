@@ -49,10 +49,10 @@ const priorityBadgeVariant: Record<TaskPriority, "default" | "info" | "warning" 
 
 function TypeIcon({ type, className = "w-4 h-4" }: { type: BentoCardType; className?: string }) {
   const base = `${className} flex-shrink-0`;
-  if (type === "summary")   return <Brain className={base} style={{ color: "#8B5CF6" }} />;
-  if (type === "sentiment") return <Zap className={base} style={{ color: "#06B6D4" }} />;
-  if (type === "duration")  return <Clock className={base} style={{ color: "#8B5CF6" }} />;
-  return <CheckCircle2 className={base} style={{ color: "#8B5CF6" }} />;
+  if (type === "summary")   return <Brain className={base} style={{ color: "#0070d2" }} />;
+  if (type === "sentiment") return <Zap className={base} style={{ color: "#1ab9ff" }} />;
+  if (type === "duration")  return <Clock className={base} style={{ color: "#0070d2" }} />;
+  return <CheckCircle2 className={base} style={{ color: "#0070d2" }} />;
 }
 
 function CardLabel({ type }: { type: BentoCardType }) {
@@ -66,9 +66,9 @@ function CardLabel({ type }: { type: BentoCardType }) {
 }
 
 const inputCls =
-  "w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent resize-none";
+  "w-full px-3 py-2 border border-[#dddbda] rounded text-sm text-[#080707] bg-white focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent resize-none";
 const selectCls =
-  "px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent";
+  "px-3 py-2 border border-[#dddbda] rounded text-sm text-[#080707] bg-white focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent";
 
 interface Props {
   card: BentoCardData;
@@ -180,7 +180,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: isBlurred ? 0.3 : 1, y: 0 }}
           transition={{ duration: 0.35, delay: entryDelay, ease: "easeOut" }}
-          className="group glass-panel bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] p-5 cursor-pointer hover:shadow-[0_6px_24px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all"
+          className="group glass-panel bg-white rounded-lg border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] p-5 cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all"
           role="button"
           tabIndex={isBlurred ? -1 : 0}
           aria-label={`הרחב סיכום: ${displayTitle}`}
@@ -189,7 +189,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
           <div className="flex items-center gap-2 mb-3">
             <TypeIcon type="summary" />
             <CardLabel type="summary" />
-            <ArrowUpRight className="w-3.5 h-3.5 text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity mr-auto" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-[#0070d2] opacity-0 group-hover:opacity-100 transition-opacity mr-auto" />
           </div>
           <p className="text-base font-bold text-gray-800 mb-2">{displayTitle}</p>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-4">{displayDesc}</p>
@@ -214,7 +214,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
               >
                 <motion.div
                   layoutId={`card-${card.id}`}
-                  className="bg-white border border-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                  className="bg-white border border-[#dddbda] rounded-lg shadow-2xl flex flex-col overflow-hidden"
                   style={{ width: "min(720px, 92vw)", maxHeight: "85vh", pointerEvents: "all" }}
                 >
                   {/* Header */}
@@ -224,7 +224,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                     {!isEditing && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onExpand(null); }}
-                        className="mr-auto p-1.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-300"
+                        className="mr-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
                         aria-label="סגור"
                       >
                         <X className="w-4 h-4 text-gray-400" />
@@ -250,11 +250,11 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                         </div>
                         {saveError && <p className="text-xs text-red-500">{saveError}</p>}
                         <div className="flex gap-2 pt-1">
-                          <button onClick={handleSave} disabled={saving || !editDesc.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                          <button onClick={handleSave} disabled={saving || !editDesc.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white bg-[#0070d2] hover:bg-[#005fb2] disabled:opacity-50 transition-colors">
                             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                             שמור
                           </button>
-                          <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors">
+                          <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-gray-500 border border-[#dddbda] hover:bg-gray-50 transition-colors">
                             <RotateCcw className="w-3.5 h-3.5" />
                             ביטול
                           </button>
@@ -265,7 +265,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                         <p className="text-sm leading-relaxed text-gray-600">{displayDesc}</p>
                         <button
                           onClick={startEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-violet-600 border border-violet-200 hover:bg-violet-50 transition-colors"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium text-[#0070d2] border border-[#b3d9f6] hover:bg-[#ecf5fe] transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
                           ערוך סיכום
@@ -291,7 +291,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
         initial={{ opacity: 0, x: -8 }}
         animate={{ opacity: isBlurred ? 0.3 : isDone ? 0.65 : 1, x: 0 }}
         transition={{ duration: 0.25, delay: entryDelay, ease: "easeOut" }}
-        className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-violet-50/30 transition-colors cursor-pointer group"
+        className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-[#fafaf9] transition-colors cursor-pointer group"
         role="button"
         tabIndex={isBlurred ? -1 : 0}
         aria-label={`פרטי משימה: ${displayTitle}`}
@@ -341,15 +341,15 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
         <button
           onClick={handleCheckboxToggle}
           disabled={toggling}
-          className="p-1 rounded-lg hover:bg-violet-50 transition-colors flex-shrink-0 focus:outline-none"
+          className="p-1 rounded hover:bg-[#ecf5fe] transition-colors flex-shrink-0 focus:outline-none"
           aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
         >
           {toggling ? (
-            <Loader2 className="w-4 h-4 animate-spin text-violet-400" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#0070d2]" />
           ) : isDone ? (
-            <CheckCircle2 className="w-4 h-4 text-violet-500" />
+            <CheckCircle2 className="w-4 h-4 text-[#04844b]" />
           ) : (
-            <div className="w-4 h-4 rounded-full border-2 border-gray-300 group-hover:border-violet-300 transition-colors" />
+            <div className="w-4 h-4 rounded-full border-2 border-gray-300 group-hover:border-[#0070d2] transition-colors" />
           )}
         </button>
       </motion.div>
@@ -374,7 +374,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
             >
               <motion.div
                 layoutId={`card-${card.id}`}
-                className="bg-white border border-gray-100 rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+                className="bg-white border border-[#dddbda] rounded-lg shadow-2xl flex flex-col overflow-hidden"
                 style={{ width: "min(680px, 92vw)", maxHeight: "85vh", pointerEvents: "all" }}
               >
                 {/* Header */}
@@ -395,7 +395,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                   {!isEditing && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onExpand(null); }}
-                      className="mr-auto p-1.5 rounded-xl hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-300"
+                      className="mr-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
                       aria-label="סגור"
                     >
                       <X className="w-4 h-4 text-gray-400" />
@@ -442,11 +442,11 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       </div>
                       {saveError && <p className="text-xs text-red-500">{saveError}</p>}
                       <div className="flex gap-2 pt-1">
-                        <button onClick={handleSave} disabled={saving || !editTitle.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 disabled:opacity-50 transition-colors">
+                        <button onClick={handleSave} disabled={saving || !editTitle.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white bg-[#0070d2] hover:bg-[#005fb2] disabled:opacity-50 transition-colors">
                           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                           שמור
                         </button>
-                        <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors">
+                        <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-gray-500 border border-[#dddbda] hover:bg-gray-50 transition-colors">
                           <RotateCcw className="w-3.5 h-3.5" />
                           ביטול
                         </button>
@@ -497,7 +497,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
 
                       {/* Actions */}
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <button onClick={startEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-violet-600 border border-violet-200 hover:bg-violet-50 transition-colors">
+                        <button onClick={startEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium text-[#0070d2] border border-[#b3d9f6] hover:bg-[#ecf5fe] transition-colors">
                           <Pencil className="w-3 h-3" />
                           עריכה
                         </button>

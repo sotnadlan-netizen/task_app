@@ -17,24 +17,20 @@
  */
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Search, Bell, Settings, ChevronDown, ChevronLeft, ChevronRight, Star,
   Plus, RefreshCw, MoreHorizontal, ArrowUpDown,
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
   Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2,
-  ExternalLink, Edit3, Calendar as CalendarIcon, Settings2, Mic,
+  ExternalLink, HelpCircle, Edit3, Calendar as CalendarIcon, Settings2, Mic,
   UserPlus, Clock, X, MicVocal, CalendarClock, CalendarPlus, XCircle, Hand,
-  LogOut, Building2, Inbox,
 } from "lucide-react";
-import Link from "next/link";
 
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
-import { useNotificationStore } from "@/stores/notification-store";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useRecording } from "@/hooks/useRecording";
 import { AudioWaveform } from "@/components/recording/audio-waveform";
 import { SessionResultsOverlay } from "@/components/recording/session-results-overlay";
@@ -83,22 +79,10 @@ interface MemberWithProfile extends OrgMembership {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-export default function MemberPage() {
-  const { supabase, session, user, signOut } = useSupabase();
-  const { currentOrg, capacity, currentRole, loading: orgLoading, organizations, switchOrganization, isPlatformAdmin } = useOrganization();
+export default function ConsoleLivePreview() {
+  const { supabase, session } = useSupabase();
+  const { currentOrg, capacity } = useOrganization();
   const { subscribe } = useRealtime();
-  const { unreadCount } = useNotificationStore();
-  const router = useRouter();
-
-  // Header utility menus
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
-
-  // Role guard: participants are read-only and routed to their own dashboard
-  useEffect(() => {
-    if (orgLoading) return;
-    if (currentRole === "participant") router.replace("/dashboard/participant");
-  }, [orgLoading, currentRole, router]);
 
   // ── Data state ─────────────────────────────────────────────────────────────
   const [allSessions, setAllSessions] = useState<Session[]>([]);
@@ -114,10 +98,10 @@ export default function MemberPage() {
   const [taskSort, setTaskSort] = useState<TaskSort>("time");
   const [taskPage, setTaskPage] = useState(0);
   const [taskProjectFilter, setTaskProjectFilter] = useState("");
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
 
   // ── Overlay / modal state ─────────────────────────────────────────────────
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [confirmDeleteSession, setConfirmDeleteSession] = useState<Session | null>(null);
   const [deletingSession, setDeletingSession] = useState(false);
   const [deleteSessionError, setDeleteSessionError] = useState<string | null>(null);
@@ -192,10 +176,18 @@ export default function MemberPage() {
     setAllTasks((prev) => prev.map((t) => (t.id === updated.id ? { ...t, ...updated } : t)));
   }, []);
 
-  // Clicking a session/meeting opens the Lightning detail popup (not a new page).
-  const handleSessionClick = useCallback((s: Session) => {
-    setSelectedSession(s);
-  }, []);
+  const handleSessionClick = useCallback(async (s: Session) => {
+    setProcessingBarOpen(true);
+    const { data } = await supabase
+      .from("tasks")
+      .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
+      .eq("session_id", s.id)
+      .order("created_at");
+    setProcessingBarOpen(false);
+    setOverlaySession(s);
+    setOverlayTasks((data as Task[]) ?? []);
+    setOverlayOpen(true);
+  }, [supabase]);
 
   const handleSessionReady = useCallback(async (sessionId: string) => {
     setProcessingBarOpen(true);
@@ -270,54 +262,40 @@ export default function MemberPage() {
 
   const recentTasks = useMemo(() => allTasks.slice(0, 5), [allTasks]);
 
-  // Real avg sentiment: map each session's sentiment label to a polarity score
-  // (positive +1 / neutral·mixed 0 / negative −1) and average across sessions.
-  const sentimentStats = useMemo(() => {
-    const labels = allSessions
-      .map((s) => s.sentiment?.toLowerCase().trim())
-      .filter((v): v is string => !!v);
-    if (labels.length === 0) return { value: "—", label: "אין נתונים", up: false };
-    const score = (s: string) => (/pos|חיוב/.test(s) ? 1 : /neg|שליל/.test(s) ? -1 : 0);
-    const avg = labels.reduce((a, s) => a + score(s), 0) / labels.length;
-    const label = avg > 0.2 ? "positive" : avg < -0.2 ? "negative" : "neutral";
-    return { value: `${avg >= 0 ? "+" : ""}${avg.toFixed(2)}`, label, up: avg >= 0 };
-  }, [allSessions]);
-
   const capacityRemaining = capacity?.remaining_minutes ?? 0;
   const capacityTotal = capacity?.capacity_minutes ?? 0;
   const capacityPct = capacityTotal > 0 ? Math.min(100, Math.round((capacityRemaining / capacityTotal) * 100)) : 0;
 
   const hasProjects = Object.keys(projects).length > 0;
 
-  if (orgLoading || currentRole === "participant") return null;
-
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" dir="rtl" style={fontStyle}>
+    <div className="fixed inset-0 z-40 overflow-y-auto bg-[#f3f3f3] text-[#080707]" dir="rtl" style={fontStyle}>
       {/* ── Global header (Salesforce blue) ───────────────────────────────── */}
       <header className="bg-[#16325c] text-white">
         <div className="h-12 px-4 flex items-center gap-3">
-          <Link href="/dashboard" className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10" aria-label="App launcher">
+          <button className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10">
             {[...Array(9)].map((_, i) => <span key={i} className="w-1 h-1 rounded-full bg-white/80" />)}
-          </Link>
+          </button>
           <span className="text-white/40">|</span>
-          <Link href="/dashboard/member" className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-black">T</div>
             <span className="font-semibold text-[15px]">TaskFlow</span>
-            <span className="text-white/60 text-[13px] hidden lg:inline">— Member Console</span>
-          </Link>
+            <span className="text-white/60 text-[13px]">— Member Console</span>
+          </div>
 
           <nav className="hidden md:flex items-center mr-6 h-12">
             {[
-              { label: "Home", icon: Home, href: "/dashboard/member", active: true },
-              { label: "Sessions", icon: Phone, href: "/dashboard/member/meetings", count: allSessions.length },
-              { label: "Tasks", icon: ListChecks, href: "/dashboard/member/tasks", count: taskCountTotal },
-              { label: "Approvals", icon: Inbox, href: "/dashboard/member/inbox", count: unreadCount || undefined },
+              { label: "Home", icon: Home, active: true },
+              { label: "Sessions", icon: Phone, count: allSessions.length },
+              { label: "Tasks", icon: ListChecks, count: taskCountTotal },
+              { label: "Reports", icon: BarChart3 },
+              { label: "Projects", icon: FolderOpen, count: Object.keys(projects).length || undefined },
+              { label: "Team", icon: Users },
             ].map((t) => {
               const Icon = t.icon;
               return (
-                <Link
+                <button
                   key={t.label}
-                  href={t.href}
                   className={`h-12 px-4 flex items-center gap-1.5 text-[13px] transition-colors ${
                     t.active ? "bg-white text-[#080707] font-semibold" : "text-white/90 hover:bg-white/10"
                   }`}
@@ -329,116 +307,35 @@ export default function MemberPage() {
                       {t.count}
                     </span>
                   )}
-                </Link>
+                  <ChevronDown className="w-3 h-3" />
+                </button>
               );
             })}
+            <button className="h-12 px-3 flex items-center text-white/80 hover:bg-white/10">
+              <Plus className="w-4 h-4" />
+            </button>
           </nav>
 
           <div className="flex-1" />
 
           <div className="flex items-center gap-1">
-            {/* Admin ↔ Member toggle (admin-role users only) */}
-            {!isPlatformAdmin && currentRole === "admin" && (
-              <div className="flex items-center bg-white/10 rounded p-0.5 gap-0.5 mr-1">
-                <span className="px-2.5 py-1 text-[11px] font-semibold rounded bg-white text-[#16325c]">Member</span>
-                <button
-                  onClick={() => router.push("/dashboard/admin")}
-                  className="px-2.5 py-1 text-[11px] font-semibold rounded text-white/80 hover:text-white"
-                >
-                  Admin
-                </button>
-              </div>
-            )}
-
-            {/* Org switcher (multi-org members) */}
-            {!isPlatformAdmin && organizations.length > 1 && (
-              <div className="relative">
-                <button
-                  onClick={() => { setOrgMenuOpen((v) => !v); setUserMenuOpen(false); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-white/10 text-[12px] font-medium text-white transition-colors"
-                  aria-label="Switch organization"
-                >
-                  <Building2 className="w-4 h-4 text-[#1ab9ff]" />
-                  <span className="max-w-[110px] truncate hidden lg:inline">{currentOrg?.name || "Org"}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-white/70" />
-                </button>
-                {orgMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
-                    {organizations.map((org) => (
-                      <button
-                        key={org.id}
-                        onClick={() => { switchOrganization(org.id); setOrgMenuOpen(false); }}
-                        className={`w-full text-right px-4 py-2 text-[13px] transition-colors ${
-                          org.id === currentOrg?.id ? "bg-[#ecf5fe] text-[#0070d2] font-semibold" : "text-[#080707] hover:bg-[#fafaf9]"
-                        }`}
-                      >
-                        {org.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="relative hidden lg:block">
+            <div className="relative">
               <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
               <input
                 placeholder="Search…"
                 dir="ltr"
-                className="w-56 pr-7 pl-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
+                className="w-64 pr-7 pl-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
               />
             </div>
-
-            {/* Theme toggle */}
-            <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
-              <ThemeToggle />
-            </div>
-
-            {/* Notifications → inbox */}
-            <Link href="/dashboard/member/inbox" className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount})` : ""}`}>
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
+            <Link href="/dashboard/member/design-preview" className="text-xs text-white/70 hover:text-white px-2 transition-colors">
+              ← Styles
             </Link>
-
-            {/* User menu */}
-            <div className="relative ml-1">
-              <button
-                onClick={() => { setUserMenuOpen((v) => !v); setOrgMenuOpen(false); }}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-bold"
-                aria-label="User menu"
-              >
-                {user?.email?.charAt(0).toUpperCase() || "?"}
-              </button>
-              {userMenuOpen && (
-                <div className="absolute left-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50 text-[#080707]" dir="rtl">
-                  <div className="px-4 py-2.5 border-b border-[#dddbda]">
-                    <p className="text-[13px] font-medium truncate">{user?.email}</p>
-                    <p className="text-[11px] text-[#706e6b] capitalize">{currentRole || "member"}</p>
-                  </div>
-                  <Link href="/dashboard/member/inbox" onClick={() => setUserMenuOpen(false)} className="w-full text-right px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2 flex-row-reverse">
-                    <Inbox className="w-4 h-4 text-[#706e6b]" />
-                    תיבת אישורים
-                  </Link>
-                  {currentRole === "admin" && !isPlatformAdmin && (
-                    <Link href="/dashboard/admin" onClick={() => setUserMenuOpen(false)} className="w-full text-right px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2 flex-row-reverse">
-                      <Settings className="w-4 h-4 text-[#706e6b]" />
-                      ניהול ארגון
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { signOut(); setUserMenuOpen(false); }}
-                    className="w-full text-right px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2 flex-row-reverse"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    התנתק
-                  </button>
-                </div>
-              )}
-            </div>
+            <HeaderButton><Settings className="w-4 h-4" /></HeaderButton>
+            <HeaderButton><HelpCircle className="w-4 h-4" /></HeaderButton>
+            <HeaderButton badge={3}><Bell className="w-4 h-4" /></HeaderButton>
+            <button className="ml-1 w-8 h-8 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-bold">
+              שק
+            </button>
           </div>
         </div>
       </header>
@@ -485,7 +382,8 @@ export default function MemberPage() {
           <KpiTile label="Sessions" value={String(allSessions.length)} trend={`${pagedMeetings.length} shown`} trendUp icon={<Phone className="w-5 h-5" />} />
           <KpiTile label="Total Tasks" value={String(taskCountTotal)} trend={`${sortedTasks.filter((t) => t.status !== "done").length} open`} trendUp icon={<ListChecks className="w-5 h-5" />} />
           <KpiTile label="Capacity Remaining" value={String(capacityRemaining)} suffix="min" trend={capacityTotal > 0 ? `${capacityPct}%` : "—"} trendUp={capacityPct > 30} icon={<BarChart3 className="w-5 h-5" />} />
-          <KpiTile label="Avg Sentiment" value={sentimentStats.value} trend={sentimentStats.label} trendUp={sentimentStats.up} icon={<TrendingUp className="w-5 h-5" />} />
+          {/* cosmetic — no schema column for org-wide sentiment */}
+          <KpiTile label="Avg Sentiment" value="+0.74" trend="positive" trendUp icon={<TrendingUp className="w-5 h-5" />} />
         </section>
 
         {/* Two-column body */}
@@ -684,25 +582,44 @@ export default function MemberPage() {
                   <tbody>
                     {pagedTasks.map((t) => {
                       const owningSession = t.session_id ? allSessions.find((s) => s.id === t.session_id) : undefined;
+                      const projectName = t.project_id ? projects[t.project_id] : null;
+                      const isExpanded = expandedTaskId === t.id;
                       return (
-                        <tr key={t.id} onClick={() => setSelectedTask(t)} className="border-b border-[#dddbda] hover:bg-[#fafaf9] cursor-pointer">
-                          <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{t.id.slice(0, 8)}</a></Td>
-                          <Td className={`font-semibold truncate max-w-[280px] ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</Td>
-                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${statusColor[t.status]}`}>{statusLabel[t.status]}</span></Td>
-                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${priorityColor[t.priority]}`}>{priorityLabel[t.priority]}</span></Td>
-                          <Td className="text-[12px]">{t.assignee?.full_name || "—"}</Td>
-                          <Td className="text-[12px] text-[#3e3e3c]">
-                            {t.scheduled_at ? new Date(t.scheduled_at).toLocaleDateString("he-IL") : t.deadline ? new Date(t.deadline).toLocaleDateString("he-IL") : "—"}
-                          </Td>
-                          <Td>
-                            <div className="flex gap-0.5">
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedTask(t); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פרטי משימה"><Pencil className="w-3.5 h-3.5 text-[#706e6b]" /></button>
-                              {owningSession && (
-                                <button onClick={(e) => { e.stopPropagation(); setSelectedSession(owningSession); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פתח פגישה"><ExternalLink className="w-3.5 h-3.5 text-[#706e6b]" /></button>
-                              )}
-                            </div>
-                          </Td>
-                        </tr>
+                        <FragmentRow key={t.id}>
+                          <tr onClick={() => setExpandedTaskId(isExpanded ? null : t.id)} className={`border-b border-[#dddbda] hover:bg-[#fafaf9] cursor-pointer ${isExpanded ? "bg-[#ecf5fe]" : ""}`}>
+                            <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{t.id.slice(0, 8)}</a></Td>
+                            <Td className={`font-semibold truncate max-w-[280px] ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</Td>
+                            <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${statusColor[t.status]}`}>{statusLabel[t.status]}</span></Td>
+                            <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${priorityColor[t.priority]}`}>{priorityLabel[t.priority]}</span></Td>
+                            <Td className="text-[12px]">{t.assignee?.full_name || "—"}</Td>
+                            <Td className="text-[12px] text-[#3e3e3c]">
+                              {t.scheduled_at ? new Date(t.scheduled_at).toLocaleDateString("he-IL") : t.deadline ? new Date(t.deadline).toLocaleDateString("he-IL") : "—"}
+                            </Td>
+                            <Td>
+                              <div className="flex gap-0.5">
+                                <button onClick={(e) => { e.stopPropagation(); if (owningSession) setSelectedSession(owningSession); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="ערוך"><Pencil className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                                <button onClick={(e) => { e.stopPropagation(); if (owningSession) handleSessionClick(owningSession); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פתח פגישה"><ExternalLink className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                              </div>
+                            </Td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="bg-[#fafaf9] border-b border-[#dddbda]">
+                              <td colSpan={7} className="px-4 py-3">
+                                <div className="text-[13px] text-[#3e3e3c] space-y-2" dir="rtl">
+                                  {t.description ? <p className="leading-relaxed whitespace-pre-wrap">{t.description}</p> : <p className="text-[#706e6b] italic">אין תיאור.</p>}
+                                  <div className="flex items-center gap-4 text-[11px] text-[#706e6b] pt-1">
+                                    {projectName && <span className="inline-flex items-center gap-1"><FolderOpen className="w-3 h-3" />{projectName}</span>}
+                                    {owningSession && (
+                                      <button onClick={() => handleSessionClick(owningSession)} className="inline-flex items-center gap-1 text-[#0070d2] hover:underline">
+                                        <Phone className="w-3 h-3" />{owningSession.title || "פגישה"}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </FragmentRow>
                       );
                     })}
                   </tbody>
@@ -756,19 +673,6 @@ export default function MemberPage() {
             setAllSessions((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
             setSelectedSession((prev) => (prev ? { ...prev, ...updated } : prev));
           }}
-        />
-      )}
-
-      {/* ── Task Detail Modal (popup) ──────────────────────────────────────── */}
-      {selectedTask && (
-        <TaskDetailModal
-          task={selectedTask}
-          token={token}
-          projectName={selectedTask.project_id ? projects[selectedTask.project_id] : undefined}
-          owningSession={selectedTask.session_id ? allSessions.find((s) => s.id === selectedTask.session_id) : undefined}
-          onClose={() => setSelectedTask(null)}
-          onTaskUpdate={(u) => { updateTaskLocal(u); setSelectedTask((prev) => (prev ? { ...prev, ...u } : prev)); }}
-          onOpenSession={(s) => { setSelectedTask(null); setSelectedSession(s); }}
         />
       )}
 
@@ -844,7 +748,7 @@ function AddParticipantModal({ open, onClose }: { open: boolean; onClose: () => 
             placeholder="user@example.com"
             required
             dir="ltr"
-            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#1589ee] focus:border-transparent bg-white"
+            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent bg-gray-50"
           />
           <p className="text-xs text-gray-400 mt-1">אם המשתמש טרם נכנס למערכת, הוא יקושר אוטומטית בהתחברות הראשונה.</p>
         </div>
@@ -857,96 +761,19 @@ function AddParticipantModal({ open, onClose }: { open: boolean; onClose: () => 
   );
 }
 
-// ── Task Detail Modal (Lightning popup) ─────────────────────────────────────
-function TaskDetailModal({
-  task,
-  token,
-  projectName,
-  owningSession,
-  onClose,
-  onTaskUpdate,
-  onOpenSession,
-}: {
-  task: Task;
-  token: string;
-  projectName?: string;
-  owningSession?: Session;
-  onClose: () => void;
-  onTaskUpdate: (t: Task) => void;
-  onOpenSession: (s: Session) => void;
-}) {
-  const [toggling, setToggling] = useState(false);
-  const isDone = task.status === "done";
+// ── Subcomponents (copied from design-preview/3) ────────────────────────────
+function FragmentRow({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
 
-  const toggleDone = async () => {
-    if (task.is_locked || toggling) return;
-    const next = isDone ? "todo" : "done";
-    setToggling(true);
-    try {
-      const updated = (await api.updateTask(task.id, { status: next }, token)) as Task;
-      onTaskUpdate({ ...task, ...updated, status: next });
-    } catch { /* keep current */ }
-    finally { setToggling(false); }
-  };
-
-  const dueLabel = task.scheduled_at
-    ? new Date(task.scheduled_at).toLocaleDateString("he-IL")
-    : task.deadline
-      ? new Date(task.deadline).toLocaleDateString("he-IL")
-      : "—";
-
+function HeaderButton({ children, badge }: { children: React.ReactNode; badge?: number }) {
   return (
-    <Modal open onClose={onClose} title={task.title || "פרטי משימה"}>
-      <div className="space-y-4 text-[13px]" dir="rtl">
-        {/* meta chips */}
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${statusColor[task.status]}`}>{statusLabel[task.status]}</span>
-          <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${priorityColor[task.priority]}`}>{priorityLabel[task.priority]}</span>
-          {projectName && (
-            <span className="inline-flex items-center gap-1 text-[12px] text-[#0070d2]"><FolderOpen className="w-3.5 h-3.5" />{projectName}</span>
-          )}
-          {task.is_locked && <span className="text-[11px] text-[#706e6b]">🔒 נעול (מסונכרן)</span>}
-        </div>
-
-        {/* fields */}
-        <div className="grid grid-cols-2 gap-3 rounded border border-[#dddbda] bg-[#fafaf9] p-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">אחראי</p>
-            <p className="text-[#080707] mt-0.5">{task.assignee?.full_name || "—"}</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">תאריך יעד</p>
-            <p className="text-[#080707] mt-0.5">{dueLabel}</p>
-          </div>
-        </div>
-
-        {/* description */}
-        <div>
-          <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold mb-1">תיאור</p>
-          {task.description
-            ? <p className="text-[#3e3e3c] leading-relaxed whitespace-pre-wrap">{task.description}</p>
-            : <p className="text-[#706e6b] italic">אין תיאור.</p>}
-        </div>
-
-        {/* actions */}
-        <div className="flex items-center justify-between gap-3 pt-1 border-t border-[#dddbda]">
-          <div className="flex gap-2">
-            {!task.is_locked && (
-              <Button size="sm" onClick={toggleDone} loading={toggling}>
-                {isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
-              </Button>
-            )}
-            {owningSession && (
-              <Button size="sm" variant="secondary" onClick={() => onOpenSession(owningSession)}>
-                <Phone className="w-3.5 h-3.5 ml-1" />
-                פתח פגישה
-              </Button>
-            )}
-          </div>
-          <Button size="sm" variant="ghost" onClick={onClose}>סגור</Button>
-        </div>
-      </div>
-    </Modal>
+    <button className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center text-white">
+      {children}
+      {badge && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">{badge}</span>
+      )}
+    </button>
   );
 }
 

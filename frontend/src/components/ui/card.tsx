@@ -7,10 +7,10 @@ interface CardProps {
   gradient?: string;
 }
 
-export function Card({ children, className = "", padding = true, gradient = "from-white/80 to-white/60" }: CardProps) {
+export function Card({ children, className = "", padding = true }: CardProps) {
   return (
     <div
-      className={`bg-gradient-to-br ${gradient} rounded-3xl border border-white shadow-[0_4px_24px_rgba(0,0,0,0.06)]
+      className={`bg-white rounded border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)]
         ${padding ? "p-6" : ""} ${className}`}
     >
       {children}

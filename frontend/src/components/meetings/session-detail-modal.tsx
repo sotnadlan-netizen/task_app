@@ -276,7 +276,7 @@ export function SessionDetailModal({
               href={buildGoogleCalendarUrl(session.calendar_event)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-gradient-to-br from-violet-400 to-pink-400 hover:scale-105 text-white text-sm font-medium transition-all shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0070d2] hover:bg-[#005fb2] text-white text-sm font-medium transition-all shadow-sm"
             >
               <CalendarPlus className="w-4 h-4 flex-shrink-0" />
               הוסף ליומן גוגל
@@ -289,7 +289,7 @@ export function SessionDetailModal({
           <div className="flex items-center justify-between">
             <button
               onClick={() => { setShowEditProject((v) => !v); setMeetingError(null); }}
-              className="text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
+              className="text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
               ערוך פרויקט
             </button>
@@ -300,14 +300,14 @@ export function SessionDetailModal({
           </div>
 
           {showEditProject && (
-            <div className="p-3 bg-violet-50/60 border border-violet-100 rounded-2xl space-y-2">
+            <div className="p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
               {meetingError && <Alert variant="error">{meetingError}</Alert>}
               {!showNewProject ? (
                 <div className="flex gap-2">
                   <select
                     value={editProjectId}
                     onChange={(e) => setEditProjectId(e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                    className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                   >
                     <option value="">ללא פרויקט</option>
                     {projects.map((p) => (
@@ -316,7 +316,7 @@ export function SessionDetailModal({
                   </select>
                   <button
                     onClick={() => setShowNewProject(true)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+                    className="text-xs text-[#0070d2] hover:text-[#005fb2] whitespace-nowrap"
                   >
                     + חדש
                   </button>
@@ -328,7 +328,7 @@ export function SessionDetailModal({
                     placeholder="שם פרויקט חדש"
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
-                    className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                    className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                   />
                   <button
                     onClick={() => setShowNewProject(false)}
@@ -351,7 +351,7 @@ export function SessionDetailModal({
           <div className="flex items-center justify-between">
             <button
               onClick={() => { setShowEditParticipants((v) => !v); setMeetingError(null); }}
-              className="text-xs text-violet-500 hover:text-violet-700 font-medium transition-colors"
+              className="text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
               ערוך משתתפים
             </button>
@@ -379,8 +379,8 @@ export function SessionDetailModal({
                   const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
                   const roleLabel = isCreator ? "יוצר" : m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף";
                   return (
-                    <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-50/60 rounded-full text-xs text-gray-600 border border-violet-100">
-                      <div className="w-5 h-5 bg-gradient-to-br from-violet-300 to-pink-300 text-white rounded-full flex items-center justify-center font-semibold text-[10px]">
+                    <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#ecf5fe] rounded-full text-xs text-[#3e3e3c] border border-[#b3d9f6]">
+                      <div className="w-5 h-5 bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] text-white rounded-full flex items-center justify-center font-semibold text-[10px]">
                         {label.charAt(0).toUpperCase()}
                       </div>
                       <span>{label}</span>
@@ -396,7 +396,7 @@ export function SessionDetailModal({
           })()}
 
           {showEditParticipants && (
-            <div className="p-3 bg-violet-50/60 border border-violet-100 rounded-2xl space-y-2">
+            <div className="p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
               {meetingError && <Alert variant="error">{meetingError}</Alert>}
               {inviteSuccess && (
                 <p className="text-xs text-green-600">{inviteSuccess} נוסף בהצלחה</p>
@@ -408,7 +408,7 @@ export function SessionDetailModal({
                 placeholder="חפש לפי שם או אימייל..."
                 value={participantSearch}
                 onChange={(e) => { setParticipantSearch(e.target.value); setInviteSuccess(null); }}
-                className="w-full px-2.5 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                className="w-full px-2.5 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
               />
 
               {/* Results appear only when searching */}
@@ -426,7 +426,7 @@ export function SessionDetailModal({
                 return (
                   <>
                     {filtered.length > 0 && (
-                      <div className="max-h-40 overflow-y-auto space-y-0.5 border border-violet-100 rounded-2xl p-2 bg-white/80">
+                      <div className="max-h-40 overflow-y-auto space-y-0.5 border border-[#dddbda] rounded p-2 bg-white">
                         {filtered.map((m) => {
                           const checked = editParticipantIds.includes(m.id);
                           const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
@@ -434,13 +434,13 @@ export function SessionDetailModal({
                           return (
                             <label
                               key={m.id}
-                              className="flex items-center gap-2 cursor-pointer hover:bg-violet-50/60 px-1 py-1 rounded-lg text-sm"
+                              className="flex items-center gap-2 cursor-pointer hover:bg-[#fafaf9] px-1 py-1 rounded text-sm"
                             >
                               <input
                                 type="checkbox"
                                 checked={checked}
                                 onChange={() => toggleParticipant(m.id)}
-                                className="rounded border-violet-200 text-violet-500 focus:ring-violet-300"
+                                className="rounded border-[#dddbda] text-[#0070d2] focus:ring-[#0070d2]"
                               />
                               <span className="flex-1">{label}</span>
                               <span className="text-xs text-gray-400">{roleLabel}</span>
@@ -454,7 +454,7 @@ export function SessionDetailModal({
                       <button
                         onClick={handleInviteParticipant}
                         disabled={inviting}
-                        className="w-full text-right px-2.5 py-1.5 text-sm rounded-2xl bg-white/80 border border-dashed border-violet-200 text-violet-500 hover:bg-violet-50/60 transition-colors disabled:opacity-50"
+                        className="w-full text-right px-2.5 py-1.5 text-sm rounded bg-white border border-dashed border-[#b3d9f6] text-[#0070d2] hover:bg-[#ecf5fe] transition-colors disabled:opacity-50"
                       >
                         {inviting ? "מוסיף..." : `+ הוסף "${participantSearch.trim()}" כמשתתף חדש`}
                       </button>
@@ -480,7 +480,7 @@ export function SessionDetailModal({
           <div className="flex items-center justify-between mb-2">
             <button
               onClick={() => { setShowAddForm(!showAddForm); setFormError(null); }}
-              className="flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+              className="flex items-center gap-1 text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
               הוסף משימה
@@ -492,26 +492,26 @@ export function SessionDetailModal({
 
           {/* Add form */}
           {showAddForm && (
-            <div className="mb-3 p-3 bg-violet-50/60 border border-violet-100 rounded-2xl space-y-2">
+            <div className="mb-3 p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
               <input
                 type="text"
                 placeholder="כותרת המשימה *"
                 value={newTaskForm.title}
                 onChange={(e) => setNewTaskForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full px-3 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
+                className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
               />
               <textarea
                 placeholder="תיאור (אופציונלי)"
                 value={newTaskForm.description}
                 onChange={(e) => setNewTaskForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
-                className="w-full px-3 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 focus:border-transparent resize-none bg-white/80"
+                className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent resize-none bg-white"
               />
               <div className="flex items-center gap-2">
                 <select
                   value={newTaskForm.priority}
                   onChange={(e) => setNewTaskForm((f) => ({ ...f, priority: e.target.value }))}
-                  className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                  className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                 >
                   <option value="low">נמוכה</option>
                   <option value="medium">בינונית</option>
@@ -540,8 +540,8 @@ export function SessionDetailModal({
                 return (
                   <div
                     key={t.id}
-                    className={`p-3 rounded-2xl border text-sm ${
-                      t.status === "done" ? "bg-emerald-50/60 border-emerald-100" : "bg-white/60 border-violet-100"
+                    className={`p-3 rounded border text-sm ${
+                      t.status === "done" ? "bg-[#ddf0d4]/40 border-[#a3d99b]" : "bg-white border-[#dddbda]"
                     }`}
                   >
                     {isEditing ? (
@@ -550,19 +550,19 @@ export function SessionDetailModal({
                           type="text"
                           value={editForm.title}
                           onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30"
                         />
                         <textarea
                           value={editForm.description}
                           onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
                           rows={2}
-                          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 resize-none"
+                          className="w-full px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 resize-none"
                         />
                         <div className="flex gap-2">
                           <select
                             value={editForm.priority}
                             onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value }))}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="flex-1 px-2 py-1 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30"
                           >
                             <option value="low">נמוכה</option>
                             <option value="medium">בינונית</option>
@@ -572,7 +572,7 @@ export function SessionDetailModal({
                           <select
                             value={editForm.status}
                             onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
-                            className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                            className="flex-1 px-2 py-1 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30"
                           >
                             <option value="todo">לביצוע</option>
                             <option value="in_progress">בתהליך</option>
@@ -597,7 +597,7 @@ export function SessionDetailModal({
                             className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                               isDone
                                 ? "bg-emerald-500 border-emerald-500"
-                                : "border-gray-300 hover:border-indigo-400"
+                                : "border-gray-300 hover:border-[#0070d2]"
                             } disabled:opacity-40`}
                             aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
                           >
@@ -636,7 +636,7 @@ export function SessionDetailModal({
                                   </p>
                                 )}
                                 {t.deadline && (
-                                  <p className="text-xs text-indigo-600 font-medium">⏰ {t.deadline}</p>
+                                  <p className="text-xs text-[#0070d2] font-medium">⏰ {t.deadline}</p>
                                 )}
                                 <div className="flex items-center justify-between gap-2 pt-1">
                                   <div className="flex gap-1">
@@ -644,18 +644,18 @@ export function SessionDetailModal({
                                       <>
                                         <button
                                           onClick={() => startEdit(t)}
-                                          className="p-1 rounded-lg hover:bg-violet-100/60 transition-colors"
+                                          className="p-1 rounded hover:bg-[#f3f3f3] transition-colors"
                                           aria-label="ערוך משימה"
                                         >
-                                          <Pencil className="w-3.5 h-3.5 text-gray-400" />
+                                          <Pencil className="w-3.5 h-3.5 text-[#706e6b]" />
                                         </button>
                                         <button
                                           onClick={() => handleDeleteTask(t.id)}
                                           disabled={isDeleting}
-                                          className="p-1 rounded-lg hover:bg-red-100/60 transition-colors disabled:opacity-40"
+                                          className="p-1 rounded hover:bg-[#fde9e7] transition-colors disabled:opacity-40"
                                           aria-label="מחק משימה"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                                          <Trash2 className="w-3.5 h-3.5 text-[#c23934]" />
                                         </button>
                                       </>
                                     )}
@@ -678,7 +678,7 @@ export function SessionDetailModal({
         </div>
 
         {/* ── Delete session ─────────────────────────────────────────────── */}
-        <div className="border-t border-violet-50 pt-4">
+        <div className="border-t border-[#dddbda] pt-4">
           <button
             onClick={() => onRequestDelete(session)}
             className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 font-medium transition-colors"

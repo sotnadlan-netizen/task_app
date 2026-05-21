@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
+import { PageHeader, KpiTile } from "@/components/ui/lightning";
 import type { OrgMembership, Profile, UserRole } from "@/types";
 import { api } from "@/lib/api";
 import { Users, Clock, Building2, Save, UserPlus, Trash2 } from "lucide-react";
@@ -110,7 +111,7 @@ function AddMemberModal({
         {/* Capacity & member summary — only for non-participants */}
         {!isParticipant && (
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
+            <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
               <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
               <p
                 className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}
@@ -121,7 +122,7 @@ function AddMemberModal({
                 {allocatedCapacity} / {currentOrg.total_capacity_min} min allocated
               </p>
             </div>
-            <div className="bg-violet-50/60 rounded-2xl p-3 text-center">
+            <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
               <p className="text-xs text-gray-500 mb-1">Members</p>
               <p
                 className={`text-lg font-bold ${currentMemberCount >= currentOrg.max_members ? "text-red-600" : "text-gray-800"}`}
@@ -156,7 +157,7 @@ function AddMemberModal({
             onChange={(e) => setEmail(e.target.value)}
             placeholder="user@example.com"
             required
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
           <p className="text-xs text-gray-400 mt-1">
             If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.
@@ -168,7 +169,7 @@ function AddMemberModal({
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full px-3 py-2 border border-violet-100 rounded-2xl text-sm focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
+            className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           >
             <option value="admin">Admin</option>
             <option value="member">Member</option>
@@ -192,7 +193,7 @@ function AddMemberModal({
               value={capacity}
               onChange={(e) => setCapacity(Number(e.target.value))}
               className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:border-transparent
-                ${capacity > remainingCapacity ? "border-red-400 focus:ring-red-500" : "border-gray-300 focus:ring-indigo-500"}`}
+                ${capacity > remainingCapacity ? "border-red-400 focus:ring-red-500" : "border-[#dddbda] focus:ring-[#0070d2]/40"}`}
             />
             {capacity > remainingCapacity && (
               <p className="text-xs text-red-500 mt-1">
@@ -386,64 +387,46 @@ export default function AdminPage() {
   if (orgLoading || currentRole !== "admin") return null;
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <h1 className="text-2xl font-bold text-gray-800">דף בית — ניהול ארגון</h1>
+    <div className="space-y-5" dir="rtl">
+      <PageHeader
+        icon={<Building2 className="w-5 h-5 text-white" />}
+        eyebrow="Organization Console"
+        title="ניהול ארגון"
+        breadcrumb={[currentOrg?.name || "Organization", "ניהול"]}
+        actions={
+          <Button size="sm" onClick={() => setShowAddModal(true)}>
+            <UserPlus className="w-4 h-4 ml-1" />
+            הוסף משתמש
+          </Button>
+        }
+      />
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card gradient="from-violet-50 to-fuchsia-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-400 to-fuchsia-400 text-white flex items-center justify-center shadow-sm">
-              <Clock className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Minutes Used</p>
-              <p className="text-xl font-bold text-gray-800">
-                {totalUsed} / {totalCapacity}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card gradient="from-sky-50 to-blue-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-400 text-white flex items-center justify-center shadow-sm">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Members</p>
-              <p className="text-xl font-bold text-gray-800">
-                {nonParticipants.length}
-                {currentOrg && (
-                  <span className="text-sm font-normal text-gray-400 ml-1">
-                    / {currentOrg.max_members}
-                  </span>
-                )}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card gradient="from-amber-50 to-orange-50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-400 text-white flex items-center justify-center shadow-sm">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Org Capacity</p>
-              <p className="text-xl font-bold text-gray-800">
-                {currentOrg?.total_capacity_min ?? "—"} min
-              </p>
-            </div>
-          </div>
-        </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <KpiTile
+          label="Total Minutes Used"
+          value={`${totalUsed} / ${totalCapacity}`}
+          icon={<Clock className="w-5 h-5" />}
+        />
+        <KpiTile
+          label="Members"
+          value={nonParticipants.length}
+          suffix={currentOrg ? `/ ${currentOrg.max_members}` : undefined}
+          icon={<Users className="w-5 h-5" />}
+        />
+        <KpiTile
+          label="Org Capacity"
+          value={currentOrg?.total_capacity_min ?? "—"}
+          suffix="min"
+          icon={<Building2 className="w-5 h-5" />}
+        />
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
 
       {/* ── Members Table (admin + member roles) ── */}
-      <Card padding={false} gradient="from-violet-50/60 to-fuchsia-50/40">
-        <div className="p-6 pb-4 flex items-center justify-between border-b border-violet-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 flex items-center justify-between border-b border-[#dddbda]">
           <CardHeader className="mb-0">
             <CardTitle>Members &amp; Quotas</CardTitle>
           </CardHeader>
@@ -460,7 +443,7 @@ export default function AdminPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/40 border-b border-violet-100/60">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
@@ -469,7 +452,7 @@ export default function AdminPage() {
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-violet-50/60">
+              <tbody className="divide-y divide-[#dddbda]">
                 {nonParticipants.map((m) => (
                   <MemberRow
                     key={m.id}
@@ -500,8 +483,8 @@ export default function AdminPage() {
       </Card>
 
       {/* ── Participants Table ── */}
-      <Card padding={false} gradient="from-pink-50/60 to-rose-50/40">
-        <div className="p-6 pb-4 flex items-center justify-between border-b border-pink-100/60">
+      <Card padding={false}>
+        <div className="p-6 pb-4 flex items-center justify-between border-b border-[#dddbda]">
           <CardHeader className="mb-0">
             <CardTitle>Participants</CardTitle>
           </CardHeader>
@@ -522,7 +505,7 @@ export default function AdminPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-white/40 border-b border-pink-100/60">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
                   <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
@@ -530,7 +513,7 @@ export default function AdminPage() {
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-pink-50/60">
+              <tbody className="divide-y divide-[#dddbda]">
                 {participants.map((m) => (
                   <MemberRow
                     key={m.id}
@@ -613,7 +596,7 @@ function MemberRow({
   showCapacity: boolean;
 }) {
   return (
-    <tr className="hover:bg-white/50 transition-colors">
+    <tr className="hover:bg-[#fafaf9] transition-colors">
       {/* Member info */}
       <td className="px-6 py-3">
         <div>
@@ -640,7 +623,7 @@ function MemberRow({
                 [m.id]: e.target.value as UserRole,
               }))
             }
-            className="px-2 py-1 text-xs border border-violet-100 rounded-xl bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+            className="px-2 py-1 text-xs border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
           >
             <option value="admin">Admin</option>
             <option value="member">Member</option>
@@ -663,9 +646,9 @@ function MemberRow({
         <>
           <td className="px-6 py-3">
             <div className="flex items-center gap-2">
-              <div className="flex-1 max-w-[120px] h-2 bg-violet-100 rounded-full overflow-hidden">
+              <div className="flex-1 max-w-[120px] h-2 bg-[#ecf5fe] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-violet-400 to-pink-400 rounded-full transition-all"
+                  className="h-full bg-gradient-to-r from-[#0070d2] to-[#1ab9ff] rounded-full transition-all"
                   style={{
                     width: `${Math.min(100, (m.used_minutes / (m.capacity_minutes || 1)) * 100)}%`,
                   }}
@@ -690,8 +673,8 @@ function MemberRow({
                   [m.id]: Number(e.target.value),
                 }))
               }
-              className="w-24 px-2 py-1 text-sm border border-violet-100 rounded-xl bg-white/80
-                focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+              className="w-24 px-2 py-1 text-sm border border-[#dddbda] rounded bg-white
+                focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
             />
           </td>
         </>
@@ -715,7 +698,7 @@ function MemberRow({
           )}
           <button
             onClick={onRemove}
-            className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors"
+            className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors"
             title="Remove"
           >
             <Trash2 className="w-4 h-4" />

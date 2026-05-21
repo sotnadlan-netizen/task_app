@@ -74,8 +74,8 @@ export function AccessibilityWidget() {
       {/* Floating Trigger — IS 5568 compliant: high-visibility, persistent */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-indigo-600 text-white rounded-full
-          shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#0070d2] text-white rounded-full
+          shadow-lg hover:bg-[#005fb2] focus:outline-none focus:ring-4 focus:ring-[#1ab9ff]
           flex items-center justify-center transition-all duration-200
           print:hidden"
         aria-label="Toggle accessibility settings"
@@ -87,17 +87,17 @@ export function AccessibilityWidget() {
       {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+          className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-lg shadow-2xl border border-[#dddbda] overflow-hidden"
           role="dialog"
           aria-label="Accessibility settings"
         >
-          <div className="flex items-center justify-between px-4 py-3 bg-indigo-600 text-white">
+          <div className="flex items-center justify-between px-4 py-3 bg-[#16325c] text-white">
             <h2 className="font-semibold text-sm">
               Accessibility — IS 5568
             </h2>
             <button
               onClick={() => setOpen(false)}
-              className="p-1 hover:bg-indigo-700 rounded"
+              className="p-1 hover:bg-white/10 rounded"
               aria-label="Close accessibility panel"
             >
               <X className="w-4 h-4" />
@@ -114,7 +114,7 @@ export function AccessibilityWidget() {
                 type="checkbox"
                 checked={settings.grayscale}
                 onChange={(e) => updateSetting("grayscale", e.target.checked)}
-                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                className="w-5 h-5 text-[#0070d2] rounded focus:ring-[#0070d2]"
               />
             </label>
 
@@ -132,9 +132,9 @@ export function AccessibilityWidget() {
                   <button
                     key={value}
                     onClick={() => updateSetting("fontSize", value)}
-                    className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors
+                    className={`flex-1 py-2 rounded text-sm font-semibold transition-colors
                       ${settings.fontSize === value
-                        ? "bg-indigo-600 text-white"
+                        ? "bg-[#0070d2] text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     aria-pressed={settings.fontSize === value}
@@ -154,7 +154,7 @@ export function AccessibilityWidget() {
                 type="checkbox"
                 checked={settings.rtl}
                 onChange={(e) => updateSetting("rtl", e.target.checked)}
-                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                className="w-5 h-5 text-[#0070d2] rounded focus:ring-[#0070d2]"
               />
             </label>
 
@@ -169,7 +169,7 @@ export function AccessibilityWidget() {
                 onChange={(e) =>
                   updateSetting("highContrast", e.target.checked)
                 }
-                className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
+                className="w-5 h-5 text-[#0070d2] rounded focus:ring-[#0070d2]"
               />
             </label>
 

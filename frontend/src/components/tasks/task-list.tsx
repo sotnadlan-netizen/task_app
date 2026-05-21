@@ -233,32 +233,32 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
 
       {/* Add task form */}
       {!readonly && showAddForm && (
-        <div className="mx-6 mt-3 p-3 bg-violet-50/60 border border-violet-100 rounded-2xl space-y-2" dir="rtl">
+        <div className="mx-6 mt-3 p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2" dir="rtl">
           <div className="flex items-center justify-between mb-1">
-            <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-violet-100/60 rounded-lg">
-              <X className="w-4 h-4 text-gray-500" />
+            <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-[#dddbda]/60 rounded">
+              <X className="w-4 h-4 text-[#706e6b]" />
             </button>
-            <p className="text-xs font-medium text-indigo-700">משימה חדשה</p>
+            <p className="text-xs font-semibold text-[#0070d2]">משימה חדשה</p>
           </div>
           <input
             type="text"
             placeholder="כותרת המשימה *"
             value={newTaskForm.title}
             onChange={(e) => setNewTaskForm((f) => ({ ...f, title: e.target.value }))}
-            className="w-full px-3 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 focus:border-transparent bg-white/80"
+            className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
           <textarea
             placeholder="תיאור (אופציונלי)"
             value={newTaskForm.description}
             onChange={(e) => setNewTaskForm((f) => ({ ...f, description: e.target.value }))}
             rows={2}
-            className="w-full px-3 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 resize-none bg-white/80"
+            className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 resize-none bg-white"
           />
           <div className="flex items-center gap-2">
             <select
               value={newTaskForm.priority}
               onChange={(e) => setNewTaskForm((f) => ({ ...f, priority: e.target.value }))}
-              className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+              className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
             >
               <option value="low">נמוכה</option>
               <option value="medium">בינונית</option>
@@ -277,7 +277,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
           <select
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-2xl border border-violet-100 text-xs text-gray-500 bg-white/80 focus:ring-2 focus:ring-violet-200 focus:border-transparent"
+            className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#706e6b] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
           >
             <option value="">כל הפרויקטים</option>
             {Object.entries(projects).map(([id, name]) => (
@@ -294,7 +294,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
           {projectFilter ? "אין משימות בפרויקט זה." : "אין משימות עדיין. התחל הקלטה כדי ליצור משימות."}
         </div>
       ) : (
-        <div className="divide-y divide-violet-50/60 mt-3" dir="rtl">
+        <div className="divide-y divide-[#dddbda] mt-3" dir="rtl">
           {filtered.map((task) => {
             const isDone = task.status === "done";
             const isEditing = editingTaskId === task.id;
@@ -305,7 +305,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
               <div
                 key={task.id}
                 className={`px-6 py-4 transition-colors ${
-                  isDone ? "bg-emerald-50/60 hover:bg-emerald-100/60" : "hover:bg-white/50"
+                  isDone ? "bg-[#ddf0d4]/40 hover:bg-[#ddf0d4]/70" : "hover:bg-[#fafaf9]"
                 }`}
               >
                 {isEditing ? (
@@ -315,7 +315,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                       type="text"
                       value={editForm.title}
                       onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                      className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                      className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                     />
                     <textarea
                       value={editForm.description}
@@ -323,13 +323,13 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         setEditForm((f) => ({ ...f, description: e.target.value }))
                       }
                       rows={2}
-                      className="w-full px-3 py-1.5 text-sm border border-violet-100 rounded-2xl focus:ring-2 focus:ring-violet-200 resize-none bg-white/80"
+                      className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 resize-none bg-white"
                     />
                     <div className="flex gap-2">
                       <select
                         value={editForm.priority}
                         onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value }))}
-                        className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                        className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                       >
                         <option value="low">נמוכה</option>
                         <option value="medium">בינונית</option>
@@ -339,7 +339,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                       <select
                         value={editForm.status}
                         onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
-                        className="flex-1 px-2 py-1.5 text-sm border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-200 bg-white/80"
+                        className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                       >
                         <option value="todo">לביצוע</option>
                         <option value="in_progress">בתהליך</option>
@@ -368,9 +368,9 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                       </Button>
                       <Button
                         size="sm"
+                        variant="danger"
                         onClick={() => handleDeleteTask(task.id)}
                         loading={isDeleting}
-                        className="bg-red-600 hover:bg-red-700 text-white"
                       >
                         מחק
                       </Button>
@@ -399,10 +399,10 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         <>
                           <button
                             onClick={() => startEdit(task)}
-                            className="p-1.5 rounded-xl hover:bg-violet-100/60 transition-colors"
+                            className="p-1.5 rounded hover:bg-[#f3f3f3] transition-colors"
                             aria-label="ערוך משימה"
                           >
-                            <Pencil className="w-3.5 h-3.5 text-gray-500" />
+                            <Pencil className="w-3.5 h-3.5 text-[#706e6b]" />
                           </button>
                           <button
                             onClick={() => {
@@ -410,10 +410,10 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                               setEditingTaskId(null);
                               setEditRequestTaskId(null);
                             }}
-                            className="p-1.5 rounded-xl hover:bg-red-100/60 transition-colors"
+                            className="p-1.5 rounded hover:bg-[#fde9e7] transition-colors"
                             aria-label="מחק משימה"
                           >
-                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                            <Trash2 className="w-3.5 h-3.5 text-[#c23934]" />
                           </button>
                         </>
                       )}
@@ -426,10 +426,10 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                               editRequestTaskId === task.id ? null : task.id
                             )
                           }
-                          className="p-1.5 rounded-xl hover:bg-violet-100/60 transition-colors"
+                          className="p-1.5 rounded hover:bg-[#f3f3f3] transition-colors"
                           aria-label="בקש עריכה"
                         >
-                          <Pencil className="w-4 h-4 text-gray-500" />
+                          <Pencil className="w-4 h-4 text-[#706e6b]" />
                         </button>
                       )}
                     </div>
@@ -439,7 +439,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         <div className="flex items-center justify-end gap-2 mb-1">
                           {task.external_sync_id && (
                             <ExternalLink
-                              className="w-3.5 h-3.5 text-blue-400 flex-shrink-0"
+                              className="w-3.5 h-3.5 text-[#0070d2] flex-shrink-0"
                               aria-label="מסונכרן לפלטפורמה חיצונית"
                             />
                           )}
@@ -450,8 +450,8 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                             />
                           )}
                           <h4
-                            className={`text-sm font-medium truncate ${
-                              isDone ? "text-green-700 line-through" : "text-gray-900"
+                            className={`text-sm font-semibold truncate ${
+                              isDone ? "text-[#04844b] line-through" : "text-[#080707]"
                             }`}
                           >
                             {task.title}
@@ -459,7 +459,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         </div>
                         <p
                           className={`text-sm line-clamp-2 ${
-                            isDone ? "text-green-600" : "text-gray-600"
+                            isDone ? "text-[#04844b]/80" : "text-[#3e3e3c]"
                           }`}
                         >
                           {task.description}
@@ -471,11 +471,11 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         <button
                           onClick={() => handleToggleDone(task)}
                           disabled={task.is_locked || togglingId === task.id}
-                          className="mt-0.5 flex-shrink-0 text-gray-300 hover:text-green-500 disabled:opacity-40 transition-colors"
+                          className="mt-0.5 flex-shrink-0 text-[#dddbda] hover:text-[#04844b] disabled:opacity-40 transition-colors"
                           aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
                         >
                           {isDone ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            <CheckCircle2 className="w-5 h-5 text-[#04844b]" />
                           ) : (
                             <Circle className="w-5 h-5" />
                           )}
