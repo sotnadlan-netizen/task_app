@@ -13,6 +13,7 @@ import {
 import { api } from "@/lib/api";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
+import { useLanguage } from "@/providers/language-provider";
 
 interface RecordingState {
   isRecording: boolean;
@@ -24,6 +25,7 @@ interface RecordingState {
 export function useRecording() {
   const { session } = useSupabase();
   const { currentOrg, capacity } = useOrganization();
+  const { t } = useLanguage();
 
   const [state, setState] = useState<RecordingState>({
     isRecording: false,
@@ -65,7 +67,7 @@ export function useRecording() {
     if (capacity?.is_blocked) {
       setState((prev) => ({
         ...prev,
-        error: "Recording blocked: insufficient capacity (≤55 minutes remaining)",
+        error: t("recording.blockedAlert"),
       }));
       return;
     }
@@ -114,15 +116,16 @@ export function useRecording() {
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        error: err instanceof Error ? err.message : "Failed to access microphone",
+        error: err instanceof Error ? err.message : t("recording.micError"),
       }));
     }
-  }, [capacity, startTimer]);
+  }, [capacity, startTimer, t]);
 
   // ── Stop recording ───────────────────────────────────────────────────────────
   const stopRecording = useCallback(async (opts?: {
     projectId?: string;
     participantIds?: string[];
+    promptId?: string;
     onSuccess?: (sessionId: string) => void;
   }) => {
     const mediaRecorder = mediaRecorderRef.current;
@@ -145,10 +148,10 @@ export function useRecording() {
     const key = cryptoKeyRef.current;
 
     try {
-      if (!key) throw new Error("Encryption key missing — cannot assemble audio");
+      if (!key) throw new Error(t("recording.keyMissing"));
 
       const blob = await decryptAndMergeChunks(sessionKey, key, mimeTypeRef.current);
-      if (!blob) throw new Error("No audio data recorded");
+      if (!blob) throw new Error(t("recording.noAudio"));
 
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
@@ -160,9 +163,12 @@ export function useRecording() {
       if (opts?.participantIds && opts.participantIds.length > 0) {
         formData.append("participant_ids", opts.participantIds.join(","));
       }
+      if (opts?.promptId) {
+        formData.append("prompt_id", opts.promptId);
+      }
 
       const token = session?.access_token;
-      if (!token) throw new Error("Not authenticated");
+      if (!token) throw new Error(t("recording.notAuthenticated"));
 
       const result = await api.processAudio(formData, token) as { session_id?: string };
       if (result?.session_id) opts?.onSuccess?.(result.session_id);
@@ -174,13 +180,13 @@ export function useRecording() {
     } catch (err) {
       setState((prev) => ({
         ...prev,
-        error: err instanceof Error ? err.message : "Failed to process audio",
+        error: err instanceof Error ? err.message : t("recording.processFailed"),
       }));
     } finally {
       setProcessing(false);
       setMediaStream(null);
     }
-  }, [currentOrg, session, state.duration, stopTimer]);
+  }, [currentOrg, session, state.duration, stopTimer, t]);
 
   return {
     ...state,

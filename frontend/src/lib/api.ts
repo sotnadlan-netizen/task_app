@@ -199,6 +199,22 @@ export const api = {
       token,
     }),
 
+  // ── Org Prompt Availability ──────────────────────────────────────────────
+  // Prompts an org may choose from (headline + description only, no system_text).
+  listAvailablePrompts: (orgId: string, token: string) =>
+    request(`/api/organizations/${orgId}/available-prompts`, { token }),
+
+  // Platform-admin: which prompt ids are assigned to an org / replace the set.
+  getOrgAssignedPrompts: (orgId: string, token: string) =>
+    request<string[]>(`/api/organizations/${orgId}/assigned-prompts`, { token }),
+
+  setOrgAssignedPrompts: (orgId: string, promptIds: string[], token: string) =>
+    request(`/api/organizations/${orgId}/assigned-prompts`, {
+      method: "PUT",
+      body: JSON.stringify({ prompt_ids: promptIds }),
+      token,
+    }),
+
   getProjects: (orgId: string, token: string) =>
     request<{ id: string; org_id: string; name: string; created_at: string }[]>(
       `/api/projects?org_id=${orgId}`, { token }
@@ -211,4 +227,8 @@ export const api = {
 
   updateSession: (sessionId: string, data: { project_id?: string; participant_ids?: string[]; summary?: string }, token: string) =>
     request(`/api/sessions/${sessionId}`, { method: "PATCH", body: JSON.stringify(data), token }),
+
+  // ── Profile (per-user UI language) ───────────────────────────────────────
+  updateProfileLanguage: (language: "en" | "he", token: string) =>
+    request("/api/profile", { method: "PATCH", body: JSON.stringify({ language }), token }),
 };

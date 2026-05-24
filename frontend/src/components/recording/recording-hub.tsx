@@ -8,9 +8,10 @@ import { useSupabase } from "@/providers/supabase-provider";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { AudioWaveform } from "@/components/recording/audio-waveform";
-import { Mic, Square, Clock, FolderOpen, Users, Plus, X } from "lucide-react";
+import { Mic, Square, Clock, FolderOpen, Users, Plus, X, Sparkles } from "lucide-react";
 import { api } from "@/lib/api";
-import type { OrgMembership, Profile } from "@/types";
+import { useLanguage } from "@/providers/language-provider";
+import type { OrgMembership, Profile, SystemPrompt } from "@/types";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile | undefined;
@@ -28,6 +29,7 @@ interface RecordingHubProps {
 
 export function RecordingHub({ onSessionReady }: RecordingHubProps) {
   const { session: authSession } = useSupabase();
+  const { t } = useLanguage();
   const { capacity, currentOrg } = useOrganization();
   const {
     isRecording,
@@ -43,8 +45,10 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
 
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
+  const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [selectedParticipantIds, setSelectedParticipantIds] = useState<string[]>([]);
+  const [selectedPromptId, setSelectedPromptId] = useState<string>("");
   const [showNewProjectInput, setShowNewProjectInput] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [creatingProject, setCreatingProject] = useState(false);
@@ -57,10 +61,22 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
     Promise.all([
       api.getProjects(currentOrg.id, token),
       api.getOrgMembers(currentOrg.id, token).catch(() => []),
+      api.listAvailablePrompts(currentOrg.id, token).catch(() => []),
     ])
-      .then(([proj, mem]) => {
+      .then(([proj, mem, prm]) => {
         setProjects(proj || []);
         setMembers((mem as MemberWithProfile[]) || []);
+        const available = (prm as SystemPrompt[]) || [];
+        setPrompts(available);
+        // Default to the org's configured prompt if it's available, else the first option.
+        const orgDefault = currentOrg.selected_prompt_id;
+        if (orgDefault && available.some((p) => p.id === orgDefault)) {
+          setSelectedPromptId(orgDefault);
+        } else if (available.length > 0) {
+          setSelectedPromptId(available[0].id);
+        } else {
+          setSelectedPromptId("");
+        }
       })
       .catch(() => {})
       .finally(() => setLoadingMeta(false));
@@ -94,6 +110,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
     await stopRecording({
       projectId: selectedProjectId || undefined,
       participantIds: selectedParticipantIds,
+      promptId: selectedPromptId || undefined,
       onSuccess: onSessionReady,
     });
   };
@@ -114,12 +131,12 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
             <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center shadow-sm">
               <Mic className="w-4.5 h-4.5 text-white" style={{ width: 18, height: 18 }} />
             </div>
-            <h2 className="text-lg font-bold text-[#080707]">מרכז הקלטה</h2>
+            <h2 className="text-lg font-bold text-[#080707]">{t("recording.title")}</h2>
           </div>
           {capacity && (
             <span className="capacity-chip inline-flex items-center gap-1.5 bg-[#ecf5fe] text-[#0070d2] rounded px-3 py-1 text-xs font-semibold border border-[#b3d9f6]">
               <Clock className="w-3.5 h-3.5" />
-              {capacity.remaining_minutes} דק׳ נותרות
+              {t("recording.minutesRemaining", { count: capacity.remaining_minutes })}
             </span>
           )}
         </div>
@@ -135,9 +152,9 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                 transition={{ duration: 0.9, ease: "easeOut", delay: 0.4 }}
               />
             </div>
-            <div className="flex justify-between text-xs text-gray-400" dir="rtl">
-              <span>{remaining} דק׳ נותרות</span>
-              <span>{used} דק׳ נוצלו</span>
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>{t("recording.minutesRemaining", { count: remaining })}</span>
+              <span>{t("recording.minutesUsed", { count: used })}</span>
             </div>
           </div>
         )}
@@ -147,13 +164,13 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
       {(capacity?.is_low_balance || capacity?.is_blocked || error) && (
         <div className="px-6 pt-4 space-y-3">
           {capacity?.is_low_balance && !capacity.is_blocked && (
-            <Alert variant="warning" title="קיבולת נמוכה">
-              נותרו לך {capacity.remaining_minutes} דקות. פנה למנהל להגדלת ההקצאה בקרוב.
+            <Alert variant="warning" title={t("recording.lowCapacityTitle")}>
+              {t("recording.lowCapacityBody", { count: capacity.remaining_minutes })}
             </Alert>
           )}
           {capacity?.is_blocked && (
-            <Alert variant="error" title="הקלטה חסומה">
-              נגמרה הקיבולת. פנה למנהל להגדלת ההקצאה.
+            <Alert variant="error" title={t("recording.blockedTitle")}>
+              {t("recording.blockedBody")}
             </Alert>
           )}
           {error && <Alert variant="error">{error}</Alert>}
@@ -162,12 +179,12 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
 
       {/* Pre-recording Controls */}
       {!isRecording && !processing && (
-        <div className="px-6 py-5 space-y-5" dir="rtl">
+        <div className="px-6 py-5 space-y-5">
           {/* Project selection */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
               <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" />
-              פרויקט
+              {t("recording.project")}
             </label>
             {!showNewProjectInput ? (
               <select
@@ -183,11 +200,11 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                 className="w-full px-3 py-2.5 bg-white border border-[#dddbda] rounded text-sm text-[#080707] focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent transition-all"
                 disabled={loadingMeta}
               >
-                <option value="">ללא פרויקט</option>
+                <option value="">{t("recording.noProject")}</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
-                <option value="__new__">+ צור פרויקט חדש</option>
+                <option value="__new__">{t("recording.newProject")}</option>
               </select>
             ) : (
               <div className="flex items-center gap-2">
@@ -202,32 +219,56 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="שם פרויקט חדש"
+                  placeholder={t("recording.newProjectName")}
                   className="flex-1 px-3 py-2.5 bg-white border border-[#dddbda] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent"
                   onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
                   autoFocus
                 />
                 <Button size="sm" onClick={handleCreateProject} loading={creatingProject} disabled={!newProjectName.trim()}>
-                  <Plus className="w-4 h-4 ml-1" />
-                  צור
+                  <Plus className="w-4 h-4 me-1" />
+                  {t("common.create")}
                 </Button>
               </div>
             )}
           </div>
 
+          {/* Analysis prompt selection — only shown when the org has assigned prompts */}
+          {prompts.length > 0 && (
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5 text-[#0070d2]" />
+                {t("recording.analysisType")}
+              </label>
+              <select
+                value={selectedPromptId}
+                onChange={(e) => setSelectedPromptId(e.target.value)}
+                className="w-full px-3 py-2.5 bg-white border border-[#dddbda] rounded text-sm text-[#080707] focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent transition-all"
+                disabled={loadingMeta}
+              >
+                {prompts.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              {selectedPromptId && (() => {
+                const desc = prompts.find((p) => p.id === selectedPromptId)?.description;
+                return desc ? <p className="text-xs text-gray-400 mt-1.5">{desc}</p> : null;
+              })()}
+            </div>
+          )}
+
           {/* Participants */}
           <div>
             <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
               <Users className="w-3.5 h-3.5 text-[#0070d2]" />
-              משתתפים
+              {t("recording.participants")}
             </label>
             {loadingMeta ? (
-              <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
+              <p className="text-xs text-gray-400 animate-pulse">{t("common.loading")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => {
                   if (!m.user_id) return null;
-                  const name = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
+                  const name = m.profile?.full_name || m.profile?.email || m.invited_email || t("recording.unknown");
                   const isSelected = selectedParticipantIds.includes(m.user_id);
                   return (
                     <button
@@ -250,7 +291,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                   );
                 })}
                 {members.length === 0 && (
-                  <p className="text-xs text-gray-400">אין חברים בארגון עדיין.</p>
+                  <p className="text-xs text-gray-400">{t("recording.noMembers")}</p>
                 )}
               </div>
             )}
@@ -313,7 +354,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
                   ? "bg-gray-200 cursor-not-allowed"
                   : "record-btn-idle bg-gradient-to-br from-[#0070d2] to-[#1ab9ff] shadow-[0_4px_24px_rgba(0,112,210,0.45)]"
               }`}
-              aria-label="התחל הקלטה"
+              aria-label={t("recording.startAria")}
             >
               <Mic className="w-9 h-9 text-white" />
             </motion.button>
@@ -325,7 +366,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
               transition={{ type: "spring", stiffness: 400, damping: 17 }}
               type="button"
               className="relative z-10 w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center shadow-[0_4px_24px_rgba(239,68,68,0.35)] focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-red-300"
-              aria-label="עצור הקלטה"
+              aria-label={t("recording.stopAria")}
             >
               <Square className="w-8 h-8 text-white" />
             </motion.button>
@@ -334,15 +375,21 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
 
         <p className="text-sm text-gray-400 text-center">
           {capacity?.is_blocked
-            ? "ההקלטה מושבתת — אין קיבולת"
+            ? t("recording.statusBlocked")
             : isRecording
-              ? "מקליט... לחץ לעצירה"
-              : "לחץ להתחלת הקלטה"}
+              ? t("recording.statusRecording")
+              : t("recording.statusIdle")}
         </p>
 
         {/* Context summary while recording */}
-        {isRecording && (selectedProjectId || selectedParticipantIds.length > 0) && (
-          <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap justify-center" dir="rtl">
+        {isRecording && (selectedProjectId || selectedParticipantIds.length > 0 || selectedPromptId) && (
+          <div className="flex items-center gap-4 text-xs text-gray-400 flex-wrap justify-center">
+            {selectedPromptId && (
+              <span className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-[#0070d2]" />
+                {prompts.find((p) => p.id === selectedPromptId)?.name}
+              </span>
+            )}
             {selectedProjectId && (
               <span className="flex items-center gap-1">
                 <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" />
@@ -352,7 +399,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
             {selectedParticipantIds.length > 0 && (
               <span className="flex items-center gap-1">
                 <Users className="w-3.5 h-3.5 text-[#0070d2]" />
-                {selectedParticipantIds.length} משתתפים
+                {t("recording.participantsCount", { count: selectedParticipantIds.length })}
               </span>
             )}
           </div>
@@ -366,7 +413,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="ai-processing-text text-sm text-[#0070d2] font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
+          <span className="ai-processing-text text-sm text-[#0070d2] font-semibold">{t("recording.processing")}</span>
         </div>
       )}
     </div>

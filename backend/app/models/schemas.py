@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 
 
@@ -51,6 +51,10 @@ class QuotaUpdate(BaseModel):
     capacity_minutes: int = Field(ge=0)
 
 
+class ProfileUpdate(BaseModel):
+    language: Literal["en", "he"]
+
+
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
@@ -58,6 +62,8 @@ class TaskUpdate(BaseModel):
     priority: Optional[TaskPriority] = None
     assignee_id: Optional[str] = None
     project_id: Optional[str] = None
+    deadline: Optional[str] = None
+    scheduled_at: Optional[str] = None  # ISO 8601 timestamp, or empty string to clear
 
 
 class TaskCreate(BaseModel):
@@ -109,11 +115,17 @@ class OrgPromptSelect(BaseModel):
     prompt_id: Optional[str] = None  # None = clear selection (fall back to prompt_versions)
 
 
+class OrgPromptAssignmentUpdate(BaseModel):
+    # Full replacement set of system_prompt ids this org is allowed to choose from.
+    prompt_ids: list[str] = Field(default_factory=list)
+
+
 class TaskExtracted(BaseModel):
     title: str
     description: str
     priority: TaskPriority = TaskPriority.medium
     deadline: Optional[str] = None
+    scheduled_at: Optional[str] = None
 
 
 class AudioProcessingResult(BaseModel):

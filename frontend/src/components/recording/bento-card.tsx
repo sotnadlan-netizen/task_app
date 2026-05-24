@@ -8,6 +8,7 @@ import {
   Pencil, Check, RotateCcw, Loader2, Trash2, FolderOpen,
 } from "lucide-react";
 import { useSupabase } from "@/providers/supabase-provider";
+import { useLanguage } from "@/providers/language-provider";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 
@@ -27,19 +28,6 @@ export interface BentoCardData {
   projectName?: string;
 }
 
-const PRIORITY_LABELS: Record<TaskPriority, string> = {
-  low: "נמוכה",
-  medium: "בינונית",
-  high: "גבוהה",
-  critical: "קריטית",
-};
-
-const STATUS_LABELS: Record<TaskStatus, string> = {
-  todo: "לביצוע",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
-
 const priorityBadgeVariant: Record<TaskPriority, "default" | "info" | "warning" | "danger"> = {
   low: "default",
   medium: "info",
@@ -56,11 +44,12 @@ function TypeIcon({ type, className = "w-4 h-4" }: { type: BentoCardType; classN
 }
 
 function CardLabel({ type }: { type: BentoCardType }) {
+  const { t } = useLanguage();
   const labels: Record<BentoCardType, string> = {
-    summary: "סיכום פגישה",
-    sentiment: "תחושה כללית",
-    duration: "משך שיחה",
-    task: "משימה",
+    summary: t("results.cardSummaryLabel"),
+    sentiment: t("results.cardSentimentLabel"),
+    duration: t("results.cardDurationLabel"),
+    task: t("results.cardTaskLabel"),
   };
   return <span className="text-xs font-medium text-gray-400">{labels[type]}</span>;
 }
@@ -80,6 +69,18 @@ interface Props {
 
 export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete }: Props) {
   const { session: authSession } = useSupabase();
+  const { t } = useLanguage();
+  const PRIORITY_LABELS: Record<TaskPriority, string> = {
+    low: t("tasks.priorityLow"),
+    medium: t("tasks.priorityMedium"),
+    high: t("tasks.priorityHigh"),
+    critical: t("tasks.priorityCritical"),
+  };
+  const STATUS_LABELS: Record<TaskStatus, string> = {
+    todo: t("tasks.statusTodo"),
+    in_progress: t("tasks.statusInProgress"),
+    done: t("tasks.statusDone"),
+  };
   const isExpanded = expandedId === card.id;
   const isBlurred = expandedId !== null && !isExpanded;
 
@@ -132,7 +133,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
       }
       setIsEditing(false);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "שגיאה בשמירה");
+      setSaveError(err instanceof Error ? err.message : t("tasks.errSave"));
     } finally {
       setSaving(false);
     }
@@ -164,7 +165,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
       onExpand(null);
       onDelete?.();
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "שגיאה במחיקה");
+      setDeleteError(err instanceof Error ? err.message : t("meetings.errDelete"));
     } finally {
       setDeleting(false);
     }
@@ -183,13 +184,13 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
           className="group glass-panel bg-white rounded-lg border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] p-5 cursor-pointer hover:shadow-[0_4px_12px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 transition-all"
           role="button"
           tabIndex={isBlurred ? -1 : 0}
-          aria-label={`הרחב סיכום: ${displayTitle}`}
+          aria-label={t("results.expandSummaryAria", { title: displayTitle })}
           onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isBlurred) { e.preventDefault(); onExpand(card.id); } }}
         >
           <div className="flex items-center gap-2 mb-3">
             <TypeIcon type="summary" />
             <CardLabel type="summary" />
-            <ArrowUpRight className="w-3.5 h-3.5 text-[#0070d2] opacity-0 group-hover:opacity-100 transition-opacity mr-auto" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-[#0070d2] opacity-0 group-hover:opacity-100 transition-opacity ms-auto" />
           </div>
           <p className="text-base font-bold text-gray-800 mb-2">{displayTitle}</p>
           <p className="text-sm text-gray-500 leading-relaxed line-clamp-4">{displayDesc}</p>
@@ -209,7 +210,6 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
               />
               <div
                 key="expanded-wrapper"
-                dir="rtl"
                 style={{ position: "fixed", inset: 0, zIndex: 310, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
               >
                 <motion.div
@@ -224,8 +224,8 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                     {!isEditing && (
                       <button
                         onClick={(e) => { e.stopPropagation(); onExpand(null); }}
-                        className="mr-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
-                        aria-label="סגור"
+                        className="ms-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
+                        aria-label={t("results.closeEsc")}
                       >
                         <X className="w-4 h-4 text-gray-400" />
                       </button>
@@ -245,18 +245,18 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                     {isEditing ? (
                       <div className="space-y-3">
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500">סיכום השיחה</label>
-                          <textarea className={inputCls} rows={10} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} dir="rtl" autoFocus />
+                          <label className="text-xs font-medium text-gray-500">{t("results.editSummaryFieldLabel")}</label>
+                          <textarea className={inputCls} rows={10} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} autoFocus />
                         </div>
                         {saveError && <p className="text-xs text-red-500">{saveError}</p>}
                         <div className="flex gap-2 pt-1">
                           <button onClick={handleSave} disabled={saving || !editDesc.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white bg-[#0070d2] hover:bg-[#005fb2] disabled:opacity-50 transition-colors">
                             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                            שמור
+                            {t("common.save")}
                           </button>
                           <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-gray-500 border border-[#dddbda] hover:bg-gray-50 transition-colors">
                             <RotateCcw className="w-3.5 h-3.5" />
-                            ביטול
+                            {t("common.cancel")}
                           </button>
                         </div>
                       </div>
@@ -268,7 +268,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium text-[#0070d2] border border-[#b3d9f6] hover:bg-[#ecf5fe] transition-colors"
                         >
                           <Pencil className="w-3 h-3" />
-                          ערוך סיכום
+                          {t("results.editSummaryBtn")}
                         </button>
                       </div>
                     )}
@@ -294,7 +294,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
         className="px-5 py-3.5 flex items-center gap-3.5 hover:bg-[#fafaf9] transition-colors cursor-pointer group"
         role="button"
         tabIndex={isBlurred ? -1 : 0}
-        aria-label={`פרטי משימה: ${displayTitle}`}
+        aria-label={t("results.taskDetailsAria", { title: displayTitle })}
         onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !isBlurred) { e.preventDefault(); onExpand(card.id); } }}
       >
         {/* Status indicator */}
@@ -342,7 +342,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
           onClick={handleCheckboxToggle}
           disabled={toggling}
           className="p-1 rounded hover:bg-[#ecf5fe] transition-colors flex-shrink-0 focus:outline-none"
-          aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
+          aria-label={isDone ? t("tasks.markIncomplete") : t("tasks.markComplete")}
         >
           {toggling ? (
             <Loader2 className="w-4 h-4 animate-spin text-[#0070d2]" />
@@ -369,7 +369,6 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
             />
             <div
               key="expanded-wrapper"
-              dir="rtl"
               style={{ position: "fixed", inset: 0, zIndex: 310, display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}
             >
               <motion.div
@@ -391,12 +390,12 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                         : <span className="w-2.5 h-2.5 rounded-full border-2 border-gray-300" />
                     }
                   </div>
-                  <span className="text-xs font-medium text-gray-400">משימה</span>
+                  <span className="text-xs font-medium text-gray-400">{t("results.cardTaskLabel")}</span>
                   {!isEditing && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onExpand(null); }}
-                      className="mr-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
-                      aria-label="סגור"
+                      className="ms-auto p-1.5 rounded hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40"
+                      aria-label={t("results.closeEsc")}
                     >
                       <X className="w-4 h-4 text-gray-400" />
                     </button>
@@ -414,29 +413,29 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                   {isEditing ? (
                     <div className="space-y-4">
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500">כותרת</label>
-                        <input className={inputCls} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} dir="rtl" autoFocus />
+                        <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldTitle")}</label>
+                        <input className={inputCls} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-gray-500">תיאור</label>
-                        <textarea className={inputCls} rows={4} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} dir="rtl" />
+                        <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldDescription")}</label>
+                        <textarea className={inputCls} rows={4} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
                       </div>
                       <div className="flex gap-4 flex-wrap">
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500">עדיפות</label>
-                          <select className={selectCls} value={editPriority} onChange={(e) => setEditPriority(e.target.value as TaskPriority)} dir="rtl">
-                            <option value="low">נמוכה</option>
-                            <option value="medium">בינונית</option>
-                            <option value="high">גבוהה</option>
-                            <option value="critical">קריטית</option>
+                          <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldPriority")}</label>
+                          <select className={selectCls} value={editPriority} onChange={(e) => setEditPriority(e.target.value as TaskPriority)}>
+                            <option value="low">{t("tasks.priorityLow")}</option>
+                            <option value="medium">{t("tasks.priorityMedium")}</option>
+                            <option value="high">{t("tasks.priorityHigh")}</option>
+                            <option value="critical">{t("tasks.priorityCritical")}</option>
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <label className="text-xs font-medium text-gray-500">סטטוס</label>
-                          <select className={selectCls} value={editStatus} onChange={(e) => setEditStatus(e.target.value as TaskStatus)} dir="rtl">
-                            <option value="todo">לביצוע</option>
-                            <option value="in_progress">בתהליך</option>
-                            <option value="done">הושלם</option>
+                          <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldStatus")}</label>
+                          <select className={selectCls} value={editStatus} onChange={(e) => setEditStatus(e.target.value as TaskStatus)}>
+                            <option value="todo">{t("tasks.statusTodo")}</option>
+                            <option value="in_progress">{t("tasks.statusInProgress")}</option>
+                            <option value="done">{t("tasks.statusDone")}</option>
                           </select>
                         </div>
                       </div>
@@ -444,11 +443,11 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       <div className="flex gap-2 pt-1">
                         <button onClick={handleSave} disabled={saving || !editTitle.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white bg-[#0070d2] hover:bg-[#005fb2] disabled:opacity-50 transition-colors">
                           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                          שמור
+                          {t("common.save")}
                         </button>
                         <button onClick={cancelEdit} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-gray-500 border border-[#dddbda] hover:bg-gray-50 transition-colors">
                           <RotateCcw className="w-3.5 h-3.5" />
-                          ביטול
+                          {t("common.cancel")}
                         </button>
                       </div>
                     </div>
@@ -470,7 +469,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       {/* Description */}
                       {displayDesc && (
                         <div>
-                          <p className="text-xs font-medium text-gray-400 mb-2">תיאור</p>
+                          <p className="text-xs font-medium text-gray-400 mb-2">{t("editRequest.fieldDescription")}</p>
                           <p className="text-sm leading-relaxed text-gray-600">{displayDesc}</p>
                         </div>
                       )}
@@ -478,13 +477,13 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       {/* Meta chips */}
                       <div className="flex items-center gap-4 flex-wrap pt-1">
                         <div>
-                          <p className="text-xs font-medium text-gray-400 mb-1.5">עדיפות</p>
+                          <p className="text-xs font-medium text-gray-400 mb-1.5">{t("editRequest.fieldPriority")}</p>
                           <Badge variant={priorityBadgeVariant[displayPriority]}>
                             {PRIORITY_LABELS[displayPriority]}
                           </Badge>
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-gray-400 mb-1.5">סטטוס</p>
+                          <p className="text-xs font-medium text-gray-400 mb-1.5">{t("editRequest.fieldStatus")}</p>
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-medium border ${
                             isDone ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                             : displayStatus === "in_progress" ? "bg-amber-50 text-amber-700 border-amber-200"
@@ -499,23 +498,23 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
                         <button onClick={startEdit} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium text-[#0070d2] border border-[#b3d9f6] hover:bg-[#ecf5fe] transition-colors">
                           <Pencil className="w-3 h-3" />
-                          עריכה
+                          {t("common.edit")}
                         </button>
 
                         {!confirmDelete ? (
                           <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-red-400 border border-red-200 hover:bg-red-50 transition-colors">
                             <Trash2 className="w-3 h-3" />
-                            מחק
+                            {t("common.delete")}
                           </button>
                         ) : (
                           <div className="flex items-center gap-2">
                             {deleteError && <span className="text-xs text-red-500">{deleteError}</span>}
                             <button onClick={handleDelete} disabled={deleting} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-white bg-red-500 hover:bg-red-600 disabled:opacity-50 transition-colors">
                               {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                              בטוח?
+                              {t("results.confirmDeleteShort")}
                             </button>
                             <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 rounded-xl text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors">
-                              ביטול
+                              {t("common.cancel")}
                             </button>
                           </div>
                         )}

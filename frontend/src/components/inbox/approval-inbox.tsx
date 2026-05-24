@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { PendingTask } from "@/types";
 import { Check, X, ArrowRight } from "lucide-react";
 
@@ -16,6 +17,7 @@ export function ApprovalInbox() {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
   const { subscribe } = useRealtime();
+  const { t } = useLanguage();
   const [pendingTasks, setPendingTasks] = useState<PendingTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -58,7 +60,7 @@ export function ApprovalInbox() {
       await api.reviewEditRequest(id, action, session?.access_token || "");
       setPendingTasks((prev) => prev.filter((pt) => pt.id !== id));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+      setError(err instanceof Error ? err.message : t("inbox.actionFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -69,7 +71,7 @@ export function ApprovalInbox() {
       <Card>
         <div className="flex items-center justify-center py-12">
           <div className="animate-pulse text-sm text-gray-400">
-            Loading inbox...
+            {t("inbox.loading")}
           </div>
         </div>
       </Card>
@@ -80,9 +82,9 @@ export function ApprovalInbox() {
     <Card padding={false}>
       <div className="p-6 pb-0">
         <CardHeader>
-          <CardTitle>Approval Inbox</CardTitle>
+          <CardTitle>{t("inbox.title")}</CardTitle>
           <Badge variant={pendingTasks.length > 0 ? "warning" : "default"}>
-            {pendingTasks.length} pending
+            {t("inbox.pendingCount", { count: pendingTasks.length })}
           </Badge>
         </CardHeader>
       </div>
@@ -95,7 +97,7 @@ export function ApprovalInbox() {
 
       {pendingTasks.length === 0 ? (
         <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8">
-          No pending edit requests.
+          {t("inbox.noPending")}
         </div>
       ) : (
         <div className="divide-y divide-[#dddbda]">
@@ -104,11 +106,13 @@ export function ApprovalInbox() {
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    Edit request for &ldquo;{pt.task?.title}&rdquo;
+                    {t("inbox.editRequestFor", { title: pt.task?.title ?? "" })}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    By {pt.requester?.full_name || pt.requester?.email} &middot;{" "}
-                    {new Date(pt.created_at).toLocaleDateString()}
+                    {t("inbox.by", {
+                      name: pt.requester?.full_name || pt.requester?.email || "",
+                      date: new Date(pt.created_at).toLocaleDateString(),
+                    })}
                   </p>
                 </div>
               </div>
@@ -132,8 +136,8 @@ export function ApprovalInbox() {
                   loading={actionLoading === pt.id}
                   disabled={!!actionLoading}
                 >
-                  <X className="w-4 h-4 mr-1" />
-                  Reject
+                  <X className="w-4 h-4 me-1" />
+                  {t("inbox.reject")}
                 </Button>
                 <Button
                   variant="primary"
@@ -142,8 +146,8 @@ export function ApprovalInbox() {
                   loading={actionLoading === pt.id}
                   disabled={!!actionLoading}
                 >
-                  <Check className="w-4 h-4 mr-1" />
-                  Approve
+                  <Check className="w-4 h-4 me-1" />
+                  {t("inbox.approve")}
                 </Button>
               </div>
             </div>

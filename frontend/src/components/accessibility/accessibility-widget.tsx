@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Accessibility, X } from "lucide-react";
+import { useLanguage } from "@/providers/language-provider";
 
 interface AccessibilitySettings {
   grayscale: boolean;
@@ -20,18 +21,25 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
 const STORAGE_KEY = "a11y-settings";
 
 export function AccessibilityWidget() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState<AccessibilitySettings>(DEFAULT_SETTINGS);
 
   useEffect(() => {
+    // Direction is owned by the language toggle; seed the RTL control from the
+    // live document direction so a previously-saved value can't override the
+    // user's chosen language on load. The checkbox still works as a manual override.
+    const liveRtl = document.documentElement.dir === "rtl";
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setSettings(JSON.parse(saved));
+        setSettings({ ...JSON.parse(saved), rtl: liveRtl });
+        return;
       }
     } catch {
       // localStorage unavailable
     }
+    setSettings((prev) => ({ ...prev, rtl: liveRtl }));
   }, []);
 
   const applySettings = useCallback((s: AccessibilitySettings) => {
@@ -74,12 +82,12 @@ export function AccessibilityWidget() {
       {/* Floating Trigger — IS 5568 compliant: high-visibility, persistent */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#0070d2] text-white rounded-full
+        className="fixed bottom-6 end-6 z-50 w-14 h-14 bg-[#0070d2] text-white rounded-full
           shadow-lg hover:bg-[#005fb2] focus:outline-none focus:ring-4 focus:ring-[#1ab9ff]
           flex items-center justify-center transition-all duration-200
           print:hidden"
-        aria-label="Toggle accessibility settings"
-        title="Accessibility settings (IS 5568)"
+        aria-label={t("accessibility.toggle")}
+        title={t("accessibility.settings")}
       >
         <Accessibility className="w-7 h-7" />
       </button>
@@ -87,18 +95,18 @@ export function AccessibilityWidget() {
       {/* Panel */}
       {open && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-80 bg-white rounded-lg shadow-2xl border border-[#dddbda] overflow-hidden"
+          className="fixed bottom-24 end-6 z-50 w-80 bg-white rounded-lg shadow-2xl border border-[#dddbda] overflow-hidden"
           role="dialog"
-          aria-label="Accessibility settings"
+          aria-label={t("accessibility.settings")}
         >
           <div className="flex items-center justify-between px-4 py-3 bg-[#16325c] text-white">
             <h2 className="font-semibold text-sm">
-              Accessibility — IS 5568
+              {t("accessibility.title")}
             </h2>
             <button
               onClick={() => setOpen(false)}
               className="p-1 hover:bg-white/10 rounded"
-              aria-label="Close accessibility panel"
+              aria-label={t("accessibility.closePanel")}
             >
               <X className="w-4 h-4" />
             </button>
@@ -108,7 +116,7 @@ export function AccessibilityWidget() {
             {/* Grayscale */}
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-sm font-medium text-gray-700">
-                Grayscale Mode
+                {t("accessibility.grayscale")}
               </span>
               <input
                 type="checkbox"
@@ -121,7 +129,7 @@ export function AccessibilityWidget() {
             {/* Font Size */}
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-2">
-                Font Size
+                {t("accessibility.fontSize")}
               </label>
               <div className="flex gap-2">
                 {[
@@ -148,7 +156,7 @@ export function AccessibilityWidget() {
             {/* RTL */}
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-sm font-medium text-gray-700">
-                RTL (Right-to-Left)
+                {t("accessibility.rtl")}
               </span>
               <input
                 type="checkbox"
@@ -161,7 +169,7 @@ export function AccessibilityWidget() {
             {/* High Contrast */}
             <label className="flex items-center justify-between cursor-pointer">
               <span className="text-sm font-medium text-gray-700">
-                High Contrast
+                {t("accessibility.highContrast")}
               </span>
               <input
                 type="checkbox"
@@ -178,7 +186,7 @@ export function AccessibilityWidget() {
               onClick={resetAll}
               className="w-full py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-lg transition-colors"
             >
-              Reset to defaults
+              {t("accessibility.reset")}
             </button>
           </div>
         </div>

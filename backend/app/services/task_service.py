@@ -10,6 +10,7 @@ async def create_session_and_tasks(
     duration_seconds: int,
     ai_result: dict,
     prompt_version: int,
+    system_prompt_id: Optional[str] = None,
     project_id: Optional[str] = None,
     participant_ids: Optional[List[str]] = None,
 ) -> dict:
@@ -30,6 +31,8 @@ async def create_session_and_tasks(
     }
     if ai_result.get("calendar_event"):
         session_data["calendar_event"] = ai_result["calendar_event"]
+    if system_prompt_id:
+        session_data["system_prompt_id"] = system_prompt_id
     if project_id:
         session_data["project_id"] = project_id
 
@@ -54,6 +57,8 @@ async def create_session_and_tasks(
         }
         if task.get("deadline"):
             task_entry["deadline"] = task["deadline"]
+        if task.get("scheduled_at"):
+            task_entry["scheduled_at"] = task["scheduled_at"]
         if project_id:
             task_entry["project_id"] = project_id
         tasks_data.append(task_entry)

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { SystemPrompt } from "@/types";
 import { Plus, Pencil, Trash2, Save, FileText } from "lucide-react";
 
@@ -24,6 +25,7 @@ function PromptFormModal({
   editing: SystemPrompt | null;
 }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [systemText, setSystemText] = useState("");
@@ -58,46 +60,46 @@ function PromptFormModal({
       onSaved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save prompt");
+      setError(err instanceof Error ? err.message : t("prompts.errSavePrompt"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? "Edit System Prompt" : "New System Prompt"}>
+    <Modal open={open} onClose={onClose} title={editing ? t("prompts.formEditTitle") : t("prompts.formNewTitle")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("prompts.nameLabel")}</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             maxLength={100}
-            placeholder="e.g. Engineering Standup Prompt"
+            placeholder={t("prompts.namePlaceholder")}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description <span className="text-gray-400 font-normal">(shown to org admins)</span>
+            {t("prompts.descLabel")} <span className="text-gray-400 font-normal">{t("prompts.descHint")}</span>
           </label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
-            placeholder="Brief description of what this prompt does"
+            placeholder={t("prompts.descPlaceholder")}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            System Text <span className="text-gray-400 font-normal">(never shown to org admins)</span>
+            {t("prompts.systemTextLabel")} <span className="text-gray-400 font-normal">{t("prompts.systemTextHint")}</span>
           </label>
           <textarea
             value={systemText}
@@ -105,16 +107,16 @@ function PromptFormModal({
             required
             minLength={10}
             rows={10}
-            placeholder="Enter the full AI system prompt..."
+            placeholder={t("prompts.systemTextPlaceholder")}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm font-mono focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent resize-y bg-white"
           />
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button type="submit" loading={loading}>
-            <Save className="w-4 h-4 mr-1" />
-            {editing ? "Save Changes" : "Create Prompt"}
+            <Save className="w-4 h-4 me-1" />
+            {editing ? t("common.saveChanges") : t("prompts.createPrompt")}
           </Button>
         </div>
       </form>
@@ -135,6 +137,7 @@ function DeletePromptModal({
   onDeleted: () => void;
 }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -146,23 +149,22 @@ function DeletePromptModal({
       onDeleted();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
+      setError(err instanceof Error ? err.message : t("prompts.errDelete"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Delete System Prompt">
+    <Modal open={open} onClose={onClose} title={t("prompts.deleteTitle")}>
       <div className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
         <Alert variant="warning">
-          Delete <strong>{prompt.name}</strong>? Any organization currently using this prompt will
-          fall back to their local prompt or the default.
+          {t("prompts.deleteConfirm", { name: prompt.name })}
         </Alert>
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button variant="danger" onClick={handleDelete} loading={loading}>
-            <Trash2 className="w-4 h-4 mr-1" />Delete
+            <Trash2 className="w-4 h-4 me-1" />{t("common.delete")}
           </Button>
         </div>
       </div>
@@ -173,6 +175,7 @@ function DeletePromptModal({
 // ─── Panel ────────────────────────────────────────────────────────────────────
 export function SystemPromptsPanel() {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -187,7 +190,7 @@ export function SystemPromptsPanel() {
       const data = await api.listSystemPrompts(session?.access_token ?? "") as SystemPrompt[];
       setPrompts(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load prompts");
+      setError(err instanceof Error ? err.message : t("prompts.errLoadPanel"));
     }
     setLoading(false);
   }, [session]);
@@ -199,13 +202,13 @@ export function SystemPromptsPanel() {
       <Card padding={false}>
         <div className="p-6 pb-4 flex items-center justify-between">
           <CardHeader>
-            <CardTitle>AI System Prompts</CardTitle>
+            <CardTitle>{t("prompts.panelTitle")}</CardTitle>
           </CardHeader>
           <Button
             size="sm"
             onClick={() => { setEditing(null); setShowForm(true); }}
           >
-            <Plus className="w-4 h-4 mr-1" />New Prompt
+            <Plus className="w-4 h-4 me-1" />{t("prompts.newPrompt")}
           </Button>
         </div>
 
@@ -213,14 +216,14 @@ export function SystemPromptsPanel() {
 
         {loading ? (
           <div className="px-6 pb-8 text-center">
-            <div className="animate-pulse text-sm text-gray-400">Loading prompts...</div>
+            <div className="animate-pulse text-sm text-gray-400">{t("prompts.loading")}</div>
           </div>
         ) : prompts.length === 0 ? (
           <div className="px-6 pb-8 text-center">
             <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No system prompts yet.</p>
+            <p className="text-sm text-gray-400">{t("prompts.noneYet")}</p>
             <Button className="mt-4" size="sm" onClick={() => { setEditing(null); setShowForm(true); }}>
-              <Plus className="w-4 h-4 mr-1" />Create first prompt
+              <Plus className="w-4 h-4 me-1" />{t("prompts.createFirst")}
             </Button>
           </div>
         ) : (
@@ -230,10 +233,10 @@ export function SystemPromptsPanel() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-sm font-semibold text-gray-900">{p.name}</p>
-                    <Badge variant="default">Prompt</Badge>
+                    <Badge variant="default">{t("prompts.promptBadge")}</Badge>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {p.description || <span className="italic">No description</span>}
+                    {p.description || <span className="italic">{t("prompts.noDescription")}</span>}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
                     {new Date(p.created_at).toLocaleDateString()}
@@ -243,14 +246,14 @@ export function SystemPromptsPanel() {
                   <button
                     onClick={() => { setEditing(p); setShowForm(true); }}
                     className="p-1.5 rounded text-gray-300 hover:text-[#0070d2] hover:bg-[#ecf5fe] transition-colors"
-                    title="Edit"
+                    title={t("common.edit")}
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setDeleting(p)}
                     className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors"
-                    title="Delete"
+                    title={t("common.delete")}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

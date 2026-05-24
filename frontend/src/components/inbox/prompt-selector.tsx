@@ -16,12 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { SystemPrompt } from "@/types";
 import { Save, Sparkles, X } from "lucide-react";
 
 export function PromptSelector() {
   const { session } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const [prompts, setPrompts] = useState<SystemPrompt[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -29,20 +31,22 @@ export function PromptSelector() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load prompts (org admin only sees name + description)
+  // Load prompts available to THIS org (name + description only — never system_text).
   const load = useCallback(async () => {
+    if (!currentOrg) return;
     setLoading(true);
     setError(null);
     try {
-      const data = (await api.listSystemPrompts(
+      const data = (await api.listAvailablePrompts(
+        currentOrg.id,
         session?.access_token ?? ""
       )) as SystemPrompt[];
       setPrompts(data);
     } catch {
-      setError("Failed to load system prompts");
+      setError(t("prompts.errLoad"));
     }
     setLoading(false);
-  }, [session]);
+  }, [session, currentOrg, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -61,7 +65,7 @@ export function PromptSelector() {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save selection");
+      setError(err instanceof Error ? err.message : t("prompts.errSaveSelection"));
     }
     setSaving(false);
   };
@@ -71,24 +75,21 @@ export function PromptSelector() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Global System Prompt</CardTitle>
+        <CardTitle>{t("prompts.globalTitle")}</CardTitle>
       </CardHeader>
 
       <p className="text-sm text-gray-500 mb-4">
-        Select a platform-provided prompt to use for all recordings in this organization.
-        This overrides your local prompt version.
-        Org admins can read the <strong>name</strong> and <strong>description</strong> only —
-        the underlying system text is managed exclusively by platform admins.
+        {t("prompts.selectorDesc")}
       </p>
 
       {error && <Alert variant="error" className="mb-3">{error}</Alert>}
-      {success && <Alert variant="success" className="mb-3">Prompt selection saved.</Alert>}
+      {success && <Alert variant="success" className="mb-3">{t("prompts.selectionSaved")}</Alert>}
 
       {loading ? (
-        <div className="animate-pulse text-sm text-gray-400 py-4">Loading prompts...</div>
+        <div className="animate-pulse text-sm text-gray-400 py-4">{t("prompts.loading")}</div>
       ) : prompts.length === 0 ? (
         <p className="text-sm text-gray-400 italic py-4">
-          No system prompts have been created by the platform admin yet.
+          {t("prompts.noneAssigned")}
         </p>
       ) : (
         <div className="space-y-2 mb-4">
@@ -108,10 +109,10 @@ export function PromptSelector() {
             />
             <div>
               <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                Use local prompt
-                {selected === null && <Badge variant="success">Active</Badge>}
+                {t("prompts.useLocal")}
+                {selected === null && <Badge variant="success">{t("prompts.active")}</Badge>}
               </p>
-              <p className="text-xs text-gray-500">Fall back to the org-specific prompt you configured below.</p>
+              <p className="text-xs text-gray-500">{t("prompts.useLocalDesc")}</p>
             </div>
           </label>
 
@@ -134,7 +135,7 @@ export function PromptSelector() {
                 <p className="text-sm font-medium text-gray-900 flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-[#0070d2] shrink-0" />
                   {p.name}
-                  {selected === p.id && <Badge variant="success">Active</Badge>}
+                  {selected === p.id && <Badge variant="success">{t("prompts.active")}</Badge>}
                 </p>
                 {p.description && (
                   <p className="text-xs text-gray-500 mt-0.5">{p.description}</p>
@@ -152,7 +153,7 @@ export function PromptSelector() {
             size="sm"
             onClick={() => setSelected(currentOrg?.selected_prompt_id ?? null)}
           >
-            <X className="w-4 h-4 mr-1" />Discard
+            <X className="w-4 h-4 me-1" />{t("common.discard")}
           </Button>
         )}
         <Button
@@ -161,7 +162,7 @@ export function PromptSelector() {
           disabled={!isDirty}
           size="sm"
         >
-          <Save className="w-4 h-4 mr-1" />Save Selection
+          <Save className="w-4 h-4 me-1" />{t("prompts.saveSelection")}
         </Button>
       </div>
     </Card>

@@ -8,6 +8,7 @@ import { RealtimeProvider } from "@/providers/realtime-provider";
 import { GlobalNav } from "@/components/navigation/global-nav";
 import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
 import { NotificationLoader } from "@/components/inbox/notification-loader";
+import { LanguageSync } from "@/components/language-sync";
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useSupabase();
@@ -62,6 +63,7 @@ export default function DashboardLayout({
 }) {
   return (
     <SupabaseProvider>
+      <LanguageSync />
       <DashboardShell>{children}</DashboardShell>
     </SupabaseProvider>
   );

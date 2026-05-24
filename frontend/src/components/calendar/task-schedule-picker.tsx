@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import { buildGoogleCalendarUrlForTask } from "@/lib/calendar-url";
+import { useLanguage } from "@/providers/language-provider";
 import type { Task } from "@/types";
 import { CalendarClock, CalendarPlus, Trash2 } from "lucide-react";
 
@@ -36,6 +37,7 @@ interface Props {
 }
 
 export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved }: Props) {
+  const { t } = useLanguage();
   const [value, setValue] = useState<string>(() => toDatetimeLocal(task.scheduled_at, defaultDate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,28 +53,28 @@ export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved 
       onSaved({ ...task, ...updated, scheduled_at: clear ? null : new Date(value).toISOString() });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה בעדכון התזמון");
+      setError(err instanceof Error ? err.message : t("schedule.errUpdate"));
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal open onClose={onClose} title="תזמון משימה">
-      <div className="space-y-4" dir="rtl">
+    <Modal open onClose={onClose} title={t("schedule.title")}>
+      <div className="space-y-4">
         <div className="flex items-start gap-3 p-3 bg-[#ecf5fe] border border-[#b3d9f6] rounded">
           <CalendarClock className="w-5 h-5 text-[#0070d2] flex-shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-gray-800 mb-0.5">{task.title}</p>
             {task.deadline && (
-              <p className="text-xs text-gray-500">דדליין מהשיחה: {task.deadline}</p>
+              <p className="text-xs text-gray-500">{t("schedule.deadlineFromCall", { deadline: task.deadline })}</p>
             )}
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            תאריך ושעה
+            {t("schedule.dateTime")}
           </label>
           <input
             type="datetime-local"
@@ -95,7 +97,7 @@ export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved 
               className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0070d2] hover:bg-[#005fb2] text-white text-sm font-medium transition-all shadow-sm"
             >
               <CalendarPlus className="w-4 h-4" />
-              הוסף ליומן גוגל
+              {t("schedule.addToGoogleCalendar")}
             </a>
           ) : null;
         })()}
@@ -103,17 +105,17 @@ export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved 
         <div className="flex justify-between gap-3 pt-2">
           <div className="flex gap-2">
             <Button onClick={() => save(false)} loading={saving} disabled={!value}>
-              <CalendarClock className="w-4 h-4 ml-1" />
-              שמור
+              <CalendarClock className="w-4 h-4 me-1" />
+              {t("common.save")}
             </Button>
             <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
-              ביטול
+              {t("common.cancel")}
             </Button>
           </div>
           {task.scheduled_at && (
             <Button type="button" variant="danger" onClick={() => save(true)} disabled={saving}>
-              <Trash2 className="w-4 h-4 ml-1" />
-              נקה תזמון
+              <Trash2 className="w-4 h-4 me-1" />
+              {t("schedule.clearSchedule")}
             </Button>
           )}
         </div>

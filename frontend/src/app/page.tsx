@@ -4,10 +4,13 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SupabaseProvider, useSupabase } from "@/providers/supabase-provider";
 import { Button } from "@/components/ui/button";
+import { LanguageToggle } from "@/components/ui/language-toggle";
+import { useLanguage } from "@/providers/language-provider";
 import { Mic, Shield, Zap, Users } from "lucide-react";
 
 function LandingContent() {
   const { user, loading, signInWithGoogle } = useSupabase();
+  const { t } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -30,17 +33,20 @@ function LandingContent() {
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#16325c] via-[#0b3a6b] to-[#0070d2]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(26,185,255,0.25),_transparent)]" />
-        <div className="relative max-w-5xl mx-auto px-6 py-24 sm:py-32 text-center text-white">
+        {/* Top bar with language toggle */}
+        <div className="relative max-w-5xl mx-auto px-6 pt-6 flex justify-end">
+          <LanguageToggle variant="dark" />
+        </div>
+        <div className="relative max-w-5xl mx-auto px-6 pb-24 pt-16 sm:pb-32 text-center text-white">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded bg-white/15 border border-white/25 text-sm font-medium mb-8 backdrop-blur-sm">
             <span className="w-2 h-2 rounded-full bg-[#1ab9ff] animate-pulse" />
-            AI-Powered Meeting Intelligence
+            {t("landing.badge")}
           </div>
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6">
-            AI Task Orchestrator
+            {t("landing.title")}
           </h1>
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10">
-            Transform live audio into actionable tasks with AI.
-            Privacy-first. Multi-tenant. Real-time collaboration.
+            {t("landing.subtitle")}
           </p>
           <Button
             size="lg"
@@ -48,7 +54,7 @@ function LandingContent() {
             className="bg-white text-[#0070d2] hover:bg-[#ecf5fe] focus-visible:ring-white
               text-base px-8 py-3 shadow-xl font-semibold"
           >
-            Sign in with Google
+            {t("landing.signIn")}
           </Button>
         </div>
       </div>
@@ -59,27 +65,23 @@ function LandingContent() {
           {[
             {
               icon: Mic,
-              title: "Audio to Tasks",
-              description:
-                "Record meetings, get AI-generated summaries, sentiment analysis, and task lists.",
+              title: t("landing.featureAudioTitle"),
+              description: t("landing.featureAudioDesc"),
             },
             {
               icon: Shield,
-              title: "Privacy First",
-              description:
-                "Audio processed in-memory. Zero disk footprint. Your data stays yours.",
+              title: t("landing.featurePrivacyTitle"),
+              description: t("landing.featurePrivacyDesc"),
             },
             {
               icon: Zap,
-              title: "Real-Time Sync",
-              description:
-                "Instant task updates across your organization via Supabase Realtime.",
+              title: t("landing.featureRealtimeTitle"),
+              description: t("landing.featureRealtimeDesc"),
             },
             {
               icon: Users,
-              title: "Multi-Tenant",
-              description:
-                "One account, multiple organizations. Role-based access across all of them.",
+              title: t("landing.featureMultiTenantTitle"),
+              description: t("landing.featureMultiTenantDesc"),
             },
           ].map(({ icon: Icon, title, description }) => (
             <div
@@ -98,7 +100,7 @@ function LandingContent() {
 
       {/* Footer */}
       <footer className="border-t border-[#dddbda] py-8 text-center text-sm text-gray-400">
-        AI Task Orchestrator &mdash; IS 5568 / WCAG 2.1 AA Compliant
+        {t("landing.footer")}
       </footer>
     </div>
   );
