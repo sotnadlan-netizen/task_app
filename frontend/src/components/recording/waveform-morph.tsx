@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
+import { useLanguage } from "@/providers/language-provider";
 
 interface Props {
   shouldMorph: boolean;
@@ -25,6 +26,7 @@ function buildPath(phase: number, amplitude: number, frequency: number): string 
 }
 
 export function WaveformMorph({ shouldMorph, onMorphComplete }: Props) {
+  const { t } = useLanguage();
   const pathRef = useRef<SVGPathElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const stateRef = useRef({ phase: 0, amplitude: 28, frequency: 2.2 });
@@ -76,8 +78,8 @@ export function WaveformMorph({ shouldMorph, onMorphComplete }: Props) {
       <p
         className="font-mono text-[11px] tracking-[0.35em] uppercase select-none text-gray-400"
       >
-        מנתח שיחה
-        <span className="cm-cursor mr-1.5" style={{ color: "#0070d2" }}>▊</span>
+        {t("results.analyzing")}
+        <span className="cm-cursor ms-1.5" style={{ color: "#0070d2" }}>▊</span>
       </p>
 
       {/* SVG wave */}

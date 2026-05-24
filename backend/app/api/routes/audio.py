@@ -21,6 +21,7 @@ async def process_audio(
     recovered: str = Form("false"),
     project_id: Optional[str] = Form(None),
     participant_ids: Optional[str] = Form(None),
+    prompt_id: Optional[str] = Form(None),
     user: dict = Depends(get_current_user),
     supabase: Client = Depends(get_supabase),
 ):
@@ -69,48 +70,79 @@ async def process_audio(
         mime_type = "audio/webm"
 
     # Resolve system prompt — priority:
-    # 1. org.selected_prompt_id  → global system_prompts.system_text
-    # 2. org's active prompt_version
-    # 3. DEFAULT_SYSTEM_PROMPT
+    # 1. prompt_id chosen by the recorder for THIS recording (must be assigned to the org)
+    # 2. org.selected_prompt_id  → global system_prompts.system_text
+    # 3. org's active prompt_version
+    # 4. DEFAULT_SYSTEM_PROMPT
     system_prompt = DEFAULT_SYSTEM_PROMPT
     prompt_version = 0
+    chosen_prompt_id = None
 
-    selected_prompt_id = None
-    try:
-        org_row = (
-            supabase.table("organizations")
-            .select("selected_prompt_id")
-            .eq("id", org_id)
-            .single()
+    if prompt_id:
+        # The recorder picked a specific prompt — only honor it if the platform admin
+        # assigned it to this org, so members can't run arbitrary prompts.
+        assigned = (
+            supabase.table("org_system_prompts")
+            .select("prompt_id")
+            .eq("org_id", org_id)
+            .eq("prompt_id", prompt_id)
+            .maybe_single()
             .execute()
         )
-        selected_prompt_id = (org_row.data or {}).get("selected_prompt_id")
-    except Exception:
-        # Column may not exist yet (migration pending) — fall through to prompt_versions
-        pass
-
-    if selected_prompt_id:
+        if not (assigned and assigned.data):
+            raise HTTPException(
+                status_code=403,
+                detail="Selected prompt is not available for this organization",
+            )
         sp_result = (
             supabase.table("system_prompts")
             .select("system_text")
-            .eq("id", selected_prompt_id)
+            .eq("id", prompt_id)
             .maybe_single()
             .execute()
         )
         if sp_result and sp_result.data:
             system_prompt = sp_result.data["system_text"]
-    else:
-        prompt_result = (
-            supabase.table("prompt_versions")
-            .select("*")
-            .eq("org_id", org_id)
-            .eq("is_active", True)
-            .maybe_single()
-            .execute()
-        )
-        if prompt_result and prompt_result.data:
-            system_prompt = prompt_result.data["prompt_text"]
-            prompt_version = prompt_result.data["version"]
+            chosen_prompt_id = prompt_id
+
+    if not chosen_prompt_id:
+        selected_prompt_id = None
+        try:
+            org_row = (
+                supabase.table("organizations")
+                .select("selected_prompt_id")
+                .eq("id", org_id)
+                .single()
+                .execute()
+            )
+            selected_prompt_id = (org_row.data or {}).get("selected_prompt_id")
+        except Exception:
+            # Column may not exist yet (migration pending) — fall through to prompt_versions
+            pass
+
+        if selected_prompt_id:
+            sp_result = (
+                supabase.table("system_prompts")
+                .select("system_text")
+                .eq("id", selected_prompt_id)
+                .maybe_single()
+                .execute()
+            )
+            if sp_result and sp_result.data:
+                system_prompt = sp_result.data["system_text"]
+                chosen_prompt_id = selected_prompt_id
+        else:
+            prompt_result = (
+                supabase.table("prompt_versions")
+                .select("*")
+                .eq("org_id", org_id)
+                .eq("is_active", True)
+                .maybe_single()
+                .execute()
+            )
+            if prompt_result and prompt_result.data:
+                system_prompt = prompt_result.data["prompt_text"]
+                prompt_version = prompt_result.data["version"]
 
     # Process with Gemini (in-memory only)
     try:
@@ -134,6 +166,7 @@ async def process_audio(
         duration_seconds=duration_seconds,
         ai_result=ai_result,
         prompt_version=prompt_version,
+        system_prompt_id=chosen_prompt_id,
         project_id=project_id or None,
         participant_ids=parsed_participant_ids,
     )

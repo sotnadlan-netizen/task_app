@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { WaveformMorph } from "./waveform-morph";
 import { BentoGrid } from "./bento-grid";
+import { useLanguage } from "@/providers/language-provider";
 import type { Session, Task } from "@/types";
 
 type Phase = "processing" | "morphing" | "revealed";
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
+  const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>("processing");
   const prevSessionRef = useRef<string | null>(null);
 
@@ -41,7 +43,6 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
     <AnimatePresence>
       <motion.div
         key="overlay"
-        dir="rtl"
         className="fixed inset-0 z-[200] flex flex-col"
         style={{ background: "var(--background)", color: "var(--foreground)" }}
         initial={{ opacity: 0 }}
@@ -50,7 +51,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
         transition={{ duration: 0.35 }}
         role="dialog"
         aria-modal="true"
-        aria-label="תוצאות שיחה"
+        aria-label={t("results.dialogLabel")}
       >
         {/* ── Top bar ── */}
         <div className="flex items-center justify-between px-10 py-4 border-b border-[#dddbda] flex-shrink-0">
@@ -58,7 +59,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
           <button
             onClick={onClose}
             className="flex items-center gap-2 text-sm text-gray-400 transition-opacity hover:opacity-70 focus:outline-none focus:ring-1 focus:ring-[#0070d2] focus:ring-offset-2"
-            aria-label="סגור"
+            aria-label={t("results.closeEsc")}
           >
             <X className="w-4 h-4" />
             <span className="font-mono text-[10px] tracking-wider">ESC</span>
@@ -83,7 +84,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
           {/* Logo mark — left side in RTL */}
           <div className="flex items-center gap-3">
             <span className="font-sans text-[11px] font-medium text-gray-400">
-              ניתוח שיחה
+              {t("results.analysis")}
             </span>
             <div
               className="w-2 h-2 rounded-full"
@@ -150,7 +151,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
                 className="font-sans text-xs font-medium text-gray-400"
                 exit={{ opacity: 0 }}
               >
-                מעבד...
+                {t("results.processing")}
               </motion.span>
             ) : (
               <motion.span
@@ -160,7 +161,7 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
                 className="font-sans text-xs font-medium"
                 style={{ color: "#0070d2" }}
               >
-                הניתוח הושלם
+                {t("results.done")}
               </motion.span>
             )}
           </AnimatePresence>

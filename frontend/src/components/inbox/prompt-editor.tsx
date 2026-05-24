@@ -7,12 +7,14 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
+import { useLanguage } from "@/providers/language-provider";
 import type { PromptVersion } from "@/types";
 import { Save, History, RotateCcw } from "lucide-react";
 
 export function PromptEditor() {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const [versions, setVersions] = useState<PromptVersion[]>([]);
   const [promptText, setPromptText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -74,7 +76,7 @@ export function PromptEditor() {
       loadVersions();
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save prompt");
+      setError(err instanceof Error ? err.message : t("prompts.errSavePrompt"));
     } finally {
       setSaving(false);
     }
@@ -88,7 +90,7 @@ export function PromptEditor() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI System Prompt</CardTitle>
+        <CardTitle>{t("prompts.editorTitle")}</CardTitle>
         <div className="flex items-center gap-2">
           {versions.length > 0 && (
             <Badge>v{versions[0]?.version || 1}</Badge>
@@ -98,8 +100,8 @@ export function PromptEditor() {
             size="sm"
             onClick={() => setShowHistory(!showHistory)}
           >
-            <History className="w-4 h-4 mr-1" />
-            History
+            <History className="w-4 h-4 me-1" />
+            {t("prompts.history")}
           </Button>
         </div>
       </CardHeader>
@@ -107,7 +109,7 @@ export function PromptEditor() {
       {error && <Alert variant="error" className="mb-4">{error}</Alert>}
       {success && (
         <Alert variant="success" className="mb-4">
-          Prompt saved as new version.
+          {t("prompts.savedNewVersion")}
         </Alert>
       )}
 
@@ -118,13 +120,13 @@ export function PromptEditor() {
         className="w-full px-4 py-3 text-sm border border-[#dddbda] rounded
           focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent
           font-mono resize-y bg-white"
-        placeholder="Enter your AI system prompt..."
+        placeholder={t("prompts.editorPlaceholder")}
       />
 
       <div className="flex justify-end mt-3">
         <Button onClick={handleSave} loading={saving}>
-          <Save className="w-4 h-4 mr-1" />
-          Save New Version
+          <Save className="w-4 h-4 me-1" />
+          {t("prompts.saveNewVersion")}
         </Button>
       </div>
 
@@ -132,7 +134,7 @@ export function PromptEditor() {
       {showHistory && versions.length > 0 && (
         <div className="mt-4 border-t border-[#dddbda] pt-4">
           <h4 className="text-sm font-semibold text-gray-700 mb-3">
-            Version History
+            {t("prompts.versionHistory")}
           </h4>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {versions.map((v) => (
@@ -143,10 +145,10 @@ export function PromptEditor() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">v{v.version}</span>
-                    {v.is_active && <Badge variant="success">Active</Badge>}
+                    {v.is_active && <Badge variant="success">{t("prompts.active")}</Badge>}
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {v.creator?.full_name || "Unknown"} &middot;{" "}
+                    {v.creator?.full_name || t("prompts.unknown")} &middot;{" "}
                     {new Date(v.created_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -155,8 +157,8 @@ export function PromptEditor() {
                   size="sm"
                   onClick={() => restoreVersion(v)}
                 >
-                  <RotateCcw className="w-3.5 h-3.5 mr-1" />
-                  Restore
+                  <RotateCcw className="w-3.5 h-3.5 me-1" />
+                  {t("prompts.restore")}
                 </Button>
               </div>
             ))}

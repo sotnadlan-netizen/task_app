@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { Session, Task, OrgMembership, Profile, Project } from "@/types";
 import { buildGoogleCalendarUrl } from "@/lib/calendar-url";
 import { Users, Pencil, Trash2, Plus, FolderOpen, CalendarPlus } from "lucide-react";
@@ -15,19 +16,6 @@ import { Users, Pencil, Trash2, Plus, FolderOpen, CalendarPlus } from "lucide-re
 interface MemberWithProfile extends OrgMembership {
   profile: Profile | undefined;
 }
-
-const priorityLabels: Record<string, string> = {
-  low: "נמוכה",
-  medium: "בינונית",
-  high: "גבוהה",
-  critical: "קריטית",
-};
-
-const statusLabels: Record<string, string> = {
-  todo: "לביצוע",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
 
 const priorityColors: Record<string, "default" | "info" | "warning" | "danger"> = {
   low: "default",
@@ -51,6 +39,19 @@ export function SessionDetailModal({
 }) {
   const { supabase } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
+
+  const priorityLabels: Record<string, string> = {
+    low: t("tasks.priorityLow"),
+    medium: t("tasks.priorityMedium"),
+    high: t("tasks.priorityHigh"),
+    critical: t("tasks.priorityCritical"),
+  };
+  const statusLabels: Record<string, string> = {
+    todo: t("tasks.statusTodo"),
+    in_progress: t("tasks.statusInProgress"),
+    done: t("tasks.statusDone"),
+  };
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -138,7 +139,7 @@ export function SessionDetailModal({
       setShowEditParticipants(false);
       onSessionUpdate?.({ id: session.id, project_id: projectId || null, participant_ids: editParticipantIds });
     } catch (err) {
-      setMeetingError(err instanceof Error ? err.message : "שגיאה בשמירה");
+      setMeetingError(err instanceof Error ? err.message : t("tasks.errSave"));
     } finally {
       setSavingMeeting(false);
     }
@@ -162,7 +163,7 @@ export function SessionDetailModal({
       setInviteSuccess(emailToInvite);
       setParticipantSearch("");
     } catch (err) {
-      setMeetingError(err instanceof Error ? err.message : "שגיאה בהוספת משתתף");
+      setMeetingError(err instanceof Error ? err.message : t("sessionDetail.errAddParticipant"));
     } finally {
       setInviting(false);
     }
@@ -184,7 +185,7 @@ export function SessionDetailModal({
       setTasks((prev) => prev.map((t) => (t.id === editingTaskId ? { ...t, ...updated } : t)));
       setEditingTaskId(null);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה בשמירה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errSave"));
     } finally {
       setSaving(false);
     }
@@ -209,7 +210,7 @@ export function SessionDetailModal({
       setNewTaskForm({ title: "", description: "", priority: "medium" });
       setShowAddForm(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה ביצירת משימה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errCreate"));
     } finally {
       setSaving(false);
     }
@@ -221,7 +222,7 @@ export function SessionDetailModal({
       await api.deleteTask(taskId, token);
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה במחיקת משימה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errDelete"));
     } finally {
       setDeletingTaskId(null);
     }
@@ -253,20 +254,20 @@ export function SessionDetailModal({
   const currentProjectName = projects.find((p) => p.id === (editProjectId || session.project_id))?.name;
 
   return (
-    <Modal open onClose={onClose} title={session.title || "פרטי פגישה"}>
-      <div className="space-y-5 max-h-[80vh] overflow-y-auto pr-1" dir="rtl">
+    <Modal open onClose={onClose} title={session.title || t("sessionDetail.fallbackTitle")}>
+      <div className="space-y-5 max-h-[80vh] overflow-y-auto pe-1">
 
         {/* Meta */}
-        <div className="flex items-center gap-3 text-xs text-gray-500 flex-row-reverse justify-end">
-          <span>{new Date(session.created_at).toLocaleString("he-IL")}</span>
-          {durationMin > 0 && <span>· {durationMin} דק׳</span>}
+        <div className="flex items-center gap-3 text-xs text-gray-500 justify-start">
+          <span>{new Date(session.created_at).toLocaleString()}</span>
+          {durationMin > 0 && <span>· {t("meetings.durationMin", { count: durationMin })}</span>}
           {session.sentiment && <span className="capitalize">· {session.sentiment}</span>}
         </div>
 
         {/* Summary */}
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-1">סיכום</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">{session.summary || "אין סיכום זמין."}</p>
+          <h3 className="text-sm font-semibold text-gray-700 mb-1">{t("sessionDetail.summary")}</h3>
+          <p className="text-sm text-gray-600 leading-relaxed">{session.summary || t("sessionDetail.noSummary")}</p>
         </div>
 
         {/* Calendar Event */}
@@ -279,7 +280,7 @@ export function SessionDetailModal({
               className="inline-flex items-center gap-2 px-4 py-2 rounded bg-[#0070d2] hover:bg-[#005fb2] text-white text-sm font-medium transition-all shadow-sm"
             >
               <CalendarPlus className="w-4 h-4 flex-shrink-0" />
-              הוסף ליומן גוגל
+              {t("sessionDetail.addToGoogleCalendar")}
             </a>
           </div>
         )}
@@ -291,11 +292,11 @@ export function SessionDetailModal({
               onClick={() => { setShowEditProject((v) => !v); setMeetingError(null); }}
               className="text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
-              ערוך פרויקט
+              {t("sessionDetail.editProject")}
             </button>
             <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
               <FolderOpen className="w-4 h-4 text-gray-400" />
-              {currentProjectName ?? "ללא פרויקט"}
+              {currentProjectName ?? t("recording.noProject")}
             </div>
           </div>
 
@@ -309,7 +310,7 @@ export function SessionDetailModal({
                     onChange={(e) => setEditProjectId(e.target.value)}
                     className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                   >
-                    <option value="">ללא פרויקט</option>
+                    <option value="">{t("recording.noProject")}</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.name}</option>
                     ))}
@@ -318,14 +319,14 @@ export function SessionDetailModal({
                     onClick={() => setShowNewProject(true)}
                     className="text-xs text-[#0070d2] hover:text-[#005fb2] whitespace-nowrap"
                   >
-                    + חדש
+                    {t("sessionDetail.newShort")}
                   </button>
                 </div>
               ) : (
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="שם פרויקט חדש"
+                    placeholder={t("recording.newProjectName")}
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
@@ -334,13 +335,13 @@ export function SessionDetailModal({
                     onClick={() => setShowNewProject(false)}
                     className="text-xs text-gray-500 hover:text-gray-700"
                   >
-                    ביטול
+                    {t("common.cancel")}
                   </button>
                 </div>
               )}
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>שמור</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setShowEditProject(false); setMeetingError(null); }}>ביטול</Button>
+                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>{t("common.save")}</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowEditProject(false); setMeetingError(null); }}>{t("common.cancel")}</Button>
               </div>
             </div>
           )}
@@ -353,16 +354,16 @@ export function SessionDetailModal({
               onClick={() => { setShowEditParticipants((v) => !v); setMeetingError(null); }}
               className="text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
-              ערוך משתתפים
+              {t("sessionDetail.editParticipants")}
             </button>
             <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-semibold text-gray-700">משתתפים בפגישה</span>
+              <span className="text-sm font-semibold text-gray-700">{t("sessionDetail.participantsInMeeting")}</span>
             </div>
           </div>
 
           {loading ? (
-            <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
+            <p className="text-xs text-gray-400 animate-pulse">{t("common.loading")}</p>
           ) : (() => {
             const creatorMember = members.find((m) => m.user_id === session.created_by);
             const taggedMembers = members.filter(
@@ -376,8 +377,8 @@ export function SessionDetailModal({
             return (
               <div className="flex flex-wrap gap-2">
                 {allDisplayed.map(({ member: m, isCreator }) => {
-                  const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
-                  const roleLabel = isCreator ? "יוצר" : m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף";
+                  const label = m.profile?.full_name || m.profile?.email || m.invited_email || t("recording.unknown");
+                  const roleLabel = isCreator ? t("sessionDetail.creator") : t(`roles.${m.role}`);
                   return (
                     <div key={m.id} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#ecf5fe] rounded-full text-xs text-[#3e3e3c] border border-[#b3d9f6]">
                       <div className="w-5 h-5 bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] text-white rounded-full flex items-center justify-center font-semibold text-[10px]">
@@ -389,7 +390,7 @@ export function SessionDetailModal({
                   );
                 })}
                 {allDisplayed.length === 0 && (
-                  <p className="text-xs text-gray-400">לא נבחרו משתתפים</p>
+                  <p className="text-xs text-gray-400">{t("sessionDetail.noParticipants")}</p>
                 )}
               </div>
             );
@@ -399,13 +400,13 @@ export function SessionDetailModal({
             <div className="p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
               {meetingError && <Alert variant="error">{meetingError}</Alert>}
               {inviteSuccess && (
-                <p className="text-xs text-green-600">{inviteSuccess} נוסף בהצלחה</p>
+                <p className="text-xs text-green-600">{t("sessionDetail.addedSuccess", { email: inviteSuccess })}</p>
               )}
 
               {/* Search / filter input */}
               <input
                 type="text"
-                placeholder="חפש לפי שם או אימייל..."
+                placeholder={t("sessionDetail.searchPlaceholder")}
                 value={participantSearch}
                 onChange={(e) => { setParticipantSearch(e.target.value); setInviteSuccess(null); }}
                 className="w-full px-2.5 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
@@ -429,8 +430,8 @@ export function SessionDetailModal({
                       <div className="max-h-40 overflow-y-auto space-y-0.5 border border-[#dddbda] rounded p-2 bg-white">
                         {filtered.map((m) => {
                           const checked = editParticipantIds.includes(m.id);
-                          const label = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
-                          const roleLabel = m.role === "admin" ? "מנהל" : m.role === "member" ? "חבר" : "משתתף";
+                          const label = m.profile?.full_name || m.profile?.email || m.invited_email || t("recording.unknown");
+                          const roleLabel = t(`roles.${m.role}`);
                           return (
                             <label
                               key={m.id}
@@ -454,22 +455,22 @@ export function SessionDetailModal({
                       <button
                         onClick={handleInviteParticipant}
                         disabled={inviting}
-                        className="w-full text-right px-2.5 py-1.5 text-sm rounded bg-white border border-dashed border-[#b3d9f6] text-[#0070d2] hover:bg-[#ecf5fe] transition-colors disabled:opacity-50"
+                        className="w-full text-start px-2.5 py-1.5 text-sm rounded bg-white border border-dashed border-[#b3d9f6] text-[#0070d2] hover:bg-[#ecf5fe] transition-colors disabled:opacity-50"
                       >
-                        {inviting ? "מוסיף..." : `+ הוסף "${participantSearch.trim()}" כמשתתף חדש`}
+                        {inviting ? t("sessionDetail.adding") : t("sessionDetail.addAsNew", { name: participantSearch.trim() })}
                       </button>
                     )}
 
                     {filtered.length === 0 && !isEmailInput && (
-                      <p className="text-xs text-gray-400 text-center py-1">לא נמצאו. הקלד אימייל להוספה.</p>
+                      <p className="text-xs text-gray-400 text-center py-1">{t("sessionDetail.notFound")}</p>
                     )}
                   </>
                 );
               })()}
 
               <div className="flex gap-2 pt-1">
-                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>שמור</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setShowEditParticipants(false); setMeetingError(null); setParticipantSearch(""); setInviteSuccess(null); }}>ביטול</Button>
+                <Button size="sm" onClick={handleSaveMeeting} loading={savingMeeting}>{t("common.save")}</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowEditParticipants(false); setMeetingError(null); setParticipantSearch(""); setInviteSuccess(null); }}>{t("common.cancel")}</Button>
               </div>
             </div>
           )}
@@ -483,9 +484,9 @@ export function SessionDetailModal({
               className="flex items-center gap-1 text-xs text-[#0070d2] hover:text-[#005fb2] font-medium transition-colors"
             >
               <Plus className="w-3.5 h-3.5" />
-              הוסף משימה
+              {t("tasks.add")}
             </button>
-            <h3 className="text-sm font-semibold text-gray-700">משימות ({tasks.length})</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{t("sessionDetail.tasksCount", { count: tasks.length })}</h3>
           </div>
 
           {formError && <Alert variant="error" className="mb-2">{formError}</Alert>}
@@ -495,13 +496,13 @@ export function SessionDetailModal({
             <div className="mb-3 p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
               <input
                 type="text"
-                placeholder="כותרת המשימה *"
+                placeholder={t("tasks.titlePlaceholder")}
                 value={newTaskForm.title}
                 onChange={(e) => setNewTaskForm((f) => ({ ...f, title: e.target.value }))}
                 className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
               />
               <textarea
-                placeholder="תיאור (אופציונלי)"
+                placeholder={t("tasks.descPlaceholder")}
                 value={newTaskForm.description}
                 onChange={(e) => setNewTaskForm((f) => ({ ...f, description: e.target.value }))}
                 rows={2}
@@ -513,35 +514,35 @@ export function SessionDetailModal({
                   onChange={(e) => setNewTaskForm((f) => ({ ...f, priority: e.target.value }))}
                   className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                 >
-                  <option value="low">נמוכה</option>
-                  <option value="medium">בינונית</option>
-                  <option value="high">גבוהה</option>
-                  <option value="critical">קריטית</option>
+                  <option value="low">{t("tasks.priorityLow")}</option>
+                  <option value="medium">{t("tasks.priorityMedium")}</option>
+                  <option value="high">{t("tasks.priorityHigh")}</option>
+                  <option value="critical">{t("tasks.priorityCritical")}</option>
                 </select>
                 <Button size="sm" onClick={handleAddTask} loading={saving} disabled={!newTaskForm.title.trim()}>
-                  צור
+                  {t("common.create")}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
-                  ביטול
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
           )}
 
           {loading ? (
-            <p className="text-xs text-gray-400 animate-pulse">טוען...</p>
+            <p className="text-xs text-gray-400 animate-pulse">{t("common.loading")}</p>
           ) : tasks.length === 0 ? (
-            <p className="text-sm text-gray-400">לא נוצרו משימות מפגישה זו.</p>
+            <p className="text-sm text-gray-400">{t("sessionDetail.noTasksFromSession")}</p>
           ) : (
             <div className="space-y-2">
-              {tasks.map((t) => {
-                const isEditing = editingTaskId === t.id;
-                const isDeleting = deletingTaskId === t.id;
+              {tasks.map((task) => {
+                const isEditing = editingTaskId === task.id;
+                const isDeleting = deletingTaskId === task.id;
                 return (
                   <div
-                    key={t.id}
+                    key={task.id}
                     className={`p-3 rounded border text-sm ${
-                      t.status === "done" ? "bg-[#ddf0d4]/40 border-[#a3d99b]" : "bg-white border-[#dddbda]"
+                      task.status === "done" ? "bg-[#ddf0d4]/40 border-[#a3d99b]" : "bg-white border-[#dddbda]"
                     }`}
                   >
                     {isEditing ? (
@@ -564,42 +565,42 @@ export function SessionDetailModal({
                             onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value }))}
                             className="flex-1 px-2 py-1 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30"
                           >
-                            <option value="low">נמוכה</option>
-                            <option value="medium">בינונית</option>
-                            <option value="high">גבוהה</option>
-                            <option value="critical">קריטית</option>
+                            <option value="low">{t("tasks.priorityLow")}</option>
+                            <option value="medium">{t("tasks.priorityMedium")}</option>
+                            <option value="high">{t("tasks.priorityHigh")}</option>
+                            <option value="critical">{t("tasks.priorityCritical")}</option>
                           </select>
                           <select
                             value={editForm.status}
                             onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
                             className="flex-1 px-2 py-1 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30"
                           >
-                            <option value="todo">לביצוע</option>
-                            <option value="in_progress">בתהליך</option>
-                            <option value="done">הושלם</option>
+                            <option value="todo">{t("tasks.statusTodo")}</option>
+                            <option value="in_progress">{t("tasks.statusInProgress")}</option>
+                            <option value="done">{t("tasks.statusDone")}</option>
                           </select>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={handleSaveEdit} loading={saving}>שמור</Button>
-                          <Button size="sm" variant="ghost" onClick={() => setEditingTaskId(null)}>ביטול</Button>
+                          <Button size="sm" onClick={handleSaveEdit} loading={saving}>{t("common.save")}</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingTaskId(null)}>{t("common.cancel")}</Button>
                         </div>
                       </div>
                     ) : (() => {
-                      const isExpanded = expandedTaskIds.has(t.id);
-                      const isDone = t.status === "done";
-                      const isToggling = togglingTaskId === t.id;
+                      const isExpanded = expandedTaskIds.has(task.id);
+                      const isDone = task.status === "done";
+                      const isToggling = togglingTaskId === task.id;
                       return (
                         <div className="flex items-start gap-3">
                           {/* Checkbox */}
                           <button
-                            onClick={() => handleToggleDone(t)}
-                            disabled={t.is_locked || isToggling}
+                            onClick={() => handleToggleDone(task)}
+                            disabled={task.is_locked || isToggling}
                             className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                               isDone
                                 ? "bg-emerald-500 border-emerald-500"
                                 : "border-gray-300 hover:border-[#0070d2]"
                             } disabled:opacity-40`}
-                            aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
+                            aria-label={isDone ? t("tasks.markIncomplete") : t("tasks.markComplete")}
                           >
                             {isDone && (
                               <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 12 12">
@@ -612,56 +613,56 @@ export function SessionDetailModal({
                           <div className="flex-1 min-w-0">
                             {/* Title row — clickable to expand */}
                             <button
-                              onClick={() => toggleExpanded(t.id)}
-                              className="w-full text-right flex items-start justify-between gap-2 group"
+                              onClick={() => toggleExpanded(task.id)}
+                              className="w-full text-start flex items-start justify-between gap-2 group"
                             >
                               <div className="flex items-center gap-1.5 flex-shrink-0 mt-0.5">
-                                <Badge variant={priorityColors[t.priority]}>
-                                  {priorityLabels[t.priority] ?? t.priority}
+                                <Badge variant={priorityColors[task.priority]}>
+                                  {priorityLabels[task.priority] ?? task.priority}
                                 </Badge>
                               </div>
-                              <span className={`flex-1 text-sm font-medium text-right leading-snug ${
+                              <span className={`flex-1 text-sm font-medium text-start leading-snug ${
                                 isDone ? "line-through text-gray-400" : "text-gray-900"
                               }`}>
-                                {t.title}
+                                {task.title}
                               </span>
                             </button>
 
                             {/* Expanded detail */}
                             {isExpanded && (
-                              <div className="mt-2 space-y-2 text-right">
-                                {t.description && (
+                              <div className="mt-2 space-y-2 text-start">
+                                {task.description && (
                                   <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-lg px-3 py-2">
-                                    {t.description}
+                                    {task.description}
                                   </p>
                                 )}
-                                {t.deadline && (
-                                  <p className="text-xs text-[#0070d2] font-medium">⏰ {t.deadline}</p>
+                                {task.deadline && (
+                                  <p className="text-xs text-[#0070d2] font-medium">⏰ {task.deadline}</p>
                                 )}
                                 <div className="flex items-center justify-between gap-2 pt-1">
                                   <div className="flex gap-1">
-                                    {!t.is_locked && (
+                                    {!task.is_locked && (
                                       <>
                                         <button
-                                          onClick={() => startEdit(t)}
+                                          onClick={() => startEdit(task)}
                                           className="p-1 rounded hover:bg-[#f3f3f3] transition-colors"
-                                          aria-label="ערוך משימה"
+                                          aria-label={t("tasks.editAria")}
                                         >
                                           <Pencil className="w-3.5 h-3.5 text-[#706e6b]" />
                                         </button>
                                         <button
-                                          onClick={() => handleDeleteTask(t.id)}
+                                          onClick={() => handleDeleteTask(task.id)}
                                           disabled={isDeleting}
                                           className="p-1 rounded hover:bg-[#fde9e7] transition-colors disabled:opacity-40"
-                                          aria-label="מחק משימה"
+                                          aria-label={t("tasks.deleteAria")}
                                         >
                                           <Trash2 className="w-3.5 h-3.5 text-[#c23934]" />
                                         </button>
                                       </>
                                     )}
                                   </div>
-                                  <Badge variant={t.status === "done" ? "success" : t.status === "in_progress" ? "info" : "default"}>
-                                    {statusLabels[t.status] ?? t.status}
+                                  <Badge variant={task.status === "done" ? "success" : task.status === "in_progress" ? "info" : "default"}>
+                                    {statusLabels[task.status] ?? task.status}
                                   </Badge>
                                 </div>
                               </div>
@@ -684,7 +685,7 @@ export function SessionDetailModal({
             className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-600 font-medium transition-colors"
           >
             <Trash2 className="w-3.5 h-3.5" />
-            מחק פגישה זו (וכל המשימות הקשורות)
+            {t("sessionDetail.deleteSession")}
           </button>
         </div>
       </div>

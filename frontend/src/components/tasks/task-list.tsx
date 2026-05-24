@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { TaskEditRequestForm } from "./task-edit-request-form";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { Task } from "@/types";
 import {
   Lock,
@@ -29,23 +30,23 @@ const priorityColors = {
   critical: "danger" as const,
 };
 
-const priorityLabels: Record<string, string> = {
-  low: "נמוכה",
-  medium: "בינונית",
-  high: "גבוהה",
-  critical: "קריטית",
-};
-
-const statusLabels: Record<string, string> = {
-  todo: "לביצוע",
-  in_progress: "בתהליך",
-  done: "הושלם",
-};
-
 export function TaskList({ readonly = false }: { readonly?: boolean }) {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
   const { subscribe } = useRealtime();
+  const { t } = useLanguage();
+
+  const priorityLabels: Record<string, string> = {
+    low: t("tasks.priorityLow"),
+    medium: t("tasks.priorityMedium"),
+    high: t("tasks.priorityHigh"),
+    critical: t("tasks.priorityCritical"),
+  };
+  const statusLabels: Record<string, string> = {
+    todo: t("tasks.statusTodo"),
+    in_progress: t("tasks.statusInProgress"),
+    done: t("tasks.statusDone"),
+  };
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
   const [projectFilter, setProjectFilter] = useState<string>("");
@@ -146,7 +147,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
       setTasks((prev) => prev.map((t) => (t.id === editingTaskId ? { ...t, ...updated } : t)));
       setEditingTaskId(null);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה בשמירה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errSave"));
     } finally {
       setSaving(false);
     }
@@ -170,7 +171,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
       setNewTaskForm({ title: "", description: "", priority: "medium" });
       setShowAddForm(false);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה ביצירת משימה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errCreate"));
     } finally {
       setSaving(false);
     }
@@ -184,7 +185,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
       setTasks((prev) => prev.filter((t) => t.id !== taskId));
       setConfirmDeleteId(null);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "שגיאה במחיקת משימה");
+      setFormError(err instanceof Error ? err.message : t("tasks.errDelete"));
     } finally {
       setDeletingTaskId(null);
     }
@@ -194,7 +195,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
     return (
       <Card>
         <div className="flex items-center justify-center py-12">
-          <div className="animate-pulse text-sm text-gray-400">טוען משימות...</div>
+          <div className="animate-pulse text-sm text-gray-400">{t("tasks.loading")}</div>
         </div>
       </Card>
     );
@@ -202,10 +203,10 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
 
   return (
     <Card padding={false}>
-      <div className="p-6 pb-0" dir="rtl">
+      <div className="p-6 pb-0">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <CardTitle>משימות</CardTitle>
+            <CardTitle>{t("tasks.title")}</CardTitle>
             <Badge>{tasks.length}</Badge>
           </div>
           {!readonly && (
@@ -218,37 +219,37 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                 setEditingTaskId(null);
               }}
             >
-              <Plus className="w-4 h-4 ml-1" />
-              הוסף משימה
+              <Plus className="w-4 h-4 me-1" />
+              {t("tasks.add")}
             </Button>
           )}
         </CardHeader>
       </div>
 
       {formError && (
-        <div className="px-6 pt-3" dir="rtl">
+        <div className="px-6 pt-3">
           <Alert variant="error">{formError}</Alert>
         </div>
       )}
 
       {/* Add task form */}
       {!readonly && showAddForm && (
-        <div className="mx-6 mt-3 p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2" dir="rtl">
+        <div className="mx-6 mt-3 p-3 bg-[#fafaf9] border border-[#dddbda] rounded space-y-2">
           <div className="flex items-center justify-between mb-1">
             <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-[#dddbda]/60 rounded">
               <X className="w-4 h-4 text-[#706e6b]" />
             </button>
-            <p className="text-xs font-semibold text-[#0070d2]">משימה חדשה</p>
+            <p className="text-xs font-semibold text-[#0070d2]">{t("tasks.newTask")}</p>
           </div>
           <input
             type="text"
-            placeholder="כותרת המשימה *"
+            placeholder={t("tasks.titlePlaceholder")}
             value={newTaskForm.title}
             onChange={(e) => setNewTaskForm((f) => ({ ...f, title: e.target.value }))}
             className="w-full px-3 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
           <textarea
-            placeholder="תיאור (אופציונלי)"
+            placeholder={t("tasks.descPlaceholder")}
             value={newTaskForm.description}
             onChange={(e) => setNewTaskForm((f) => ({ ...f, description: e.target.value }))}
             rows={2}
@@ -260,26 +261,26 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
               onChange={(e) => setNewTaskForm((f) => ({ ...f, priority: e.target.value }))}
               className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
             >
-              <option value="low">נמוכה</option>
-              <option value="medium">בינונית</option>
-              <option value="high">גבוהה</option>
-              <option value="critical">קריטית</option>
+              <option value="low">{t("tasks.priorityLow")}</option>
+              <option value="medium">{t("tasks.priorityMedium")}</option>
+              <option value="high">{t("tasks.priorityHigh")}</option>
+              <option value="critical">{t("tasks.priorityCritical")}</option>
             </select>
             <Button size="sm" onClick={handleAddTask} loading={saving} disabled={!newTaskForm.title.trim()}>
-              צור
+              {t("common.create")}
             </Button>
           </div>
         </div>
       )}
 
       {Object.keys(projects).length > 0 && (
-        <div className="px-6 pb-0 pt-2" dir="rtl">
+        <div className="px-6 pb-0 pt-2">
           <select
             value={projectFilter}
             onChange={(e) => setProjectFilter(e.target.value)}
             className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#706e6b] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
           >
-            <option value="">כל הפרויקטים</option>
+            <option value="">{t("tasks.allProjects")}</option>
             {Object.entries(projects).map(([id, name]) => (
               <option key={id} value={id}>{name}</option>
             ))}
@@ -290,11 +291,11 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
       {(() => {
         const filtered = projectFilter ? tasks.filter((t) => t.project_id === projectFilter) : tasks;
         return filtered.length === 0 ? (
-        <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8" dir="rtl">
-          {projectFilter ? "אין משימות בפרויקט זה." : "אין משימות עדיין. התחל הקלטה כדי ליצור משימות."}
+        <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8">
+          {projectFilter ? t("tasks.emptyInProject") : t("tasks.emptyHint")}
         </div>
       ) : (
-        <div className="divide-y divide-[#dddbda] mt-3" dir="rtl">
+        <div className="divide-y divide-[#dddbda] mt-3">
           {filtered.map((task) => {
             const isDone = task.status === "done";
             const isEditing = editingTaskId === task.id;
@@ -331,27 +332,27 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         onChange={(e) => setEditForm((f) => ({ ...f, priority: e.target.value }))}
                         className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                       >
-                        <option value="low">נמוכה</option>
-                        <option value="medium">בינונית</option>
-                        <option value="high">גבוהה</option>
-                        <option value="critical">קריטית</option>
+                        <option value="low">{t("tasks.priorityLow")}</option>
+                        <option value="medium">{t("tasks.priorityMedium")}</option>
+                        <option value="high">{t("tasks.priorityHigh")}</option>
+                        <option value="critical">{t("tasks.priorityCritical")}</option>
                       </select>
                       <select
                         value={editForm.status}
                         onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
                         className="flex-1 px-2 py-1.5 text-sm border border-[#dddbda] rounded focus:ring-2 focus:ring-[#0070d2]/30 bg-white"
                       >
-                        <option value="todo">לביצוע</option>
-                        <option value="in_progress">בתהליך</option>
-                        <option value="done">הושלם</option>
+                        <option value="todo">{t("tasks.statusTodo")}</option>
+                        <option value="in_progress">{t("tasks.statusInProgress")}</option>
+                        <option value="done">{t("tasks.statusDone")}</option>
                       </select>
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleSaveEdit} loading={saving}>
-                        שמור
+                        {t("common.save")}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditingTaskId(null)}>
-                        ביטול
+                        {t("common.cancel")}
                       </Button>
                     </div>
                   </div>
@@ -364,7 +365,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         variant="ghost"
                         onClick={() => setConfirmDeleteId(null)}
                       >
-                        ביטול
+                        {t("common.cancel")}
                       </Button>
                       <Button
                         size="sm"
@@ -372,11 +373,11 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                         onClick={() => handleDeleteTask(task.id)}
                         loading={isDeleting}
                       >
-                        מחק
+                        {t("common.delete")}
                       </Button>
                     </div>
                     <p className="text-sm text-gray-700">
-                      למחוק את <span className="font-medium">{task.title}</span>?
+                      {t("tasks.confirmDelete", { title: task.title })}
                     </p>
                   </div>
                 ) : (
@@ -400,7 +401,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                           <button
                             onClick={() => startEdit(task)}
                             className="p-1.5 rounded hover:bg-[#f3f3f3] transition-colors"
-                            aria-label="ערוך משימה"
+                            aria-label={t("tasks.editAria")}
                           >
                             <Pencil className="w-3.5 h-3.5 text-[#706e6b]" />
                           </button>
@@ -411,7 +412,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                               setEditRequestTaskId(null);
                             }}
                             className="p-1.5 rounded hover:bg-[#fde9e7] transition-colors"
-                            aria-label="מחק משימה"
+                            aria-label={t("tasks.deleteAria")}
                           >
                             <Trash2 className="w-3.5 h-3.5 text-[#c23934]" />
                           </button>
@@ -427,7 +428,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                             )
                           }
                           className="p-1.5 rounded hover:bg-[#f3f3f3] transition-colors"
-                          aria-label="בקש עריכה"
+                          aria-label={t("tasks.requestEditAria")}
                         >
                           <Pencil className="w-4 h-4 text-[#706e6b]" />
                         </button>
@@ -435,18 +436,18 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                     </div>
 
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <div className="flex-1 min-w-0 text-right">
-                        <div className="flex items-center justify-end gap-2 mb-1">
+                      <div className="flex-1 min-w-0 text-start">
+                        <div className="flex items-center justify-start gap-2 mb-1">
                           {task.external_sync_id && (
                             <ExternalLink
                               className="w-3.5 h-3.5 text-[#0070d2] flex-shrink-0"
-                              aria-label="מסונכרן לפלטפורמה חיצונית"
+                              aria-label={t("tasks.syncedAria")}
                             />
                           )}
                           {task.is_locked && (
                             <Lock
                               className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
-                              aria-label="נעול"
+                              aria-label={t("tasks.lockedAria")}
                             />
                           )}
                           <h4
@@ -472,7 +473,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
                           onClick={() => handleToggleDone(task)}
                           disabled={task.is_locked || togglingId === task.id}
                           className="mt-0.5 flex-shrink-0 text-[#dddbda] hover:text-[#04844b] disabled:opacity-40 transition-colors"
-                          aria-label={isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
+                          aria-label={isDone ? t("tasks.markIncomplete") : t("tasks.markComplete")}
                         >
                           {isDone ? (
                             <CheckCircle2 className="w-5 h-5 text-[#04844b]" />

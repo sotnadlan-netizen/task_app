@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import gsap from "gsap";
+import { useLanguage } from "@/providers/language-provider";
 
 const SVG_W = 180;
 const SVG_H = 36;
@@ -20,6 +21,7 @@ function buildPath(phase: number, amplitude: number, frequency: number): string 
 }
 
 export function ProcessingBar() {
+  const { t } = useLanguage();
   const pathRef = useRef<SVGPathElement>(null);
   const stateRef = useRef({ phase: 0, amplitude: 9, frequency: 2.4 });
 
@@ -35,12 +37,11 @@ export function ProcessingBar() {
 
   return (
     <motion.div
-      className="fixed bottom-6 left-6 z-[150] bg-white border border-[#dddbda] rounded-lg shadow-xl flex items-center gap-4 px-5 py-3"
+      className="fixed bottom-6 start-6 z-[150] bg-white border border-[#dddbda] rounded-lg shadow-xl flex items-center gap-4 px-5 py-3"
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      dir="rtl"
     >
       {/* Mini wave */}
       <svg
@@ -74,9 +75,9 @@ export function ProcessingBar() {
 
       {/* Text */}
       <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-semibold text-gray-700">מנתח שיחה</span>
+        <span className="text-xs font-semibold text-gray-700">{t("results.analyzing")}</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-gray-400">AI מעבד</span>
+          <span className="text-[10px] text-gray-400">{t("results.aiProcessing")}</span>
           <div className="flex gap-0.5">
             {[0, 1, 2].map((i) => (
               <motion.span

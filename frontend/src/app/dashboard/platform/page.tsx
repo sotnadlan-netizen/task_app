@@ -17,6 +17,8 @@ import {
   ChevronLeft, Save, BarChart3, ListChecks, Trash2, Settings, UserPlus,
 } from "lucide-react";
 import { SystemPromptsPanel } from "@/components/platform/system-prompts-panel";
+import { OrgPromptAssignment } from "@/components/platform/org-prompt-assignment";
+import { useLanguage } from "@/providers/language-provider";
 
 interface MemberWithProfile extends OrgMembership {
   profile: Profile;
@@ -32,6 +34,7 @@ interface OrgDetail {
 // ─── Create Org Modal ─────────────────────────────────────────────────────────
 function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState(600);
   const [loading, setLoading] = useState(false);
@@ -50,33 +53,33 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
       await api.createOrg({ name: name.trim(), total_capacity_min: capacity, max_members: maxMembers }, token);
       setName(""); setCapacity(600); setMaxMembers(10); onCreated(); onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create organization");
+      setError(err instanceof Error ? err.message : t("platform.errCreateOrg"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Create Organization">
+    <Modal open={open} onClose={onClose} title={t("platform.createOrg")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Acme Corp" required
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.orgName")}</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("platform.orgNamePlaceholder")} required
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.totalCapacityLabel")}</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.maxMembers")}</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={loading}><Plus className="w-4 h-4 mr-1" />Create</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button type="submit" loading={loading}><Plus className="w-4 h-4 me-1" />{t("common.create")}</Button>
         </div>
       </form>
     </Modal>
@@ -86,6 +89,7 @@ function CreateOrgModal({ open, onClose, onCreated }: { open: boolean; onClose: 
 // ─── Edit Org Modal ───────────────────────────────────────────────────────────
 function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose: () => void; org: Organization; onSaved: (updated: Organization) => void }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [name, setName] = useState(org.name);
   const [capacity, setCapacity] = useState(org.total_capacity_min);
   const [maxMembers, setMaxMembers] = useState(org.max_members);
@@ -103,33 +107,33 @@ function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose:
       const updated = await api.updateOrg(org.id, { name: name.trim(), total_capacity_min: capacity, max_members: maxMembers }, token) as Organization;
       onSaved(updated); onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update organization");
+      setError(err instanceof Error ? err.message : t("platform.errUpdateOrg"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Edit Organization">
+    <Modal open={open} onClose={onClose} title={t("platform.editOrg")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.orgName")}</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Total Capacity (minutes)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.totalCapacityLabel")}</label>
           <input type="number" min={0} value={capacity} onChange={(e) => setCapacity(Number(e.target.value))}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max Members</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.maxMembers")}</label>
           <input type="number" min={1} value={maxMembers} onChange={(e) => setMaxMembers(Number(e.target.value))}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={loading}><Save className="w-4 h-4 mr-1" />Save Changes</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button type="submit" loading={loading}><Save className="w-4 h-4 me-1" />{t("common.saveChanges")}</Button>
         </div>
       </form>
     </Modal>
@@ -145,6 +149,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
   onAdded: () => void;
 }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>("member");
   const [capacity, setCapacity] = useState(120);
@@ -162,20 +167,13 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
 
     // Check member limit
     if (currentMemberCount >= org.max_members) {
-      setError(
-        `This organization has reached its member limit of ${org.max_members}. ` +
-        `Increase the max members in Edit Config to add more.`
-      );
+      setError(t("platform.errMemberLimit", { max: org.max_members }));
       return;
     }
 
     // Check capacity
     if (capacity > remainingCapacity) {
-      setError(
-        `Not enough capacity. You're trying to allocate ${capacity} min, ` +
-        `but only ${remainingCapacity} min remain out of ${org.total_capacity_min} min total ` +
-        `(${allocatedCapacity} min already allocated).`
-      );
+      setError(t("platform.errCapacity", { cap: capacity, rem: remainingCapacity, total: org.total_capacity_min, alloc: allocatedCapacity }));
       return;
     }
 
@@ -187,7 +185,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
       (m) => m.profile?.email === trimmedEmail || m.invited_email === trimmedEmail
     );
     if (existingByEmail) {
-      setError(`${trimmedEmail} is already a member of this organization.`);
+      setError(t("admin.errAlreadyMember", { email: trimmedEmail }));
       setLoading(false);
       return;
     }
@@ -197,72 +195,71 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
       await api.addOrgMember(org.id, { email: trimmedEmail, role }, token);
       setEmail(""); setCapacity(120); onAdded(); onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add member");
+      setError(err instanceof Error ? err.message : t("admin.errAddMember"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Member">
+    <Modal open={open} onClose={onClose} title={t("admin.addMember")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Capacity & member summary */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
+            <p className="text-xs text-gray-500 mb-1">{t("admin.capacityAvailable")}</p>
             <p className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}>
-              {remainingCapacity} min
+              {remainingCapacity} {t("common.minutes")}
             </p>
-            <p className="text-xs text-gray-400">{allocatedCapacity} / {org.total_capacity_min} min allocated</p>
+            <p className="text-xs text-gray-400">{t("admin.allocatedOf", { alloc: allocatedCapacity, total: org.total_capacity_min })}</p>
           </div>
           <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">Members</p>
+            <p className="text-xs text-gray-500 mb-1">{t("admin.members")}</p>
             <p className={`text-lg font-bold ${currentMemberCount >= org.max_members ? "text-red-600" : "text-gray-800"}`}>
               {currentMemberCount} / {org.max_members}
             </p>
-            <p className="text-xs text-gray-400">max members</p>
+            <p className="text-xs text-gray-400">{t("admin.maxMembers")}</p>
           </div>
         </div>
 
         {isOverAllocated && (
           <Alert variant="warning">
-            Existing members are allocated {allocatedCapacity} min, which exceeds the org total of {org.total_capacity_min} min.
-            Increase the org capacity in <strong>Edit Config</strong> before adding more.
+            {t("platform.overAllocated", { alloc: allocatedCapacity, total: org.total_capacity_min })}
           </Alert>
         )}
 
         {error && <Alert variant="error">{error}</Alert>}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.userEmail")}</label>
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="user@example.com" required
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white" />
-          <p className="text-xs text-gray-400 mt-1">If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.</p>
+          <p className="text-xs text-gray-400 mt-1">{t("memberHome.emailHelper")}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.role")}</label>
           <select value={role} onChange={(e) => setRole(e.target.value as UserRole)}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white">
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
-            <option value="participant">Participant</option>
+            <option value="admin">{t("roles.admin")}</option>
+            <option value="member">{t("roles.member")}</option>
+            <option value="participant">{t("roles.participant")}</option>
           </select>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Capacity (minutes)
-            <span className="text-gray-400 font-normal ml-1">— {remainingCapacity} min available to allocate</span>
+            {t("admin.capacityMinutes")}
+            <span className="text-gray-400 font-normal ms-1">{t("platform.minAvailableAllocate", { rem: remainingCapacity })}</span>
           </label>
           <input type="number" min={0} max={remainingCapacity} value={capacity}
             onChange={(e) => setCapacity(Number(e.target.value))}
             className={`w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:border-transparent
               ${capacity > remainingCapacity ? "border-red-400 focus:ring-red-500" : "border-[#dddbda] focus:ring-[#0070d2]/40"}`} />
           {capacity > remainingCapacity && (
-            <p className="text-xs text-red-500 mt-1">Exceeds available capacity by {capacity - remainingCapacity} min</p>
+            <p className="text-xs text-red-500 mt-1">{t("admin.exceedsBy", { count: capacity - remainingCapacity })}</p>
           )}
         </div>
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" loading={loading}><UserPlus className="w-4 h-4 mr-1" />Add Member</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button type="submit" loading={loading}><UserPlus className="w-4 h-4 me-1" />{t("admin.addMember")}</Button>
         </div>
       </form>
     </Modal>
@@ -272,6 +269,7 @@ function AddMemberModal({ open, onClose, org, members, onAdded }: {
 // ─── Delete Org Confirm Modal ─────────────────────────────────────────────────
 function DeleteOrgModal({ open, onClose, org, onDeleted }: { open: boolean; onClose: () => void; org: Organization; onDeleted: () => void }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -284,29 +282,29 @@ function DeleteOrgModal({ open, onClose, org, onDeleted }: { open: boolean; onCl
       await api.deleteOrg(org.id, token);
       onDeleted(); onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete organization");
+      setError(err instanceof Error ? err.message : t("platform.errDeleteOrg"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Delete Organization">
+    <Modal open={open} onClose={onClose} title={t("platform.deleteOrg")}>
       <div className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
         <Alert variant="warning">
-          This will permanently delete <strong>{org.name}</strong> and all its sessions, tasks, and memberships. This cannot be undone.
+          {t("platform.deleteOrgWarning", { name: org.name })}
         </Alert>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Type <span className="font-mono text-red-600">{org.name}</span> to confirm
+            {t("platform.typeToConfirm", { name: org.name })}
           </label>
           <input type="text" value={confirm} onChange={(e) => setConfirm(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent" />
         </div>
         <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.cancel")}</Button>
           <Button variant="danger" onClick={handleDelete} loading={loading} disabled={confirm !== org.name}>
-            <Trash2 className="w-4 h-4 mr-1" />Delete Organization
+            <Trash2 className="w-4 h-4 me-1" />{t("platform.deleteOrg")}
           </Button>
         </div>
       </div>
@@ -322,6 +320,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
   onDeleted: () => void;
 }) {
   const { session } = useSupabase();
+  const { t } = useLanguage();
   const [org, setOrg] = useState(detail.org);
   const { members, sessions, taskCount } = detail;
   const [editingQuotas, setEditingQuotas] = useState<Record<string, number>>({});
@@ -363,7 +362,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       setEditingQuotas((prev) => { const n = { ...prev }; delete n[membershipId]; return n; });
       onRefresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update quota");
+      setError(err instanceof Error ? err.message : t("admin.errQuota"));
     }
     setSavingQuota(null);
   };
@@ -374,7 +373,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       await api.updateMemberRole(org.id, membershipId, newRole, token);
       onRefresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role");
+      setError(err instanceof Error ? err.message : t("admin.errRole"));
     }
   };
 
@@ -384,7 +383,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       await api.removeOrgMember(org.id, membershipId, token);
       onRefresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove member");
+      setError(err instanceof Error ? err.message : t("admin.errRemoveMember"));
     }
   };
 
@@ -401,30 +400,30 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">Organization</p>
+              <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">{t("platform.organizationLabel")}</p>
               <h1 className="text-[20px] font-bold text-[#080707] leading-tight">{org.name}</h1>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" onClick={() => setShowAddMemberModal(true)}>
-            <UserPlus className="w-4 h-4 mr-1" />Add Member
+            <UserPlus className="w-4 h-4 me-1" />{t("admin.addMember")}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => setShowEditModal(true)}>
-            <Settings className="w-4 h-4 mr-1" />Edit Config
+            <Settings className="w-4 h-4 me-1" />{t("platform.editConfig")}
           </Button>
           <Button variant="danger" size="sm" onClick={() => setShowDeleteModal(true)}>
-            <Trash2 className="w-4 h-4 mr-1" />Delete
+            <Trash2 className="w-4 h-4 me-1" />{t("common.delete")}
           </Button>
         </div>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <KpiTile label="Members" value={nonParticipants.length} icon={<Users className="w-5 h-5" />} />
-        <KpiTile label="Sessions" value={sessions.length} icon={<BarChart3 className="w-5 h-5" />} />
-        <KpiTile label="Tasks" value={taskCount} icon={<ListChecks className="w-5 h-5" />} />
-        <KpiTile label="Capacity Used" value={`${totalUsed}/${totalCapacity}`} suffix="min" icon={<Clock className="w-5 h-5" />} />
+        <KpiTile label={t("admin.members")} value={nonParticipants.length} icon={<Users className="w-5 h-5" />} />
+        <KpiTile label={t("memberHome.sessions")} value={sessions.length} icon={<BarChart3 className="w-5 h-5" />} />
+        <KpiTile label={t("nav.tasks")} value={taskCount} icon={<ListChecks className="w-5 h-5" />} />
+        <KpiTile label={t("platform.capacityUsed")} value={`${totalUsed}/${totalCapacity}`} suffix={t("common.minutes")} icon={<Clock className="w-5 h-5" />} />
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
@@ -432,13 +431,13 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       {/* ── Members Table (admin + member) ── */}
       <Card padding={false}>
         <div className="p-6 pb-4 border-b border-[#dddbda]">
-          <CardHeader className="mb-0"><CardTitle>Members &amp; Quotas</CardTitle></CardHeader>
+          <CardHeader className="mb-0"><CardTitle>{t("admin.membersQuotas")}</CardTitle></CardHeader>
         </div>
         {nonParticipants.length === 0 ? (
           <div className="px-6 pb-8 text-center py-6">
-            <p className="text-sm text-gray-400 mb-3">No members yet.</p>
+            <p className="text-sm text-gray-400 mb-3">{t("admin.noMembers")}</p>
             <Button size="sm" onClick={() => setShowAddMemberModal(true)}>
-              <UserPlus className="w-4 h-4 mr-1" />Add First Member
+              <UserPlus className="w-4 h-4 me-1" />{t("platform.addFirstMember")}
             </Button>
           </div>
         ) : (
@@ -446,10 +445,10 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
             <table className="w-full text-sm">
               <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used / Quota</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Quota (min)</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colMember")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colRole")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colUsedQuota")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colQuota")}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -459,14 +458,14 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     <td className="px-6 py-3">
                       <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
                       <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
-                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">Pending invite</span>}
+                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">{t("platform.pendingInvite")}</span>}
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
                         className="px-2 py-1 text-sm border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent">
-                        <option value="admin">Admin</option>
-                        <option value="member">Member</option>
-                        <option value="participant">Participant</option>
+                        <option value="admin">{t("roles.admin")}</option>
+                        <option value="member">{t("roles.member")}</option>
+                        <option value="participant">{t("roles.participant")}</option>
                       </select>
                     </td>
                     <td className="px-6 py-3">
@@ -492,7 +491,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                           </Button>
                         )}
                         <button onClick={() => handleRemoveMember(m.id)}
-                          className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors" title="Remove">
+                          className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors" title={t("admin.remove")}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -508,18 +507,18 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       {/* ── Participants Table ── */}
       <Card padding={false}>
         <div className="p-6 pb-4 border-b border-[#dddbda]">
-          <CardHeader className="mb-0"><CardTitle>Participants</CardTitle></CardHeader>
+          <CardHeader className="mb-0"><CardTitle>{t("admin.participantsTitle")}</CardTitle></CardHeader>
         </div>
         {participants.length === 0 ? (
-          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No participants in this organization.</p>
+          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">{t("platform.noParticipantsOrg")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colParticipant")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colRole")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colStatus")}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -529,22 +528,22 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
                     <td className="px-6 py-3">
                       <p className="font-medium text-gray-800">{m.profile?.full_name || m.invited_email || "—"}</p>
                       <p className="text-xs text-gray-400">{m.profile?.email || m.invited_email}</p>
-                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">Pending invite</span>}
+                      {!m.user_id && <span className="text-xs text-amber-500 font-medium">{t("platform.pendingInvite")}</span>}
                     </td>
                     <td className="px-6 py-3">
                       <select value={m.role} onChange={(e) => handleRoleChange(m.id, e.target.value as UserRole)}
                         className="px-2 py-1 text-sm border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent">
-                        <option value="admin">Admin</option>
-                        <option value="member">Member</option>
-                        <option value="participant">Participant</option>
+                        <option value="admin">{t("roles.admin")}</option>
+                        <option value="member">{t("roles.member")}</option>
+                        <option value="participant">{t("roles.participant")}</option>
                       </select>
                     </td>
                     <td className="px-6 py-3">
-                      <Badge variant="default">Read-only access</Badge>
+                      <Badge variant="default">{t("admin.readOnly")}</Badge>
                     </td>
                     <td className="px-6 py-3">
                       <button onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors" title="Remove">
+                        className="p-1.5 rounded-xl text-gray-300 hover:text-red-500 hover:bg-red-50/60 transition-colors" title={t("admin.remove")}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </td>
@@ -557,24 +556,26 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
       </Card>
 
       {/* Recent Sessions */}
+      <OrgPromptAssignment orgId={org.id} />
+
       <Card padding={false}>
         <div className="p-6 pb-4 border-b border-[#dddbda]">
-          <CardHeader className="mb-0"><CardTitle>Recent Sessions</CardTitle></CardHeader>
+          <CardHeader className="mb-0"><CardTitle>{t("platform.recentSessions")}</CardTitle></CardHeader>
         </div>
         {sessions.length === 0 ? (
-          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">No sessions yet.</p>
+          <p className="px-6 pb-6 pt-4 text-sm text-gray-400">{t("platform.noSessions")}</p>
         ) : (
           <div className="divide-y divide-[#dddbda]">
             {sessions.map((s) => (
               <div key={s.id} className="px-6 py-4 hover:bg-[#fafaf9] transition-colors">
                 <div className="flex items-center justify-between mb-1">
-                  <h4 className="text-sm font-semibold text-gray-800">{s.title || "Untitled Session"}</h4>
+                  <h4 className="text-sm font-semibold text-gray-800">{s.title || t("platform.untitledSession")}</h4>
                   <span className="text-xs text-gray-400">{new Date(s.created_at).toLocaleDateString()}</span>
                 </div>
-                <p className="text-xs text-gray-500 line-clamp-2">{s.summary || "No summary."}</p>
+                <p className="text-xs text-gray-500 line-clamp-2">{s.summary || t("platform.noSummary")}</p>
                 <div className="flex gap-3 mt-1">
-                  <span className="text-xs text-gray-400">{Math.round(s.duration_seconds / 60)} min</span>
-                  <span className="text-xs text-gray-400 capitalize">Sentiment: {s.sentiment}</span>
+                  <span className="text-xs text-gray-400">{Math.round(s.duration_seconds / 60)} {t("common.minutes")}</span>
+                  <span className="text-xs text-gray-400 capitalize">{t("platform.sentimentLabel", { value: s.sentiment })}</span>
                 </div>
               </div>
             ))}
@@ -595,6 +596,7 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 // ─── Main Platform Page ───────────────────────────────────────────────────────
 export default function PlatformPage() {
   const { supabase } = useSupabase();
+  const { t } = useLanguage();
   const { isPlatformAdmin, loading: orgLoading } = useOrganization();
   const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -665,39 +667,39 @@ export default function PlatformPage() {
     <div className="space-y-5">
       <PageHeader
         icon={<Activity className="w-5 h-5 text-white" />}
-        eyebrow="Platform Console"
-        title="ניהול פלטפורמה"
-        breadcrumb={["Platform", "ניהול"]}
+        eyebrow={t("console.platform")}
+        title={t("platform.title")}
+        breadcrumb={[t("nav.platform"), t("platform.crumb")]}
         actions={
           <Button size="sm" onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 ml-1" />New Organization
+            <Plus className="w-4 h-4 me-1" />{t("platform.newOrg")}
           </Button>
         }
       />
 
       {/* Global Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <KpiTile label="Organizations" value={organizations.length} icon={<Building2 className="w-5 h-5" />} />
-        <KpiTile label="Total Capacity" value={totalCapacity} suffix="min" icon={<Clock className="w-5 h-5" />} />
-        <KpiTile label="Used" value={totalUsed} suffix="min" icon={<Activity className="w-5 h-5" />} />
-        <KpiTile label="Utilization" value={`${totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%`} icon={<Users className="w-5 h-5" />} />
+        <KpiTile label={t("platform.organizations")} value={organizations.length} icon={<Building2 className="w-5 h-5" />} />
+        <KpiTile label={t("platform.totalCapacity")} value={totalCapacity} suffix={t("common.minutes")} icon={<Clock className="w-5 h-5" />} />
+        <KpiTile label={t("platform.used")} value={totalUsed} suffix={t("common.minutes")} icon={<Activity className="w-5 h-5" />} />
+        <KpiTile label={t("platform.utilization")} value={`${totalCapacity > 0 ? Math.round((totalUsed / totalCapacity) * 100) : 0}%`} icon={<Users className="w-5 h-5" />} />
       </div>
 
       {/* Org Table */}
       <Card padding={false}>
         <div className="p-6 pb-4 border-b border-[#dddbda]">
-          <CardHeader className="mb-0"><CardTitle>All Organizations</CardTitle></CardHeader>
+          <CardHeader className="mb-0"><CardTitle>{t("platform.allOrganizations")}</CardTitle></CardHeader>
         </div>
         {loading ? (
           <div className="px-6 pb-6 text-center py-8">
-            <div className="animate-pulse text-sm text-gray-400">Loading organizations...</div>
+            <div className="animate-pulse text-sm text-gray-400">{t("platform.loadingOrgs")}</div>
           </div>
         ) : organizations.length === 0 ? (
           <div className="px-6 pb-8 text-center py-8">
             <Building2 className="w-10 h-10 text-[#b3d9f6] mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No organizations yet.</p>
+            <p className="text-sm text-gray-400">{t("platform.noOrgs")}</p>
             <Button className="mt-4" onClick={() => setShowCreateModal(true)}>
-              <Plus className="w-4 h-4 mr-2" />Create first organization
+              <Plus className="w-4 h-4 me-2" />{t("platform.createFirstOrg")}
             </Button>
           </div>
         ) : (
@@ -705,11 +707,11 @@ export default function PlatformPage() {
             <table className="w-full text-sm">
               <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Organization</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Capacity</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Utilization</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Created</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colOrganization")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colCapacity")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colUsed")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colUtilization")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colCreated")}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -720,8 +722,8 @@ export default function PlatformPage() {
                   return (
                     <tr key={org.id} className="hover:bg-[#fafaf9] transition-colors">
                       <td className="px-6 py-3 font-semibold text-gray-800">{org.name}</td>
-                      <td className="px-6 py-3 text-gray-500">{org.total_capacity_min} min</td>
-                      <td className="px-6 py-3 text-gray-500">{org.used_capacity_min} min</td>
+                      <td className="px-6 py-3 text-gray-500">{org.total_capacity_min} {t("common.minutes")}</td>
+                      <td className="px-6 py-3 text-gray-500">{org.used_capacity_min} {t("common.minutes")}</td>
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-2">
                           <div className="flex-1 max-w-[100px] h-2 bg-[#ecf5fe] rounded-full overflow-hidden">
@@ -736,7 +738,7 @@ export default function PlatformPage() {
                       <td className="px-6 py-3">
                         <button onClick={() => loadOrgDetail(org)}
                           className="flex items-center gap-1 text-[#0070d2] hover:text-[#005fb2] text-sm font-medium transition-colors">
-                          Manage<ChevronRight className="w-4 h-4" />
+                          {t("platform.manage")}<ChevronRight className="w-4 h-4 rtl:-scale-x-100" />
                         </button>
                       </td>
                     </tr>

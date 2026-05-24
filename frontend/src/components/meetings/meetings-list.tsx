@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { api } from "@/lib/api";
+import { useLanguage } from "@/providers/language-provider";
 import type { Session, Task } from "@/types";
 import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
 import {
@@ -41,6 +42,7 @@ export function MeetingsList() {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
   const { subscribe } = useRealtime();
+  const { t } = useLanguage();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [taskCounts, setTaskCounts] = useState<Record<string, TaskCount>>({});
@@ -139,7 +141,7 @@ export function MeetingsList() {
       if (selectedSession?.id === confirmDelete.id) setSelectedSession(null);
       setConfirmDelete(null);
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : "שגיאה במחיקה");
+      setDeleteError(err instanceof Error ? err.message : t("meetings.errDelete"));
     } finally {
       setDeleting(false);
     }
@@ -149,7 +151,7 @@ export function MeetingsList() {
     return (
       <Card gradient="from-sky-50 to-blue-50">
         <div className="flex items-center justify-center py-12">
-          <div className="animate-pulse text-sm text-gray-400">טוען פגישות...</div>
+          <div className="animate-pulse text-sm text-gray-400">{t("meetings.loading")}</div>
         </div>
       </Card>
     );
@@ -158,9 +160,9 @@ export function MeetingsList() {
   return (
     <>
       <Card padding={false} gradient="from-sky-50 to-blue-50">
-        <div className="p-5 pb-3 flex items-center justify-between" dir="rtl">
+        <div className="p-5 pb-3 flex items-center justify-between">
           <CardHeader>
-            <CardTitle>פגישות ({sessions.length})</CardTitle>
+            <CardTitle>{t("meetings.title", { count: sessions.length })}</CardTitle>
           </CardHeader>
           <div className="flex items-center gap-2">
             {Object.keys(projects).length > 0 && (
@@ -169,7 +171,7 @@ export function MeetingsList() {
                 onChange={(e) => { setProjectFilter(e.target.value); setPage(0); }}
                 className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#3e3e3c] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
               >
-                <option value="">כל הפרויקטים</option>
+                <option value="">{t("tasks.allProjects")}</option>
                 {Object.entries(projects).map(([id, name]) => (
                   <option key={id} value={id}>{name}</option>
                 ))}
@@ -180,26 +182,26 @@ export function MeetingsList() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#dddbda] hover:bg-[#fafaf9] text-xs text-[#3e3e3c] transition-colors"
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
-              {sortMode === "time" ? "מיין לפי פרויקט" : "מיין לפי זמן"}
+              {sortMode === "time" ? t("meetings.sortByProject") : t("meetings.sortByTime")}
             </button>
           </div>
         </div>
 
         {sessions.length === 0 ? (
-          <div className="px-6 pb-8 text-center text-sm text-gray-400" dir="rtl">
-            אין פגישות עדיין. התחל הקלטה כדי ליצור פגישה.
+          <div className="px-6 pb-8 text-center text-sm text-gray-400">
+            {t("meetings.empty")}
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" dir="rtl">
+              <table className="w-full text-sm">
                 <thead className="bg-[#fafaf9] border-y border-[#dddbda]">
                   <tr>
-                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">תאריך</th>
-                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">כותרת</th>
-                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">פרויקט</th>
-                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">התקדמות</th>
-                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">משך</th>
+                    <th className="text-start px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("meetings.colDate")}</th>
+                    <th className="text-start px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("meetings.colTitle")}</th>
+                    <th className="text-start px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("meetings.colProject")}</th>
+                    <th className="text-start px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("meetings.colProgress")}</th>
+                    <th className="text-start px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("meetings.colDuration")}</th>
                     <th className="px-5 py-3" />
                   </tr>
                 </thead>
@@ -220,7 +222,7 @@ export function MeetingsList() {
                           </div>
                         </td>
                         <td className="px-5 py-3 font-medium text-gray-900 max-w-xs truncate">
-                          {s.title || "פגישה ללא שם"}
+                          {s.title || t("meetings.untitled")}
                         </td>
                         <td className="px-5 py-3 text-gray-500 text-xs">
                           {s.project_id && projects[s.project_id] ? (
@@ -245,7 +247,7 @@ export function MeetingsList() {
                           {durationMin != null ? (
                             <span className="flex items-center gap-1">
                               <Clock className="w-3.5 h-3.5 text-gray-400" />
-                              {durationMin} דק׳
+                              {t("meetings.durationMin", { count: durationMin })}
                             </span>
                           ) : (
                             <span className="text-gray-300">—</span>
@@ -255,7 +257,7 @@ export function MeetingsList() {
                           <button
                             onClick={() => { setConfirmDelete(s); setDeleteError(null); }}
                             className="p-1.5 rounded hover:bg-[#fde9e7] transition-colors text-gray-300 hover:text-[#c23934]"
-                            aria-label="מחק פגישה"
+                            aria-label={t("meetings.deleteAria")}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -269,16 +271,16 @@ export function MeetingsList() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-[#dddbda]" dir="rtl">
+              <div className="flex items-center justify-between px-5 py-3 border-t border-[#dddbda]">
                 <span className="text-xs text-gray-500">
-                  עמוד {page + 1} מתוך {totalPages}
+                  {t("meetings.pageOf", { page: page + 1, total: totalPages })}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
                     className="p-1.5 rounded hover:bg-[#fafaf9] disabled:opacity-40 transition-colors"
-                    aria-label="עמוד הבא"
+                    aria-label={t("meetings.prevPage")}
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -286,7 +288,7 @@ export function MeetingsList() {
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page >= totalPages - 1}
                     className="p-1.5 rounded hover:bg-[#fafaf9] disabled:opacity-40 transition-colors"
-                    aria-label="עמוד קודם"
+                    aria-label={t("meetings.nextPage")}
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -299,20 +301,19 @@ export function MeetingsList() {
 
       {/* Delete Confirm Modal */}
       {confirmDelete && (
-        <Modal open onClose={() => !deleting && setConfirmDelete(null)} title="מחיקת פגישה">
-          <div className="space-y-4" dir="rtl">
+        <Modal open onClose={() => !deleting && setConfirmDelete(null)} title={t("meetings.deleteTitle")}>
+          <div className="space-y-4">
             <Alert variant="warning">
-              האם למחוק את הפגישה &quot;{confirmDelete.title || "פגישה ללא שם"}&quot;?
-              פעולה זו תמחק גם את <strong>כל המשימות הקשורות</strong>.
+              {t("meetings.confirmDeleteBody", { title: confirmDelete.title || t("meetings.untitled") })}
             </Alert>
             {deleteError && <Alert variant="error">{deleteError}</Alert>}
             <div className="flex gap-3">
               <Button variant="danger" onClick={handleDelete} loading={deleting}>
-                <Trash2 className="w-4 h-4 ml-1" />
-                מחק
+                <Trash2 className="w-4 h-4 me-1" />
+                {t("common.delete")}
               </Button>
               <Button variant="secondary" onClick={() => setConfirmDelete(null)} disabled={deleting}>
-                ביטול
+                {t("common.cancel")}
               </Button>
             </div>
           </div>

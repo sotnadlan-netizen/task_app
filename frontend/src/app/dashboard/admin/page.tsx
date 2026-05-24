@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { PageHeader, KpiTile } from "@/components/ui/lightning";
+import { useLanguage } from "@/providers/language-provider";
 import type { OrgMembership, Profile, UserRole } from "@/types";
 import { api } from "@/lib/api";
 import { Users, Clock, Building2, Save, UserPlus, Trash2 } from "lucide-react";
@@ -37,6 +38,7 @@ function AddMemberModal({
 }) {
   const { supabase, session } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<UserRole>(defaultRole);
   const [capacity, setCapacity] = useState(120);
@@ -65,16 +67,11 @@ function AddMemberModal({
 
     if (!isParticipant) {
       if (currentMemberCount >= currentOrg.max_members) {
-        setError(
-          `This organization has reached its member limit of ${currentOrg.max_members}. Contact your platform admin to increase it.`
-        );
+        setError(t("admin.errMemberLimit", { max: currentOrg.max_members }));
         return;
       }
       if (capacity > remainingCapacity) {
-        setError(
-          `Not enough capacity. Trying to allocate ${capacity} min, but only ${remainingCapacity} min remain ` +
-            `(${allocatedCapacity} / ${currentOrg.total_capacity_min} min allocated).`
-        );
+        setError(t("admin.errCapacity", { cap: capacity, rem: remainingCapacity, alloc: allocatedCapacity, total: currentOrg.total_capacity_min }));
         return;
       }
     }
@@ -86,7 +83,7 @@ function AddMemberModal({
       (m) => m.profile?.email === trimmedEmail || m.invited_email === trimmedEmail
     );
     if (existingByEmail) {
-      setError(`${trimmedEmail} is already a member of this organization.`);
+      setError(t("admin.errAlreadyMember", { email: trimmedEmail }));
       setLoading(false);
       return;
     }
@@ -100,57 +97,56 @@ function AddMemberModal({
       onAdded();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add member");
+      setError(err instanceof Error ? err.message : t("admin.errAddMember"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isParticipant ? "Add Participant" : "Add Member"}>
+    <Modal open={open} onClose={onClose} title={isParticipant ? t("admin.addParticipant") : t("admin.addMember")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Capacity & member summary — only for non-participants */}
         {!isParticipant && (
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">Capacity Available</p>
+              <p className="text-xs text-gray-500 mb-1">{t("admin.capacityAvailable")}</p>
               <p
                 className={`text-lg font-bold ${remainingCapacity === 0 ? "text-red-600" : "text-green-600"}`}
               >
-                {remainingCapacity} min
+                {remainingCapacity} {t("common.minutes")}
               </p>
               <p className="text-xs text-gray-400">
-                {allocatedCapacity} / {currentOrg.total_capacity_min} min allocated
+                {t("admin.allocatedOf", { alloc: allocatedCapacity, total: currentOrg.total_capacity_min })}
               </p>
             </div>
             <div className="bg-[#fafaf9] border border-[#dddbda] rounded p-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">Members</p>
+              <p className="text-xs text-gray-500 mb-1">{t("admin.members")}</p>
               <p
                 className={`text-lg font-bold ${currentMemberCount >= currentOrg.max_members ? "text-red-600" : "text-gray-800"}`}
               >
                 {currentMemberCount} / {currentOrg.max_members}
               </p>
-              <p className="text-xs text-gray-400">max members</p>
+              <p className="text-xs text-gray-400">{t("admin.maxMembers")}</p>
             </div>
           </div>
         )}
 
         {!isParticipant && isOverAllocated && (
           <Alert variant="warning">
-            Existing members are allocated {allocatedCapacity} min, which exceeds the org total of{" "}
-            {currentOrg.total_capacity_min} min. Contact your platform admin to increase capacity.
+            {t("admin.overAllocated", { alloc: allocatedCapacity, total: currentOrg.total_capacity_min })}
           </Alert>
         )}
 
         {isParticipant && (
           <Alert variant="warning">
-            Participants have read-only task access and do not consume recording capacity.
+            {t("admin.participantWarning")}
           </Alert>
         )}
 
         {error && <Alert variant="error">{error}</Alert>}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">User Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.userEmail")}</label>
           <input
             type="email"
             value={email}
@@ -160,20 +156,20 @@ function AddMemberModal({
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           />
           <p className="text-xs text-gray-400 mt-1">
-            If the user hasn&apos;t signed in yet, they&apos;ll be linked automatically on first login.
+            {t("memberHome.emailHelper")}
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("admin.role")}</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value as UserRole)}
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
           >
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
-            <option value="participant">Participant</option>
+            <option value="admin">{t("roles.admin")}</option>
+            <option value="member">{t("roles.member")}</option>
+            <option value="participant">{t("roles.participant")}</option>
           </select>
         </div>
 
@@ -181,9 +177,9 @@ function AddMemberModal({
         {!isParticipant && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Capacity (minutes)
-              <span className="text-gray-400 font-normal ml-1">
-                — {remainingCapacity} min available
+              {t("admin.capacityMinutes")}
+              <span className="text-gray-400 font-normal ms-1">
+                {t("admin.minAvailable", { rem: remainingCapacity })}
               </span>
             </label>
             <input
@@ -197,7 +193,7 @@ function AddMemberModal({
             />
             {capacity > remainingCapacity && (
               <p className="text-xs text-red-500 mt-1">
-                Exceeds available capacity by {capacity - remainingCapacity} min
+                {t("admin.exceedsBy", { count: capacity - remainingCapacity })}
               </p>
             )}
           </div>
@@ -205,11 +201,11 @@ function AddMemberModal({
 
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" loading={loading}>
-            <UserPlus className="w-4 h-4 mr-1" />
-            {isParticipant ? "Add Participant" : "Add Member"}
+            <UserPlus className="w-4 h-4 me-1" />
+            {isParticipant ? t("admin.addParticipant") : t("admin.addMember")}
           </Button>
         </div>
       </form>
@@ -231,6 +227,7 @@ function RemoveMemberModal({
 }) {
   const { session } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -238,7 +235,7 @@ function RemoveMemberModal({
     member.profile?.full_name ||
     member.profile?.email ||
     member.invited_email ||
-    "this member";
+    t("admin.thisMember");
 
   const handleRemove = async () => {
     if (!currentOrg) return;
@@ -250,26 +247,25 @@ function RemoveMemberModal({
       onRemoved();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to remove member");
+      setError(err instanceof Error ? err.message : t("admin.errRemoveMember"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Remove Member">
+    <Modal open={open} onClose={onClose} title={t("admin.removeMember")}>
       <div className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
         <Alert variant="warning">
-          Remove <strong>{displayName}</strong> from this organization? They will lose all access
-          immediately.
+          {t("admin.removeConfirm", { name: displayName })}
         </Alert>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button variant="danger" onClick={handleRemove} loading={loading}>
-            <Trash2 className="w-4 h-4 mr-1" />
-            Remove
+            <Trash2 className="w-4 h-4 me-1" />
+            {t("admin.remove")}
           </Button>
         </div>
       </div>
@@ -281,6 +277,7 @@ function RemoveMemberModal({
 export default function AdminPage() {
   const { session } = useSupabase();
   const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
+  const { t } = useLanguage();
   const router = useRouter();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -337,10 +334,7 @@ export default function AdminPage() {
     const maxAllowed = currentOrg.total_capacity_min - otherAllocated;
 
     if (newQuota > maxAllowed) {
-      setError(
-        `Cannot set quota to ${newQuota} min. Only ${maxAllowed} min available ` +
-          `(org total: ${currentOrg.total_capacity_min} min, other members: ${otherAllocated} min).`
-      );
+      setError(t("admin.errQuotaLimit", { q: newQuota, max: maxAllowed, total: currentOrg.total_capacity_min, other: otherAllocated }));
       return;
     }
 
@@ -356,7 +350,7 @@ export default function AdminPage() {
       });
       loadMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update quota");
+      setError(err instanceof Error ? err.message : t("admin.errQuota"));
     }
     setSavingQuota(null);
   };
@@ -378,7 +372,7 @@ export default function AdminPage() {
       });
       loadMembers();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update role");
+      setError(err instanceof Error ? err.message : t("admin.errRole"));
     }
     setSavingRole(null);
   };
@@ -387,16 +381,16 @@ export default function AdminPage() {
   if (orgLoading || currentRole !== "admin") return null;
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5">
       <PageHeader
         icon={<Building2 className="w-5 h-5 text-white" />}
-        eyebrow="Organization Console"
-        title="ניהול ארגון"
-        breadcrumb={[currentOrg?.name || "Organization", "ניהול"]}
+        eyebrow={t("console.organization")}
+        title={t("admin.title")}
+        breadcrumb={[currentOrg?.name || t("nav.organization"), t("admin.crumb")]}
         actions={
           <Button size="sm" onClick={() => setShowAddModal(true)}>
-            <UserPlus className="w-4 h-4 ml-1" />
-            הוסף משתמש
+            <UserPlus className="w-4 h-4 me-1" />
+            {t("admin.addUser")}
           </Button>
         }
       />
@@ -404,20 +398,20 @@ export default function AdminPage() {
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <KpiTile
-          label="Total Minutes Used"
+          label={t("admin.totalMinutesUsed")}
           value={`${totalUsed} / ${totalCapacity}`}
           icon={<Clock className="w-5 h-5" />}
         />
         <KpiTile
-          label="Members"
+          label={t("admin.members")}
           value={nonParticipants.length}
           suffix={currentOrg ? `/ ${currentOrg.max_members}` : undefined}
           icon={<Users className="w-5 h-5" />}
         />
         <KpiTile
-          label="Org Capacity"
+          label={t("admin.orgCapacity")}
           value={currentOrg?.total_capacity_min ?? "—"}
-          suffix="min"
+          suffix={t("common.minutes")}
           icon={<Building2 className="w-5 h-5" />}
         />
       </div>
@@ -428,27 +422,27 @@ export default function AdminPage() {
       <Card padding={false}>
         <div className="p-6 pb-4 flex items-center justify-between border-b border-[#dddbda]">
           <CardHeader className="mb-0">
-            <CardTitle>Members &amp; Quotas</CardTitle>
+            <CardTitle>{t("admin.membersQuotas")}</CardTitle>
           </CardHeader>
           <Button size="sm" onClick={() => setShowAddModal(true)}>
-            <UserPlus className="w-4 h-4 mr-1" />
-            Add Member
+            <UserPlus className="w-4 h-4 me-1" />
+            {t("admin.addMember")}
           </Button>
         </div>
 
         {loading ? (
           <div className="px-6 pb-6 text-center py-8">
-            <div className="animate-pulse text-sm text-gray-400">Loading members...</div>
+            <div className="animate-pulse text-sm text-gray-400">{t("admin.loadingMembers")}</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Member</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Used / Quota</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Quota (min)</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colMember")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colRole")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colUsedQuota")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colQuota")}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -472,7 +466,7 @@ export default function AdminPage() {
                 {nonParticipants.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-400">
-                      No members yet. Add the first one.
+                      {t("admin.noMembers")}
                     </td>
                   </tr>
                 )}
@@ -486,30 +480,30 @@ export default function AdminPage() {
       <Card padding={false}>
         <div className="p-6 pb-4 flex items-center justify-between border-b border-[#dddbda]">
           <CardHeader className="mb-0">
-            <CardTitle>Participants</CardTitle>
+            <CardTitle>{t("admin.participantsTitle")}</CardTitle>
           </CardHeader>
           <Button
             size="sm"
             variant="secondary"
             onClick={() => setShowAddModal(true)}
           >
-            <UserPlus className="w-4 h-4 mr-1" />
-            Add Participant
+            <UserPlus className="w-4 h-4 me-1" />
+            {t("admin.addParticipant")}
           </Button>
         </div>
 
         {loading ? (
           <div className="px-6 pb-6 text-center py-8">
-            <div className="animate-pulse text-sm text-gray-400">Loading participants...</div>
+            <div className="animate-pulse text-sm text-gray-400">{t("admin.loadingParticipants")}</div>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
                 <tr>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Participant</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Role</th>
-                  <th className="text-left px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colParticipant")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colRole")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("admin.colStatus")}</th>
                   <th className="px-6 py-3" />
                 </tr>
               </thead>
@@ -533,7 +527,7 @@ export default function AdminPage() {
                 {participants.length === 0 && (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-400">
-                      No participants yet.
+                      {t("admin.noParticipants")}
                     </td>
                   </tr>
                 )}
@@ -595,6 +589,7 @@ function MemberRow({
   onRemove: () => void;
   showCapacity: boolean;
 }) {
+  const { t } = useLanguage();
   return (
     <tr className="hover:bg-[#fafaf9] transition-colors">
       {/* Member info */}
@@ -606,7 +601,7 @@ function MemberRow({
           <p className="text-xs text-gray-400">
             {m.profile?.email || m.invited_email}
             {!m.profile && m.invited_email && (
-              <span className="ml-1 text-amber-500">(pending)</span>
+              <span className="ms-1 text-amber-500">{t("admin.pending")}</span>
             )}
           </p>
         </div>
@@ -625,9 +620,9 @@ function MemberRow({
             }
             className="px-2 py-1 text-xs border border-[#dddbda] rounded bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
           >
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
-            <option value="participant">Participant</option>
+            <option value="admin">{t("roles.admin")}</option>
+            <option value="member">{t("roles.member")}</option>
+            <option value="participant">{t("roles.participant")}</option>
           </select>
           {editingRoles[m.id] !== undefined && (
             <Button
@@ -680,7 +675,7 @@ function MemberRow({
         </>
       ) : (
         <td className="px-6 py-3">
-          <Badge variant="default">Read-only access</Badge>
+          <Badge variant="default">{t("admin.readOnly")}</Badge>
         </td>
       )}
 
@@ -699,7 +694,7 @@ function MemberRow({
           <button
             onClick={onRemove}
             className="p-1.5 rounded text-gray-300 hover:text-[#c23934] hover:bg-[#fde9e7] transition-colors"
-            title="Remove"
+            title={t("admin.remove")}
           >
             <Trash2 className="w-4 h-4" />
           </button>

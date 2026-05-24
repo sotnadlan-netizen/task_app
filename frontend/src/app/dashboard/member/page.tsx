@@ -33,8 +33,11 @@ import Link from "next/link";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
+import { useLanguage } from "@/providers/language-provider";
+import type { Lang } from "@/lib/i18n";
 import { useNotificationStore } from "@/stores/notification-store";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useRecording } from "@/hooks/useRecording";
 import { AudioWaveform } from "@/components/recording/audio-waveform";
 import { SessionResultsOverlay } from "@/components/recording/session-results-overlay";
@@ -60,8 +63,21 @@ const statusColor: Record<string, string> = {
   in_progress: "bg-[#0070d2] text-white",
   done: "bg-[#04844b] text-white",
 };
-const statusLabel: Record<string, string> = { todo: "Open", in_progress: "In Progress", done: "Closed" };
-const priorityLabel: Record<string, string> = { low: "Low", medium: "Medium", high: "High", critical: "Critical" };
+
+// Translate-aware label maps (built per component from the active language).
+type TFn = (path: string, vars?: Record<string, string | number>) => string;
+const localeOf = (lang: Lang) => (lang === "he" ? "he-IL" : "en-US");
+const statusLabelsOf = (t: TFn): Record<string, string> => ({
+  todo: t("tasks.statusTodo"),
+  in_progress: t("tasks.statusInProgress"),
+  done: t("tasks.statusDone"),
+});
+const priorityLabelsOf = (t: TFn): Record<string, string> => ({
+  low: t("tasks.priorityLow"),
+  medium: t("tasks.priorityMedium"),
+  high: t("tasks.priorityHigh"),
+  critical: t("tasks.priorityCritical"),
+});
 
 // ── Sort helpers (ported from member/page.tsx) ──────────────────────────────
 type MeetingSort = "time" | "project";
@@ -87,6 +103,10 @@ export default function MemberPage() {
   const { supabase, session, user, signOut } = useSupabase();
   const { currentOrg, capacity, currentRole, loading: orgLoading, organizations, switchOrganization, isPlatformAdmin } = useOrganization();
   const { subscribe } = useRealtime();
+  const { t, lang } = useLanguage();
+  const loc = localeOf(lang);
+  const statusLabel = statusLabelsOf(t);
+  const priorityLabel = priorityLabelsOf(t);
   const { unreadCount } = useNotificationStore();
   const router = useRouter();
 
@@ -223,7 +243,7 @@ export default function MemberPage() {
       if (selectedSession?.id === confirmDeleteSession.id) setSelectedSession(null);
       setConfirmDeleteSession(null);
     } catch (err) {
-      setDeleteSessionError(err instanceof Error ? err.message : "שגיאה במחיקת פגישה");
+      setDeleteSessionError(err instanceof Error ? err.message : t("meetings.errDelete"));
     } finally {
       setDeletingSession(false);
     }
@@ -276,7 +296,7 @@ export default function MemberPage() {
     const labels = allSessions
       .map((s) => s.sentiment?.toLowerCase().trim())
       .filter((v): v is string => !!v);
-    if (labels.length === 0) return { value: "—", label: "אין נתונים", up: false };
+    if (labels.length === 0) return { value: "—", label: "neutral", up: false };
     const score = (s: string) => (/pos|חיוב/.test(s) ? 1 : /neg|שליל/.test(s) ? -1 : 0);
     const avg = labels.reduce((a, s) => a + score(s), 0) / labels.length;
     const label = avg > 0.2 ? "positive" : avg < -0.2 ? "negative" : "neutral";
@@ -292,41 +312,41 @@ export default function MemberPage() {
   if (orgLoading || currentRole === "participant") return null;
 
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" dir="rtl" style={fontStyle}>
+    <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" style={fontStyle}>
       {/* ── Global header (Salesforce blue) ───────────────────────────────── */}
       <header className="bg-[#16325c] text-white">
         <div className="h-12 px-4 flex items-center gap-3">
-          <Link href="/dashboard" className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10" aria-label="App launcher">
+          <Link href="/dashboard" className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10" aria-label={t("nav.appLauncher")}>
             {[...Array(9)].map((_, i) => <span key={i} className="w-1 h-1 rounded-full bg-white/80" />)}
           </Link>
           <span className="text-white/40">|</span>
           <Link href="/dashboard/member" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-black">T</div>
             <span className="font-semibold text-[15px]">TaskFlow</span>
-            <span className="text-white/60 text-[13px] hidden lg:inline">— Member Console</span>
+            <span className="text-white/60 text-[13px] hidden lg:inline">— {t("console.member")}</span>
           </Link>
 
-          <nav className="hidden md:flex items-center mr-6 h-12">
+          <nav className="hidden md:flex items-center ms-6 h-12">
             {[
-              { label: "Home", icon: Home, href: "/dashboard/member", active: true },
-              { label: "Sessions", icon: Phone, href: "/dashboard/member/meetings", count: allSessions.length },
-              { label: "Tasks", icon: ListChecks, href: "/dashboard/member/tasks", count: taskCountTotal },
-              { label: "Approvals", icon: Inbox, href: "/dashboard/member/inbox", count: unreadCount || undefined },
-            ].map((t) => {
-              const Icon = t.icon;
+              { label: t("nav.home"), icon: Home, href: "/dashboard/member", active: true },
+              { label: t("memberHome.sessions"), icon: Phone, href: "/dashboard/member/meetings", count: allSessions.length },
+              { label: t("nav.tasks"), icon: ListChecks, href: "/dashboard/member/tasks", count: taskCountTotal },
+              { label: t("memberHome.approvals"), icon: Inbox, href: "/dashboard/member/inbox", count: unreadCount || undefined },
+            ].map((item) => {
+              const Icon = item.icon;
               return (
                 <Link
-                  key={t.label}
-                  href={t.href}
+                  key={item.href}
+                  href={item.href}
                   className={`h-12 px-4 flex items-center gap-1.5 text-[13px] transition-colors ${
-                    t.active ? "bg-white text-[#080707] font-semibold" : "text-white/90 hover:bg-white/10"
+                    item.active ? "bg-white text-[#080707] font-semibold" : "text-white/90 hover:bg-white/10"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
-                  {t.label}
-                  {t.count !== undefined && (
-                    <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded ${t.active ? "bg-[#0070d2] text-white" : "bg-white/15 text-white"}`}>
-                      {t.count}
+                  {item.label}
+                  {item.count !== undefined && (
+                    <span className={`ms-1 text-[10px] px-1.5 py-0.5 rounded ${item.active ? "bg-[#0070d2] text-white" : "bg-white/15 text-white"}`}>
+                      {item.count}
                     </span>
                   )}
                 </Link>
@@ -339,13 +359,13 @@ export default function MemberPage() {
           <div className="flex items-center gap-1">
             {/* Admin ↔ Member toggle (admin-role users only) */}
             {!isPlatformAdmin && currentRole === "admin" && (
-              <div className="flex items-center bg-white/10 rounded p-0.5 gap-0.5 mr-1">
-                <span className="px-2.5 py-1 text-[11px] font-semibold rounded bg-white text-[#16325c]">Member</span>
+              <div className="flex items-center bg-white/10 rounded p-0.5 gap-0.5 me-1">
+                <span className="px-2.5 py-1 text-[11px] font-semibold rounded bg-white text-[#16325c]">{t("nav.member")}</span>
                 <button
                   onClick={() => router.push("/dashboard/admin")}
                   className="px-2.5 py-1 text-[11px] font-semibold rounded text-white/80 hover:text-white"
                 >
-                  Admin
+                  {t("nav.admin")}
                 </button>
               </div>
             )}
@@ -356,19 +376,19 @@ export default function MemberPage() {
                 <button
                   onClick={() => { setOrgMenuOpen((v) => !v); setUserMenuOpen(false); }}
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-white/10 text-[12px] font-medium text-white transition-colors"
-                  aria-label="Switch organization"
+                  aria-label={t("nav.switchOrganization")}
                 >
                   <Building2 className="w-4 h-4 text-[#1ab9ff]" />
-                  <span className="max-w-[110px] truncate hidden lg:inline">{currentOrg?.name || "Org"}</span>
+                  <span className="max-w-[110px] truncate hidden lg:inline">{currentOrg?.name || t("nav.selectOrg")}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-white/70" />
                 </button>
                 {orgMenuOpen && (
-                  <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
+                  <div className="absolute top-full start-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
                     {organizations.map((org) => (
                       <button
                         key={org.id}
                         onClick={() => { switchOrganization(org.id); setOrgMenuOpen(false); }}
-                        className={`w-full text-right px-4 py-2 text-[13px] transition-colors ${
+                        className={`w-full text-start px-4 py-2 text-[13px] transition-colors ${
                           org.id === currentOrg?.id ? "bg-[#ecf5fe] text-[#0070d2] font-semibold" : "text-[#080707] hover:bg-[#fafaf9]"
                         }`}
                       >
@@ -381,13 +401,15 @@ export default function MemberPage() {
             )}
 
             <div className="relative hidden lg:block">
-              <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
+              <Search className="w-3.5 h-3.5 absolute start-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
               <input
-                placeholder="Search…"
-                dir="ltr"
-                className="w-56 pr-7 pl-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
+                placeholder={t("common.search")}
+                className="w-56 ps-7 pe-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
               />
             </div>
+
+            {/* Language toggle */}
+            <LanguageToggle variant="dark" />
 
             {/* Theme toggle */}
             <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
@@ -395,46 +417,46 @@ export default function MemberPage() {
             </div>
 
             {/* Notifications → inbox */}
-            <Link href="/dashboard/member/inbox" className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center" aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount})` : ""}`}>
+            <Link href="/dashboard/member/inbox" className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center" aria-label={unreadCount > 0 ? t("nav.notificationsUnread", { count: unreadCount }) : t("nav.notifications")}>
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
+                <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </Link>
 
             {/* User menu */}
-            <div className="relative ml-1">
+            <div className="relative ms-1">
               <button
                 onClick={() => { setUserMenuOpen((v) => !v); setOrgMenuOpen(false); }}
                 className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-bold"
-                aria-label="User menu"
+                aria-label={t("memberHome.userMenuAria")}
               >
                 {user?.email?.charAt(0).toUpperCase() || "?"}
               </button>
               {userMenuOpen && (
-                <div className="absolute left-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50 text-[#080707]" dir="rtl">
+                <div className="absolute start-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50 text-[#080707]">
                   <div className="px-4 py-2.5 border-b border-[#dddbda]">
                     <p className="text-[13px] font-medium truncate">{user?.email}</p>
-                    <p className="text-[11px] text-[#706e6b] capitalize">{currentRole || "member"}</p>
+                    <p className="text-[11px] text-[#706e6b]">{t(`roles.${currentRole || "member"}`)}</p>
                   </div>
-                  <Link href="/dashboard/member/inbox" onClick={() => setUserMenuOpen(false)} className="w-full text-right px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2 flex-row-reverse">
+                  <Link href="/dashboard/member/inbox" onClick={() => setUserMenuOpen(false)} className="w-full text-start px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2">
                     <Inbox className="w-4 h-4 text-[#706e6b]" />
-                    תיבת אישורים
+                    {t("console.approvalsTitle")}
                   </Link>
                   {currentRole === "admin" && !isPlatformAdmin && (
-                    <Link href="/dashboard/admin" onClick={() => setUserMenuOpen(false)} className="w-full text-right px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2 flex-row-reverse">
+                    <Link href="/dashboard/admin" onClick={() => setUserMenuOpen(false)} className="w-full text-start px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2">
                       <Settings className="w-4 h-4 text-[#706e6b]" />
-                      ניהול ארגון
+                      {t("memberHome.manageOrg")}
                     </Link>
                   )}
                   <button
                     onClick={() => { signOut(); setUserMenuOpen(false); }}
-                    className="w-full text-right px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2 flex-row-reverse"
+                    className="w-full text-start px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2"
                   >
                     <LogOut className="w-4 h-4" />
-                    התנתק
+                    {t("nav.signOut")}
                   </button>
                 </div>
               )}
@@ -447,10 +469,10 @@ export default function MemberPage() {
       <div className="bg-white border-b border-[#dddbda] px-6 pt-3 pb-2">
         <div className="flex items-center gap-1.5 text-[11px] text-[#706e6b] mb-2">
           <Home className="w-3 h-3" />
-          <ChevronLeft className="w-3 h-3" />
-          <span>Member Console</span>
-          <ChevronLeft className="w-3 h-3" />
-          <span className="text-[#080707] font-semibold">Home</span>
+          <ChevronLeft className="w-3 h-3 rtl:-scale-x-100" />
+          <span>{t("console.member")}</span>
+          <ChevronLeft className="w-3 h-3 rtl:-scale-x-100" />
+          <span className="text-[#080707] font-semibold">{t("nav.home")}</span>
         </div>
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
@@ -459,18 +481,18 @@ export default function MemberPage() {
             </div>
             <div>
               <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">
-                {currentOrg?.name ? currentOrg.name : "Member Workspace"}
+                {currentOrg?.name ? currentOrg.name : t("memberHome.workspace")}
               </p>
               <h1 className="text-[20px] font-bold text-[#080707] leading-tight flex items-center gap-2">
-                Home
+                {t("nav.home")}
                 <Star className="w-4 h-4 text-[#dddbda] hover:text-amber-400 cursor-pointer" />
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Btn icon={<UserPlus className="w-3.5 h-3.5 ml-1" />} onClick={() => setShowAddParticipant(true)}>הוסף משתתף</Btn>
-            <Btn variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => document.getElementById("quick-action")?.scrollIntoView({ behavior: "smooth" })}>New Session</Btn>
-            <Btn variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => loadStats()}>Refresh</Btn>
+            <Btn icon={<UserPlus className="w-3.5 h-3.5 me-1" />} onClick={() => setShowAddParticipant(true)}>{t("memberHome.addParticipant")}</Btn>
+            <Btn variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => document.getElementById("quick-action")?.scrollIntoView({ behavior: "smooth" })}>{t("memberHome.newSession")}</Btn>
+            <Btn variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => loadStats()}>{t("memberHome.refresh")}</Btn>
             <button className="p-2 rounded border border-[#dddbda] hover:bg-[#f3f3f3]">
               <MoreHorizontal className="w-3.5 h-3.5 text-[#0070d2]" />
             </button>
@@ -482,10 +504,10 @@ export default function MemberPage() {
       <main className="max-w-[1600px] mx-auto px-6 py-5 space-y-5">
         {/* KPI tiles */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiTile label="Sessions" value={String(allSessions.length)} trend={`${pagedMeetings.length} shown`} trendUp icon={<Phone className="w-5 h-5" />} />
-          <KpiTile label="Total Tasks" value={String(taskCountTotal)} trend={`${sortedTasks.filter((t) => t.status !== "done").length} open`} trendUp icon={<ListChecks className="w-5 h-5" />} />
-          <KpiTile label="Capacity Remaining" value={String(capacityRemaining)} suffix="min" trend={capacityTotal > 0 ? `${capacityPct}%` : "—"} trendUp={capacityPct > 30} icon={<BarChart3 className="w-5 h-5" />} />
-          <KpiTile label="Avg Sentiment" value={sentimentStats.value} trend={sentimentStats.label} trendUp={sentimentStats.up} icon={<TrendingUp className="w-5 h-5" />} />
+          <KpiTile label={t("memberHome.sessions")} value={String(allSessions.length)} trend={t("memberHome.kpiShown", { count: pagedMeetings.length })} trendUp icon={<Phone className="w-5 h-5" />} />
+          <KpiTile label={t("memberHome.totalTasks")} value={String(taskCountTotal)} trend={t("memberHome.kpiOpen", { count: sortedTasks.filter((task) => task.status !== "done").length })} trendUp icon={<ListChecks className="w-5 h-5" />} />
+          <KpiTile label={t("memberHome.capacityRemaining")} value={String(capacityRemaining)} suffix={t("common.minutes")} trend={capacityTotal > 0 ? `${capacityPct}%` : "—"} trendUp={capacityPct > 30} icon={<BarChart3 className="w-5 h-5" />} />
+          <KpiTile label={t("memberHome.avgSentiment")} value={sentimentStats.value} trend={sentimentStats.value === "—" ? t("memberHome.noData") : t(`sentiment.${sentimentStats.label}`)} trendUp={sentimentStats.up} icon={<TrendingUp className="w-5 h-5" />} />
         </section>
 
         {/* Two-column body */}
@@ -494,24 +516,24 @@ export default function MemberPage() {
           <div className="col-span-12 lg:col-span-4 space-y-3">
             <div id="quick-action">
               <Card>
-                <CardHeader icon={<Mic className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title="מרכז הקלטה" sub="Capture a new Session" />
+                <CardHeader icon={<Mic className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title={t("recording.title")} sub={t("memberHome.newSession")} />
                 <LightningRecordingHub onSessionReady={handleSessionReady} />
               </Card>
             </div>
 
             <Card>
-              <CardHeader icon={<Edit3 className="w-4 h-4 text-white" />} iconBg="bg-[#04844b]" title="Recent Tasks" sub={`${recentTasks.length} of ${taskCountTotal}`} />
+              <CardHeader icon={<Edit3 className="w-4 h-4 text-white" />} iconBg="bg-[#04844b]" title={t("memberHome.recentTasks")} sub={t("memberHome.ofCount", { shown: recentTasks.length, total: taskCountTotal })} />
               {recentTasks.length === 0 ? (
-                <p className="px-4 py-6 text-center text-[12px] text-[#706e6b]">אין משימות עדיין.</p>
+                <p className="px-4 py-6 text-center text-[12px] text-[#706e6b]">{t("memberHome.noTasksYet")}</p>
               ) : (
                 <ul className="divide-y divide-[#dddbda]">
-                  {recentTasks.map((t) => {
-                    const owningSession = t.session_id ? allSessions.find((s) => s.id === t.session_id) : undefined;
+                  {recentTasks.map((rt) => {
+                    const owningSession = rt.session_id ? allSessions.find((s) => s.id === rt.session_id) : undefined;
                     return (
-                      <li key={t.id} onClick={() => owningSession && handleSessionClick(owningSession)} className="px-3 py-2.5 flex items-center gap-2 hover:bg-[#f3f3f3] cursor-pointer">
-                        <span className="text-[11px] font-mono text-[#0070d2] hover:underline w-14 truncate">{t.id.slice(0, 8)}</span>
-                        <p className={`flex-1 text-[13px] truncate ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</p>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${priorityColor[t.priority]}`}>{priorityLabel[t.priority]}</span>
+                      <li key={rt.id} onClick={() => owningSession && handleSessionClick(owningSession)} className="px-3 py-2.5 flex items-center gap-2 hover:bg-[#f3f3f3] cursor-pointer">
+                        <span className="text-[11px] font-mono text-[#0070d2] hover:underline w-14 truncate">{rt.id.slice(0, 8)}</span>
+                        <p className={`flex-1 text-[13px] truncate ${rt.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{rt.title}</p>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${priorityColor[rt.priority]}`}>{priorityLabel[rt.priority]}</span>
                       </li>
                     );
                   })}
@@ -528,9 +550,9 @@ export default function MemberPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#080707]">
                     <Phone className="w-4 h-4 text-[#0070d2]" />
-                    Sessions
+                    {t("memberHome.sessions")}
                   </div>
-                  <span className="text-[11px] text-[#706e6b]">{sortedMeetings.length} items</span>
+                  <span className="text-[11px] text-[#706e6b]">{t("memberHome.items", { count: sortedMeetings.length })}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   {hasProjects && (
@@ -539,19 +561,19 @@ export default function MemberPage() {
                       onChange={(e) => { setMeetingProjectFilter(e.target.value); setMeetingPage(0); }}
                       className="px-2 py-1 rounded border border-[#dddbda] bg-white text-[12px] text-[#3e3e3c] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
                     >
-                      <option value="">All Projects</option>
+                      <option value="">{t("tasks.allProjects")}</option>
                       {Object.entries(projects).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
                     </select>
                   )}
                   <Btn variant="secondary" small onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}>
-                    <ArrowUpDown className="w-3 h-3 ml-1" />
-                    {meetingSort === "time" ? "By Project" : "By Time"}
+                    <ArrowUpDown className="w-3 h-3 me-1" />
+                    {meetingSort === "time" ? t("meetings.sortByProject") : t("meetings.sortByTime")}
                   </Btn>
                 </div>
               </div>
 
               {pagedMeetings.length === 0 ? (
-                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">אין פגישות — התחל הקלטה כדי ליצור פגישה חדשה.</p>
+                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{t("meetings.empty")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px]">
@@ -562,12 +584,12 @@ export default function MemberPage() {
                             {selected.length === pagedMeetings.length && pagedMeetings.length > 0 ? <CheckSquare className="w-4 h-4 text-[#0070d2]" /> : <Square className="w-4 h-4 text-[#706e6b]" />}
                           </button>
                         </Th>
-                        <Th sortable>Session ID</Th>
-                        <Th sortable>Title</Th>
-                        <Th sortable>Project</Th>
-                        <Th sortable>Date</Th>
-                        <Th sortable className="text-center">Tasks</Th>
-                        <Th sortable>Stage</Th>
+                        <Th sortable>{t("memberHome.colSessionId")}</Th>
+                        <Th sortable>{t("meetings.colTitle")}</Th>
+                        <Th sortable>{t("meetings.colProject")}</Th>
+                        <Th sortable>{t("meetings.colDate")}</Th>
+                        <Th sortable className="text-center">{t("memberHome.colTasks")}</Th>
+                        <Th sortable>{t("memberHome.colStage")}</Th>
                         <Th width="w-10"></Th>
                       </tr>
                     </thead>
@@ -576,7 +598,7 @@ export default function MemberPage() {
                         const isSelected = selected.includes(s.id);
                         const tc = taskCounts[s.id];
                         const projectName = s.project_id ? projects[s.project_id] : null;
-                        const stage = tc && tc.total > 0 && tc.done === tc.total ? "סגור" : "פעיל";
+                        const isClosed = !!(tc && tc.total > 0 && tc.done === tc.total);
                         return (
                           <tr key={s.id} onClick={() => handleSessionClick(s)} className={`border-b border-[#dddbda] cursor-pointer transition-colors ${isSelected ? "bg-[#ecf5fe]" : "hover:bg-[#fafaf9]"}`}>
                             <Td>
@@ -585,26 +607,26 @@ export default function MemberPage() {
                               </button>
                             </Td>
                             <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{s.id.slice(0, 8)}</a></Td>
-                            <Td className="font-semibold text-[#080707] truncate max-w-[280px]">{s.title || "פגישה ללא שם"}</Td>
+                            <Td className="font-semibold text-[#080707] truncate max-w-[280px]">{s.title || t("meetings.untitled")}</Td>
                             <Td>
                               {projectName ? (
                                 <span className="inline-flex items-center gap-1 text-[12px] text-[#0070d2]"><FolderOpen className="w-3 h-3" />{projectName}</span>
                               ) : <span className="text-[12px] text-[#706e6b]">—</span>}
                             </Td>
-                            <Td className="text-[12px] text-[#3e3e3c]">{new Date(s.created_at).toLocaleDateString("he-IL")}</Td>
+                            <Td className="text-[12px] text-[#3e3e3c]">{new Date(s.created_at).toLocaleDateString(loc)}</Td>
                             <Td className="text-center">
                               {tc ? (
                                 <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${tc.done === tc.total ? "bg-[#cfeac4] text-[#04844b]" : "bg-[#dceffb] text-[#0070d2]"}`}>{tc.done}/{tc.total}</span>
                               ) : <span className="text-[11px] text-[#706e6b]">—</span>}
                             </Td>
                             <Td>
-                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${stage === "פעיל" ? "text-[#04844b]" : "text-[#706e6b]"}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${stage === "פעיל" ? "bg-[#04844b]" : "bg-[#706e6b]"}`} />
-                                {stage}
+                              <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${!isClosed ? "text-[#04844b]" : "text-[#706e6b]"}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${!isClosed ? "bg-[#04844b]" : "bg-[#706e6b]"}`} />
+                                {isClosed ? t("memberHome.stageClosed") : t("memberHome.stageActive")}
                               </span>
                             </Td>
                             <Td>
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedSession(s); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פרטי פגישה">
+                              <button onClick={(e) => { e.stopPropagation(); setSelectedSession(s); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label={t("memberHome.sessionDetailsAria")}>
                                 <Settings2 className="w-3.5 h-3.5 text-[#706e6b]" />
                               </button>
                             </Td>
@@ -632,9 +654,9 @@ export default function MemberPage() {
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 text-[14px] font-semibold text-[#080707]">
                     <ListChecks className="w-4 h-4 text-[#fe9339]" />
-                    Tasks
+                    {t("nav.tasks")}
                   </div>
-                  <span className="text-[11px] text-[#706e6b]">{sortedTasks.length} items</span>
+                  <span className="text-[11px] text-[#706e6b]">{t("memberHome.items", { count: sortedTasks.length })}</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {hasProjects && (
@@ -643,22 +665,27 @@ export default function MemberPage() {
                       onChange={(e) => { setTaskProjectFilter(e.target.value); setTaskPage(0); }}
                       className="px-2 py-1 rounded border border-[#dddbda] bg-white text-[12px] text-[#3e3e3c] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
                     >
-                      <option value="">All Projects</option>
+                      <option value="">{t("tasks.allProjects")}</option>
                       {Object.entries(projects).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
                     </select>
                   )}
                   <div className="flex items-center gap-0.5">
-                    {(["time", "project", "status", "urgency"] as TaskSort[]).map((s) => {
-                      const labels: Record<TaskSort, string> = { time: "Time", project: "Project", status: "Status", urgency: "Urgency" };
+                    {(["time", "project", "status", "urgency"] as TaskSort[]).map((sortKey) => {
+                      const labels: Record<TaskSort, string> = {
+                        time: t("memberHome.sortTime"),
+                        project: t("memberHome.sortProject"),
+                        status: t("memberHome.sortStatus"),
+                        urgency: t("memberHome.sortUrgency"),
+                      };
                       return (
                         <button
-                          key={s}
-                          onClick={() => { setTaskSort(s); setTaskPage(0); }}
+                          key={sortKey}
+                          onClick={() => { setTaskSort(sortKey); setTaskPage(0); }}
                           className={`px-2 py-1 rounded text-[11px] font-semibold border transition-colors ${
-                            taskSort === s ? "bg-[#0070d2] text-white border-[#0070d2]" : "bg-white text-[#0070d2] border-[#dddbda] hover:bg-[#f4f6f9]"
+                            taskSort === sortKey ? "bg-[#0070d2] text-white border-[#0070d2]" : "bg-white text-[#0070d2] border-[#dddbda] hover:bg-[#f4f6f9]"
                           }`}
                         >
-                          {labels[s]}
+                          {labels[sortKey]}
                         </button>
                       );
                     })}
@@ -667,38 +694,38 @@ export default function MemberPage() {
               </div>
 
               {pagedTasks.length === 0 ? (
-                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">אין משימות.</p>
+                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{t("tasks.empty")}</p>
               ) : (
                 <table className="w-full text-[13px]">
                   <thead className="bg-[#fafaf9] text-[#3e3e3c]">
                     <tr className="border-b border-[#dddbda]">
-                      <Th sortable>Task ID</Th>
-                      <Th sortable>Subject</Th>
-                      <Th sortable>Status</Th>
-                      <Th sortable>Priority</Th>
-                      <Th sortable>Assignee</Th>
-                      <Th sortable>Due</Th>
+                      <Th sortable>{t("memberHome.colTaskId")}</Th>
+                      <Th sortable>{t("memberHome.colSubject")}</Th>
+                      <Th sortable>{t("editRequest.fieldStatus")}</Th>
+                      <Th sortable>{t("editRequest.fieldPriority")}</Th>
+                      <Th sortable>{t("memberHome.colAssignee")}</Th>
+                      <Th sortable>{t("memberHome.colDue")}</Th>
                       <Th></Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pagedTasks.map((t) => {
-                      const owningSession = t.session_id ? allSessions.find((s) => s.id === t.session_id) : undefined;
+                    {pagedTasks.map((task) => {
+                      const owningSession = task.session_id ? allSessions.find((s) => s.id === task.session_id) : undefined;
                       return (
-                        <tr key={t.id} onClick={() => setSelectedTask(t)} className="border-b border-[#dddbda] hover:bg-[#fafaf9] cursor-pointer">
-                          <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{t.id.slice(0, 8)}</a></Td>
-                          <Td className={`font-semibold truncate max-w-[280px] ${t.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{t.title}</Td>
-                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${statusColor[t.status]}`}>{statusLabel[t.status]}</span></Td>
-                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${priorityColor[t.priority]}`}>{priorityLabel[t.priority]}</span></Td>
-                          <Td className="text-[12px]">{t.assignee?.full_name || "—"}</Td>
+                        <tr key={task.id} onClick={() => setSelectedTask(task)} className="border-b border-[#dddbda] hover:bg-[#fafaf9] cursor-pointer">
+                          <Td><a className="text-[#0070d2] hover:underline font-mono text-[12px]">{task.id.slice(0, 8)}</a></Td>
+                          <Td className={`font-semibold truncate max-w-[280px] ${task.status === "done" ? "line-through text-[#706e6b]" : "text-[#080707]"}`}>{task.title}</Td>
+                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${statusColor[task.status]}`}>{statusLabel[task.status]}</span></Td>
+                          <Td><span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${priorityColor[task.priority]}`}>{priorityLabel[task.priority]}</span></Td>
+                          <Td className="text-[12px]">{task.assignee?.full_name || "—"}</Td>
                           <Td className="text-[12px] text-[#3e3e3c]">
-                            {t.scheduled_at ? new Date(t.scheduled_at).toLocaleDateString("he-IL") : t.deadline ? new Date(t.deadline).toLocaleDateString("he-IL") : "—"}
+                            {task.scheduled_at ? new Date(task.scheduled_at).toLocaleDateString(loc) : task.deadline ? new Date(task.deadline).toLocaleDateString(loc) : "—"}
                           </Td>
                           <Td>
                             <div className="flex gap-0.5">
-                              <button onClick={(e) => { e.stopPropagation(); setSelectedTask(t); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פרטי משימה"><Pencil className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                              <button onClick={(e) => { e.stopPropagation(); setSelectedTask(task); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label={t("memberHome.taskDetailsAria")}><Pencil className="w-3.5 h-3.5 text-[#706e6b]" /></button>
                               {owningSession && (
-                                <button onClick={(e) => { e.stopPropagation(); setSelectedSession(owningSession); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label="פתח פגישה"><ExternalLink className="w-3.5 h-3.5 text-[#706e6b]" /></button>
+                                <button onClick={(e) => { e.stopPropagation(); setSelectedSession(owningSession); }} className="p-1 rounded hover:bg-[#dddbda]" aria-label={t("memberHome.openSessionAria")}><ExternalLink className="w-3.5 h-3.5 text-[#706e6b]" /></button>
                               )}
                             </div>
                           </Td>
@@ -723,7 +750,7 @@ export default function MemberPage() {
 
         {/* Calendar Console Card — full width */}
         <Card>
-          <CardHeader icon={<CalendarIcon className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title="לוח שנה" sub="פגישות ומשימות" />
+          <CardHeader icon={<CalendarIcon className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title={t("calendar.title")} sub={t("calendar.subtitle")} />
           <div className="p-4 bg-white space-y-3">
             <LightningUnscheduledRail tasks={allTasks} token={token} onTaskUpdate={updateTaskLocal} />
             <LightningCalendar sessions={allSessions} tasks={allTasks} token={token} onMeetingClick={handleSessionClick} onTaskUpdate={updateTaskLocal} />
@@ -774,22 +801,22 @@ export default function MemberPage() {
 
       {/* ── Confirm Delete Modal ───────────────────────────────────────────── */}
       {confirmDeleteSession && (
-        <Modal open onClose={() => !deletingSession && setConfirmDeleteSession(null)} title="מחיקת פגישה">
-          <div className="space-y-4" dir="rtl">
+        <Modal open onClose={() => !deletingSession && setConfirmDeleteSession(null)} title={t("meetings.deleteTitle")}>
+          <div className="space-y-4">
             <div className="flex items-start gap-3 p-3 bg-red-50/60 border border-red-100 rounded-2xl">
               <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-red-700">
-                <p className="font-semibold mb-1">האם למחוק את הפגישה &quot;{confirmDeleteSession.title || "פגישה ללא שם"}&quot;?</p>
-                <p>פעולה זו תמחק לצמיתות את סיכום הפגישה ואת <strong>כל המשימות הקשורות</strong> אליה.</p>
+                <p className="font-semibold mb-1">{t("memberHome.deleteSessionQ", { title: confirmDeleteSession.title || t("meetings.untitled") })}</p>
+                <p>{t("memberHome.deleteSessionDetail")}</p>
               </div>
             </div>
             {deleteSessionError && <Alert variant="error">{deleteSessionError}</Alert>}
             <div className="flex gap-3 justify-start">
               <Button variant="danger" onClick={handleDeleteSession} loading={deletingSession}>
-                <Trash2 className="w-4 h-4 ml-1" />
-                מחק לצמיתות
+                <Trash2 className="w-4 h-4 me-1" />
+                {t("memberHome.deletePermanently")}
               </Button>
-              <Button variant="secondary" onClick={() => setConfirmDeleteSession(null)} disabled={deletingSession}>ביטול</Button>
+              <Button variant="secondary" onClick={() => setConfirmDeleteSession(null)} disabled={deletingSession}>{t("common.cancel")}</Button>
             </div>
           </div>
         </Modal>
@@ -805,6 +832,7 @@ export default function MemberPage() {
 function AddParticipantModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { session } = useSupabase();
   const { currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -821,22 +849,22 @@ function AddParticipantModal({ open, onClose }: { open: boolean; onClose: () => 
     const token = session?.access_token || "";
     try {
       await api.addOrgMember(currentOrg.id, { email: trimmedEmail, role: "participant" }, token);
-      setSuccess(`${trimmedEmail} נוסף כמשתתף.`);
+      setSuccess(t("memberHome.participantAdded", { email: trimmedEmail }));
       setEmail("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "שגיאה בהוספת משתתף");
+      setError(err instanceof Error ? err.message : t("sessionDetail.errAddParticipant"));
     }
     setLoading(false);
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="הוסף משתתף">
-      <form onSubmit={handleSubmit} className="space-y-4" dir="rtl">
-        <Alert variant="warning">למשתתפים יש גישת קריאה בלבד למשימות ואינם צורכים קיבולת הקלטה.</Alert>
+    <Modal open={open} onClose={onClose} title={t("memberHome.addParticipant")}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Alert variant="warning">{t("memberHome.participantWarning")}</Alert>
         {error && <Alert variant="error">{error}</Alert>}
         {success && <div className="px-3 py-2 bg-green-50 border border-green-200 text-green-700 rounded-lg text-sm">{success}</div>}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">כתובת אימייל</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("memberHome.emailLabel")}</label>
           <input
             type="email"
             value={email}
@@ -846,11 +874,11 @@ function AddParticipantModal({ open, onClose }: { open: boolean; onClose: () => 
             dir="ltr"
             className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[#1589ee] focus:border-transparent bg-white"
           />
-          <p className="text-xs text-gray-400 mt-1">אם המשתמש טרם נכנס למערכת, הוא יקושר אוטומטית בהתחברות הראשונה.</p>
+          <p className="text-xs text-gray-400 mt-1">{t("memberHome.emailHelper")}</p>
         </div>
         <div className="flex justify-start gap-3 pt-2">
-          <Button type="submit" loading={loading}><UserPlus className="w-4 h-4 ml-1" />הוסף משתתף</Button>
-          <Button type="button" variant="secondary" onClick={onClose}>סגור</Button>
+          <Button type="submit" loading={loading}><UserPlus className="w-4 h-4 me-1" />{t("memberHome.addParticipant")}</Button>
+          <Button type="button" variant="secondary" onClick={onClose}>{t("common.close")}</Button>
         </div>
       </form>
     </Modal>
@@ -875,6 +903,10 @@ function TaskDetailModal({
   onTaskUpdate: (t: Task) => void;
   onOpenSession: (s: Session) => void;
 }) {
+  const { t, lang } = useLanguage();
+  const loc = localeOf(lang);
+  const statusLabel = statusLabelsOf(t);
+  const priorityLabel = priorityLabelsOf(t);
   const [toggling, setToggling] = useState(false);
   const isDone = task.status === "done";
 
@@ -890,14 +922,14 @@ function TaskDetailModal({
   };
 
   const dueLabel = task.scheduled_at
-    ? new Date(task.scheduled_at).toLocaleDateString("he-IL")
+    ? new Date(task.scheduled_at).toLocaleDateString(loc)
     : task.deadline
-      ? new Date(task.deadline).toLocaleDateString("he-IL")
+      ? new Date(task.deadline).toLocaleDateString(loc)
       : "—";
 
   return (
-    <Modal open onClose={onClose} title={task.title || "פרטי משימה"}>
-      <div className="space-y-4 text-[13px]" dir="rtl">
+    <Modal open onClose={onClose} title={task.title || t("memberHome.taskDetails")}>
+      <div className="space-y-4 text-[13px]">
         {/* meta chips */}
         <div className="flex flex-wrap items-center gap-2">
           <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${statusColor[task.status]}`}>{statusLabel[task.status]}</span>
@@ -905,27 +937,27 @@ function TaskDetailModal({
           {projectName && (
             <span className="inline-flex items-center gap-1 text-[12px] text-[#0070d2]"><FolderOpen className="w-3.5 h-3.5" />{projectName}</span>
           )}
-          {task.is_locked && <span className="text-[11px] text-[#706e6b]">🔒 נעול (מסונכרן)</span>}
+          {task.is_locked && <span className="text-[11px] text-[#706e6b]">{t("memberHome.lockedSynced")}</span>}
         </div>
 
         {/* fields */}
         <div className="grid grid-cols-2 gap-3 rounded border border-[#dddbda] bg-[#fafaf9] p-3">
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">אחראי</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">{t("memberHome.assignee")}</p>
             <p className="text-[#080707] mt-0.5">{task.assignee?.full_name || "—"}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">תאריך יעד</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold">{t("memberHome.dueDate")}</p>
             <p className="text-[#080707] mt-0.5">{dueLabel}</p>
           </div>
         </div>
 
         {/* description */}
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold mb-1">תיאור</p>
+          <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold mb-1">{t("editRequest.fieldDescription")}</p>
           {task.description
             ? <p className="text-[#3e3e3c] leading-relaxed whitespace-pre-wrap">{task.description}</p>
-            : <p className="text-[#706e6b] italic">אין תיאור.</p>}
+            : <p className="text-[#706e6b] italic">{t("memberHome.noDescription")}</p>}
         </div>
 
         {/* actions */}
@@ -933,17 +965,17 @@ function TaskDetailModal({
           <div className="flex gap-2">
             {!task.is_locked && (
               <Button size="sm" onClick={toggleDone} loading={toggling}>
-                {isDone ? "סמן כלא הושלם" : "סמן כהושלם"}
+                {isDone ? t("tasks.markIncomplete") : t("tasks.markComplete")}
               </Button>
             )}
             {owningSession && (
               <Button size="sm" variant="secondary" onClick={() => onOpenSession(owningSession)}>
-                <Phone className="w-3.5 h-3.5 ml-1" />
-                פתח פגישה
+                <Phone className="w-3.5 h-3.5 me-1" />
+                {t("memberHome.openSession")}
               </Button>
             )}
           </div>
-          <Button size="sm" variant="ghost" onClick={onClose}>סגור</Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>{t("common.close")}</Button>
         </div>
       </div>
     </Modal>
@@ -1014,18 +1046,19 @@ function KpiTile({ label, value, suffix, trend, trendUp, icon }: { label: string
 }
 
 function LightningPager({ page, totalPages, total, pageSize, onPrev, onNext }: { page: number; totalPages: number; total: number; pageSize: number; onPrev: () => void; onNext: () => void }) {
+  const { t } = useLanguage();
   const from = total === 0 ? 0 : page * pageSize + 1;
   const to = Math.min(total, (page + 1) * pageSize);
   return (
     <div className="px-4 py-2.5 border-t border-[#dddbda] flex items-center justify-between text-[12px] text-[#706e6b]">
-      <span>{from} - {to} of {total}</span>
+      <span>{t("memberHome.pagerRange", { from, to, total })}</span>
       <div className="flex items-center gap-2">
-        <button onClick={onPrev} disabled={page === 0} className="p-1.5 rounded border border-[#dddbda] disabled:opacity-40 hover:bg-[#f3f3f3]" aria-label="הקודם">
-          <ChevronRight className="w-3.5 h-3.5" />
+        <button onClick={onPrev} disabled={page === 0} className="p-1.5 rounded border border-[#dddbda] disabled:opacity-40 hover:bg-[#f3f3f3]" aria-label={t("meetings.prevPage")}>
+          <ChevronRight className="w-3.5 h-3.5 rtl:-scale-x-100" />
         </button>
-        <span className="font-semibold text-[#080707]">Page {totalPages === 0 ? 1 : page + 1} of {totalPages || 1}</span>
-        <button onClick={onNext} disabled={page >= totalPages - 1} className="p-1.5 rounded border border-[#dddbda] disabled:opacity-40 hover:bg-[#f3f3f3]" aria-label="הבא">
-          <ChevronLeft className="w-3.5 h-3.5" />
+        <span className="font-semibold text-[#080707]">{t("meetings.pageOf", { page: totalPages === 0 ? 1 : page + 1, total: totalPages || 1 })}</span>
+        <button onClick={onNext} disabled={page >= totalPages - 1} className="p-1.5 rounded border border-[#dddbda] disabled:opacity-40 hover:bg-[#f3f3f3]" aria-label={t("meetings.nextPage")}>
+          <ChevronLeft className="w-3.5 h-3.5 rtl:-scale-x-100" />
         </button>
       </div>
     </div>
@@ -1038,6 +1071,7 @@ function LightningPager({ page, totalPages, total, pageSize, onPrev, onNext }: {
 function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId: string) => void }) {
   const { session: authSession } = useSupabase();
   const { capacity, currentOrg } = useOrganization();
+  const { t } = useLanguage();
   const { isRecording, duration, error, processing, mediaStream, startRecording, stopRecording } = useRecording();
   const shouldReduceMotion = useReducedMotion();
 
@@ -1091,16 +1125,16 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
   const pct = remaining + used > 0 ? Math.min(100, (remaining / (remaining + used)) * 100) : 0;
 
   return (
-    <div dir="rtl">
+    <div>
       {/* Capacity strip */}
       {capacity && (
         <div className="px-4 py-3 border-b border-[#dddbda] bg-[#fafaf9]">
           <div className="flex items-center justify-between mb-1.5">
             <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#0070d2]">
               <Clock className="w-3.5 h-3.5" />
-              {capacity.remaining_minutes} דק׳ נותרות
+              {t("recording.minutesRemaining", { count: capacity.remaining_minutes })}
             </span>
-            <span className="text-[11px] text-[#706e6b] font-mono">{used} / {remaining + used} min</span>
+            <span className="text-[11px] text-[#706e6b] font-mono">{used} / {remaining + used} {t("common.minutes")}</span>
           </div>
           <div className="h-1.5 rounded-full bg-[#dddbda] overflow-hidden">
             <div className="h-full rounded-full bg-[#0070d2]" style={{ width: `${pct}%` }} />
@@ -1112,9 +1146,9 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
       {(capacity?.is_low_balance || capacity?.is_blocked || error) && (
         <div className="px-4 pt-3 space-y-2">
           {capacity?.is_low_balance && !capacity.is_blocked && (
-            <Alert variant="warning" title="קיבולת נמוכה">נותרו לך {capacity.remaining_minutes} דקות.</Alert>
+            <Alert variant="warning" title={t("recording.lowCapacityTitle")}>{t("recording.lowCapacityBody", { count: capacity.remaining_minutes })}</Alert>
           )}
-          {capacity?.is_blocked && <Alert variant="error" title="הקלטה חסומה">נגמרה הקיבולת. פנה למנהל.</Alert>}
+          {capacity?.is_blocked && <Alert variant="error" title={t("recording.blockedTitle")}>{t("recording.blockedBody")}</Alert>}
           {error && <Alert variant="error">{error}</Alert>}
         </div>
       )}
@@ -1124,7 +1158,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
         <div className="px-4 py-4 space-y-4">
           <div>
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#706e6b] mb-1.5 uppercase tracking-wide">
-              <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" /> Project
+              <FolderOpen className="w-3.5 h-3.5 text-[#0070d2]" /> {t("recording.project")}
             </label>
             {!showNewProjectInput ? (
               <select
@@ -1136,9 +1170,9 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
                 disabled={loadingMeta}
                 className="w-full px-3 py-2 bg-white border border-[#dddbda] rounded text-[13px] text-[#080707] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
               >
-                <option value="">ללא פרויקט</option>
+                <option value="">{t("recording.noProject")}</option>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                <option value="__new__">+ צור פרויקט חדש</option>
+                <option value="__new__">{t("recording.newProject")}</option>
               </select>
             ) : (
               <div className="flex items-center gap-2">
@@ -1149,13 +1183,13 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
                   type="text"
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="שם פרויקט חדש"
+                  placeholder={t("recording.newProjectName")}
                   onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
                   autoFocus
                   className="flex-1 px-3 py-2 bg-white border border-[#dddbda] rounded text-[13px] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
                 />
                 <Button size="sm" onClick={handleCreateProject} loading={creatingProject} disabled={!newProjectName.trim()}>
-                  <Plus className="w-4 h-4 ml-1" /> צור
+                  <Plus className="w-4 h-4 me-1" /> {t("common.create")}
                 </Button>
               </div>
             )}
@@ -1163,15 +1197,15 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
 
           <div>
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#706e6b] mb-1.5 uppercase tracking-wide">
-              <Users className="w-3.5 h-3.5 text-[#0070d2]" /> Participants
+              <Users className="w-3.5 h-3.5 text-[#0070d2]" /> {t("recording.participants")}
             </label>
             {loadingMeta ? (
-              <p className="text-[12px] text-[#706e6b] animate-pulse">טוען...</p>
+              <p className="text-[12px] text-[#706e6b] animate-pulse">{t("common.loading")}</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {members.map((m) => {
                   if (!m.user_id) return null;
-                  const name = m.profile?.full_name || m.profile?.email || m.invited_email || "לא ידוע";
+                  const name = m.profile?.full_name || m.profile?.email || m.invited_email || t("recording.unknown");
                   const isSel = selectedParticipantIds.includes(m.user_id);
                   return (
                     <button
@@ -1189,7 +1223,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
                     </button>
                   );
                 })}
-                {members.length === 0 && <p className="text-[12px] text-[#706e6b]">אין חברים בארגון עדיין.</p>}
+                {members.length === 0 && <p className="text-[12px] text-[#706e6b]">{t("recording.noMembers")}</p>}
               </div>
             )}
           </div>
@@ -1227,7 +1261,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
                 capacity?.is_blocked ? "bg-[#dddbda] cursor-not-allowed" : "bg-[#0070d2] shadow-[0_4px_16px_rgba(0,112,210,0.4)]"
               }`}
               style={{ width: 72, height: 72 }}
-              aria-label="התחל הקלטה"
+              aria-label={t("recording.startAria")}
             >
               <Mic className="w-8 h-8 text-white" />
             </button>
@@ -1237,14 +1271,14 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
               type="button"
               className="relative z-10 rounded-full bg-[#c23934] flex items-center justify-center shadow-[0_4px_16px_rgba(194,57,52,0.4)] focus:outline-none focus:ring-4 focus:ring-[#c23934]/30 transition-transform hover:scale-105 active:scale-95"
               style={{ width: 72, height: 72 }}
-              aria-label="עצור הקלטה"
+              aria-label={t("recording.stopAria")}
             >
               <Square className="w-7 h-7 text-white" />
             </button>
           )}
         </div>
         <p className="text-[13px] text-[#706e6b] text-center">
-          {capacity?.is_blocked ? "ההקלטה מושבתת — אין קיבולת" : isRecording ? "מקליט... לחץ לעצירה" : "לחץ להתחלת הקלטה"}
+          {capacity?.is_blocked ? t("recording.statusBlocked") : isRecording ? t("recording.statusRecording") : t("recording.statusIdle")}
         </p>
       </div>
 
@@ -1254,7 +1288,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="text-[13px] text-[#0070d2] font-semibold">מעבד אודיו עם בינה מלאכותית...</span>
+          <span className="text-[13px] text-[#0070d2] font-semibold">{t("recording.processing")}</span>
         </div>
       )}
     </div>
@@ -1264,7 +1298,6 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
 // ════════════════════════════════════════════════════════════════════════════
 // Console-styled calendar helpers + components (reuse api + TaskSchedulePicker)
 // ════════════════════════════════════════════════════════════════════════════
-const dayHeaders = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
 const WEEK_HOURS = Array.from({ length: 14 }, (_, i) => i + 8);
 const priorityDot: Record<string, string> = { critical: "bg-[#ba0517]", high: "bg-[#ea001e]", medium: "bg-[#fe9339]", low: "bg-[#0070d2]" };
 const isoToDay = (iso: string) => new Date(iso).toLocaleDateString("sv-SE");
@@ -1279,13 +1312,14 @@ function startOfWeek(anchor: Date): Date {
 }
 
 function LightningUnscheduledRail({ tasks, token, onTaskUpdate }: { tasks: Task[]; token: string; onTaskUpdate: (u: Task) => void }) {
+  const { t } = useLanguage();
   const [pickerTask, setPickerTask] = useState<Task | null>(null);
-  const unscheduled = useMemo(() => tasks.filter((t) => !t.scheduled_at && t.status !== "done"), [tasks]);
+  const unscheduled = useMemo(() => tasks.filter((tk) => !tk.scheduled_at && tk.status !== "done"), [tasks]);
 
   if (unscheduled.length === 0) {
     return (
-      <div className="rounded border border-[#dddbda] bg-[#fafaf9] px-4 py-3 text-[13px] text-[#706e6b] flex items-center gap-2" dir="rtl">
-        <CalendarClock className="w-4 h-4 text-[#aeb0b3]" /> כל המשימות מתוזמנות 🎉
+      <div className="rounded border border-[#dddbda] bg-[#fafaf9] px-4 py-3 text-[13px] text-[#706e6b] flex items-center gap-2">
+        <CalendarClock className="w-4 h-4 text-[#aeb0b3]" /> {t("calendar.allScheduled")}
       </div>
     );
   }
@@ -1296,28 +1330,28 @@ function LightningUnscheduledRail({ tasks, token, onTaskUpdate }: { tasks: Task[
   };
   return (
     <>
-      <div className="rounded border border-[#dddbda] bg-white overflow-hidden" dir="rtl">
+      <div className="rounded border border-[#dddbda] bg-white overflow-hidden">
         <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center gap-2 bg-[#fafaf9]">
           <Hand className="w-4 h-4 text-[#0070d2]" />
-          <h3 className="text-[13px] font-semibold text-[#080707]">משימות ללא תזמון</h3>
-          <span className="text-[11px] text-[#706e6b] mr-1">({unscheduled.length}) — גרור ליום ביומן או לחץ לתזמון</span>
+          <h3 className="text-[13px] font-semibold text-[#080707]">{t("calendar.unscheduledTitle")}</h3>
+          <span className="text-[11px] text-[#706e6b] ms-1">{t("calendar.unscheduledHint", { count: unscheduled.length })}</span>
         </div>
         <div className="flex gap-2 overflow-x-auto px-4 py-3">
-          {unscheduled.map((t) => (
+          {unscheduled.map((tk) => (
             <button
-              key={t.id}
+              key={tk.id}
               type="button"
               draggable
-              onDragStart={(e) => onDragStart(e, t)}
-              onClick={() => setPickerTask(t)}
-              className="flex-shrink-0 max-w-[180px] cursor-grab active:cursor-grabbing px-3 py-2 rounded border border-[#dddbda] bg-white text-right text-[12px] font-medium text-[#3e3e3c] hover:border-[#0070d2] hover:shadow-sm transition-all"
-              aria-label={`תזמן ${t.title}`}
+              onDragStart={(e) => onDragStart(e, tk)}
+              onClick={() => setPickerTask(tk)}
+              className="flex-shrink-0 max-w-[180px] cursor-grab active:cursor-grabbing px-3 py-2 rounded border border-[#dddbda] bg-white text-start text-[12px] font-medium text-[#3e3e3c] hover:border-[#0070d2] hover:shadow-sm transition-all"
+              aria-label={t("calendar.scheduleAria", { title: tk.title })}
             >
               <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[t.priority] || priorityDot.medium}`} />
-                <span className="truncate">{t.title}</span>
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[tk.priority] || priorityDot.medium}`} />
+                <span className="truncate">{tk.title}</span>
               </div>
-              {t.deadline && <p className="text-[10px] text-[#706e6b] truncate mt-0.5">{t.deadline}</p>}
+              {tk.deadline && <p className="text-[10px] text-[#706e6b] truncate mt-0.5">{tk.deadline}</p>}
             </button>
           ))}
         </div>
@@ -1328,6 +1362,8 @@ function LightningUnscheduledRail({ tasks, token, onTaskUpdate }: { tasks: Task[
 }
 
 function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdate }: { sessions: Session[]; tasks: Task[]; token: string; onMeetingClick: (s: Session) => void; onTaskUpdate: (u: Task) => void }) {
+  const { t, lang } = useLanguage();
+  const loc = localeOf(lang);
   const [view, setView] = useState<"month" | "week">("month");
   const [currentMonth, setCurrentMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
@@ -1368,7 +1404,7 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
       onTaskUpdate({ ...task, ...updated, scheduled_at: iso });
     } catch (err) {
       onTaskUpdate({ ...task, scheduled_at: task.scheduled_at });
-      setDropError(err instanceof Error ? err.message : "שגיאה בעדכון התזמון");
+      setDropError(err instanceof Error ? err.message : t("schedule.errUpdate"));
       setTimeout(() => setDropError(null), 4000);
     }
   };
@@ -1395,27 +1431,27 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4" dir="rtl">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
       <div className="rounded border border-[#dddbda] bg-white overflow-hidden">
         <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center justify-between gap-3 flex-wrap bg-[#fafaf9]">
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-[#0070d2]" />
-            <h2 className="text-[13px] font-semibold text-[#080707]">לוח שנה — פגישות ומשימות</h2>
+            <h2 className="text-[13px] font-semibold text-[#080707]">{t("calendar.headerTitle")}</h2>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center bg-white border border-[#dddbda] rounded p-0.5">
-              <button onClick={() => setView("month")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "month" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>חודש</button>
-              <button onClick={() => setView("week")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "week" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>שבוע</button>
+              <button onClick={() => setView("month")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "month" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>{t("calendar.month")}</button>
+              <button onClick={() => setView("week")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "week" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>{t("calendar.week")}</button>
             </div>
             <div className="flex items-center gap-1">
-              <button onClick={view === "month" ? nextMonth : nextWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label="הבא"><ChevronRight className="w-4 h-4 text-[#706e6b]" /></button>
+              <button onClick={view === "month" ? nextMonth : nextWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label={t("calendar.next")}><ChevronRight className="w-4 h-4 text-[#706e6b] rtl:-scale-x-100" /></button>
               <span className="font-semibold text-[#080707] text-[13px] min-w-[140px] text-center">
                 {view === "month"
-                  ? currentMonth.toLocaleString("he-IL", { month: "long", year: "numeric" })
-                  : (() => { const end = new Date(weekStart); end.setDate(end.getDate() + 6); return `${weekStart.toLocaleDateString("he-IL", { day: "numeric", month: "short" })} – ${end.toLocaleDateString("he-IL", { day: "numeric", month: "short" })}`; })()}
+                  ? currentMonth.toLocaleString(loc, { month: "long", year: "numeric" })
+                  : (() => { const end = new Date(weekStart); end.setDate(end.getDate() + 6); return `${weekStart.toLocaleDateString(loc, { day: "numeric", month: "short" })} – ${end.toLocaleDateString(loc, { day: "numeric", month: "short" })}`; })()}
               </span>
-              <button onClick={view === "month" ? prevMonth : prevWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label="קודם"><ChevronLeft className="w-4 h-4 text-[#706e6b]" /></button>
-              <button onClick={goToday} className="mr-1 px-2.5 py-1 text-[11px] font-semibold text-[#0070d2] border border-[#dddbda] rounded hover:bg-[#ecf5fe]">היום</button>
+              <button onClick={view === "month" ? prevMonth : prevWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label={t("calendar.prev")}><ChevronLeft className="w-4 h-4 text-[#706e6b] rtl:-scale-x-100" /></button>
+              <button onClick={goToday} className="ms-1 px-2.5 py-1 text-[11px] font-semibold text-[#0070d2] border border-[#dddbda] rounded hover:bg-[#ecf5fe]">{t("calendar.today")}</button>
             </div>
           </div>
         </div>
@@ -1425,7 +1461,7 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
         {view === "month" && (
           <>
             <div className="grid grid-cols-7 text-center px-2 pt-2">
-              {dayHeaders.map((d) => <div key={d} className="text-[10px] font-semibold text-[#706e6b] py-1">{d}</div>)}
+              {[0, 1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="text-[10px] font-semibold text-[#706e6b] py-1">{t(`calendar.d${i}`)}</div>)}
             </div>
             <div className="grid grid-cols-7 gap-1 p-2">
               {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`e-${i}`} className="aspect-square" />)}
@@ -1447,19 +1483,19 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
                     onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverDay !== dateStr) setDragOverDay(dateStr); }}
                     onDragLeave={() => { if (dragOverDay === dateStr) setDragOverDay(null); }}
                     onDrop={(e) => handleDrop(e, dateStr)}
-                    className={`relative aspect-square p-1 rounded text-right transition-all overflow-hidden border ${
+                    className={`relative aspect-square p-1 rounded text-start transition-all overflow-hidden border ${
                       isSelected ? "bg-[#ecf5fe] border-[#0070d2]" : isToday ? "bg-[#f4f9fe] border-[#cfe3fa]" : "border-transparent hover:bg-[#f3f3f3]"
                     } ${isDragOver ? "ring-2 ring-[#0070d2] bg-[#ecf5fe]" : ""}`}
                   >
                     <div className={`text-[11px] font-semibold ${isToday ? "text-[#0070d2]" : "text-[#3e3e3c]"}`}>{day}</div>
                     <div className="flex flex-col gap-0.5 mt-0.5 items-start">
                       {visS.map((s) => (
-                        <span key={s.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#dceffb] text-[#0070d2] text-right" title={s.title || "פגישה"}>• {s.title || "פגישה"}</span>
+                        <span key={s.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#dceffb] text-[#0070d2] text-start" title={s.title || t("calendar.meeting")}>• {s.title || t("calendar.meeting")}</span>
                       ))}
-                      {visT.map((t) => (
-                        <span key={t.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#fdecdd] text-[#c4521a] text-right" title={t.title}>✓ {t.title}</span>
+                      {visT.map((vt) => (
+                        <span key={vt.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#fdecdd] text-[#c4521a] text-start" title={vt.title}>✓ {vt.title}</span>
                       ))}
-                      {hidden > 0 && <span className="text-[9px] font-semibold text-[#0070d2]">+{hidden} נוספים</span>}
+                      {hidden > 0 && <span className="text-[9px] font-semibold text-[#0070d2]">{t("calendar.more", { count: hidden })}</span>}
                     </div>
                   </button>
                 );
@@ -1480,7 +1516,7 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
                   const isSel = selectedDay === ymd;
                   return (
                     <button key={ymd} onClick={() => setSelectedDay(isSel ? null : ymd)} className={`p-2 text-center transition-colors ${isSel ? "bg-[#ecf5fe]" : isToday ? "bg-[#f4f9fe]" : "bg-white hover:bg-[#f3f3f3]"}`}>
-                      <div className="text-[10px] text-[#706e6b]">{d.toLocaleDateString("he-IL", { weekday: "short" })}</div>
+                      <div className="text-[10px] text-[#706e6b]">{d.toLocaleDateString(loc, { weekday: "short" })}</div>
                       <div className={`text-[13px] font-bold ${isToday ? "text-[#0070d2]" : "text-[#080707]"}`}>{d.getDate()}</div>
                     </button>
                   );
@@ -1505,10 +1541,10 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
                           className={`bg-white min-h-[40px] p-1 transition-colors ${isDragOver ? "ring-2 ring-inset ring-[#0070d2] bg-[#ecf5fe]" : ""}`}
                         >
                           {slotSessions.map((s) => (
-                            <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-right block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#dceffb] text-[#0070d2] hover:bg-[#c5e3fa] truncate" title={s.title || "פגישה"}>{s.title || "פגישה"}</button>
+                            <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-start block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#dceffb] text-[#0070d2] hover:bg-[#c5e3fa] truncate" title={s.title || t("calendar.meeting")}>{s.title || t("calendar.meeting")}</button>
                           ))}
-                          {slotTasks.map((t) => (
-                            <div key={t.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("application/x-task-id", t.id); e.dataTransfer.setData("text/plain", t.id); }} className="w-full cursor-grab active:cursor-grabbing text-right block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#fdecdd] text-[#c4521a] truncate" title={t.title}>✓ {t.title}</div>
+                          {slotTasks.map((st) => (
+                            <div key={st.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("application/x-task-id", st.id); e.dataTransfer.setData("text/plain", st.id); }} className="w-full cursor-grab active:cursor-grabbing text-start block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#fdecdd] text-[#c4521a] truncate" title={st.title}>✓ {st.title}</div>
                           ))}
                         </div>
                       );
@@ -1521,9 +1557,9 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
         })()}
 
         <div className="px-4 py-2 border-t border-[#dddbda] flex items-center gap-4 text-[11px] text-[#706e6b]">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#dceffb]" /><MicVocal className="w-3 h-3" /> פגישות</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#fdecdd]" /><CheckSquare className="w-3 h-3" /> משימות</span>
-          <span className="text-[#aeb0b3] mr-auto">גרור משימה לתא יום כדי לתזמן</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#dceffb]" /><MicVocal className="w-3 h-3" /> {t("calendar.legendMeetings")}</span>
+          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#fdecdd]" /><CheckSquare className="w-3 h-3" /> {t("calendar.legendTasks")}</span>
+          <span className="text-[#aeb0b3] ms-auto">{t("calendar.dragHint")}</span>
         </div>
       </div>
 
@@ -1533,6 +1569,8 @@ function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdat
 }
 
 function LightningDayPanel({ selectedDate, sessions, tasks, token, onClose, onMeetingClick, onTaskUpdate }: { selectedDate: string | null; sessions: Session[]; tasks: Task[]; token: string; onClose: () => void; onMeetingClick: (s: Session) => void; onTaskUpdate: (u: Task) => void }) {
+  const { t, lang } = useLanguage();
+  const loc = localeOf(lang);
   const [pickerTask, setPickerTask] = useState<Task | null>(null);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [clearingId, setClearingId] = useState<string | null>(null);
@@ -1552,44 +1590,44 @@ function LightningDayPanel({ selectedDate, sessions, tasks, token, onClose, onMe
   if (!selectedDate) return null;
   return (
     <AnimatePresence>
-      <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }} className="rounded border border-[#dddbda] bg-white overflow-hidden" dir="rtl">
+      <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }} className="rounded border border-[#dddbda] bg-white overflow-hidden">
         <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center justify-between bg-[#fafaf9]">
           <div>
-            <p className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-0.5">תאריך נבחר</p>
-            <p className="text-[13px] font-bold text-[#080707]">{new Date(selectedDate + "T00:00:00").toLocaleDateString("he-IL", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+            <p className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-0.5">{t("calendar.selectedDate")}</p>
+            <p className="text-[13px] font-bold text-[#080707]">{new Date(selectedDate + "T00:00:00").toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-[#f3f3f3]" aria-label="סגור"><X className="w-4 h-4 text-[#706e6b]" /></button>
+          <button onClick={onClose} className="p-1.5 rounded hover:bg-[#f3f3f3]" aria-label={t("common.close")}><X className="w-4 h-4 text-[#706e6b]" /></button>
         </div>
         <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
           <section>
-            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><MicVocal className="w-3 h-3" /> פגישות ({daySessions.length})</h4>
-            {daySessions.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">— אין פגישות —</p> : (
+            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><MicVocal className="w-3 h-3" /> {t("calendar.meetingsCount", { count: daySessions.length })}</h4>
+            {daySessions.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noMeetings")}</p> : (
               <div className="space-y-1.5">
                 {daySessions.map((s) => (
-                  <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-right p-2.5 rounded bg-[#f4f9fe] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] text-[13px] transition-all">
-                    <p className="font-medium text-[#080707] truncate">{s.title || "פגישה ללא שם"}</p>
-                    <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(s.created_at).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</p>
+                  <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-start p-2.5 rounded bg-[#f4f9fe] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] text-[13px] transition-all">
+                    <p className="font-medium text-[#080707] truncate">{s.title || t("meetings.untitled")}</p>
+                    <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(s.created_at).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</p>
                   </button>
                 ))}
               </div>
             )}
           </section>
           <section>
-            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><CalendarClock className="w-3 h-3" /> משימות מתוזמנות ({dayTasks.length})</h4>
-            {dayTasks.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">— אין משימות —</p> : (
+            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><CalendarClock className="w-3 h-3" /> {t("calendar.scheduledTasksCount", { count: dayTasks.length })}</h4>
+            {dayTasks.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noTasks")}</p> : (
               <div className="space-y-1.5">
-                {dayTasks.map((t) => {
-                  const gcal = buildGoogleCalendarUrlForTask(t);
+                {dayTasks.map((dt) => {
+                  const gcal = buildGoogleCalendarUrlForTask(dt);
                   return (
-                    <div key={t.id} className="w-full p-2.5 rounded bg-[#fdf6f0] border border-[#f5e3d2] flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[t.priority] || priorityDot.medium}`} />
+                    <div key={dt.id} className="w-full p-2.5 rounded bg-[#fdf6f0] border border-[#f5e3d2] flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[dt.priority] || priorityDot.medium}`} />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[13px] font-medium truncate ${t.status === "done" ? "line-through text-[#aeb0b3]" : "text-[#080707]"}`}>{t.title}</p>
-                        <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(t.scheduled_at!).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}</p>
+                        <p className={`text-[13px] font-medium truncate ${dt.status === "done" ? "line-through text-[#aeb0b3]" : "text-[#080707]"}`}>{dt.title}</p>
+                        <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(dt.scheduled_at!).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</p>
                       </div>
-                      {gcal && <a href={gcal} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-[#ecf5fe]" title="הוסף ליומן גוגל"><CalendarPlus className="w-3 h-3 text-[#0070d2]" /></a>}
-                      <button onClick={() => setPickerTask(t)} className="p-1.5 rounded hover:bg-[#ecf5fe]" title="ערוך תזמון"><Pencil className="w-3 h-3 text-[#0070d2]" /></button>
-                      <button onClick={() => clearFromDay(t)} disabled={clearingId === t.id} className="p-1.5 rounded hover:bg-[#fde9e8] disabled:opacity-40" title="הסר מהיום"><XCircle className="w-3.5 h-3.5 text-[#c23934]" /></button>
+                      {gcal && <a href={gcal} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-[#ecf5fe]" title={t("schedule.addToGoogleCalendar")}><CalendarPlus className="w-3 h-3 text-[#0070d2]" /></a>}
+                      <button onClick={() => setPickerTask(dt)} className="p-1.5 rounded hover:bg-[#ecf5fe]" title={t("calendar.editSchedule")}><Pencil className="w-3 h-3 text-[#0070d2]" /></button>
+                      <button onClick={() => clearFromDay(dt)} disabled={clearingId === dt.id} className="p-1.5 rounded hover:bg-[#fde9e8] disabled:opacity-40" title={t("calendar.removeFromDay")}><XCircle className="w-3.5 h-3.5 text-[#c23934]" /></button>
                     </div>
                   );
                 })}
@@ -1598,16 +1636,16 @@ function LightningDayPanel({ selectedDate, sessions, tasks, token, onClose, onMe
           </section>
           <section>
             <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide flex items-center gap-1.5"><Plus className="w-3 h-3" /> הוסף משימה ליום זה</h4>
-              {unscheduled.length > 0 && <button onClick={() => setShowAddMenu((v) => !v)} className="text-[11px] font-semibold text-[#0070d2] hover:underline">{showAddMenu ? "סגור" : `הצג (${unscheduled.length})`}</button>}
+              <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide flex items-center gap-1.5"><Plus className="w-3 h-3" /> {t("calendar.addTaskToDay")}</h4>
+              {unscheduled.length > 0 && <button onClick={() => setShowAddMenu((v) => !v)} className="text-[11px] font-semibold text-[#0070d2] hover:underline">{showAddMenu ? t("common.close") : t("calendar.show", { count: unscheduled.length })}</button>}
             </div>
-            {unscheduled.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">— אין משימות ללא תזמון —</p> : showAddMenu ? (
+            {unscheduled.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noUnscheduled")}</p> : showAddMenu ? (
               <div className="space-y-1 max-h-48 overflow-y-auto">
-                {unscheduled.map((t) => (
-                  <button key={t.id} onClick={() => { setPickerTask(t); setShowAddMenu(false); }} className="w-full text-right p-2 rounded bg-[#fafaf9] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] transition-all flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[t.priority] || priorityDot.medium}`} />
-                    <span className="text-[12px] font-medium text-[#3e3e3c] truncate flex-1">{t.title}</span>
-                    {t.deadline && <span className="text-[10px] text-[#706e6b] truncate max-w-[100px]">{t.deadline}</span>}
+                {unscheduled.map((ut) => (
+                  <button key={ut.id} onClick={() => { setPickerTask(ut); setShowAddMenu(false); }} className="w-full text-start p-2 rounded bg-[#fafaf9] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] transition-all flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[ut.priority] || priorityDot.medium}`} />
+                    <span className="text-[12px] font-medium text-[#3e3e3c] truncate flex-1">{ut.title}</span>
+                    {ut.deadline && <span className="text-[10px] text-[#706e6b] truncate max-w-[100px]">{ut.deadline}</span>}
                   </button>
                 ))}
               </div>

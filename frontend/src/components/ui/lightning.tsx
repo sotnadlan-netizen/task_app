@@ -18,12 +18,12 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="bg-white rounded border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] px-5 pt-3 pb-3" dir="rtl">
+    <div className="bg-white rounded border border-[#dddbda] shadow-[0_2px_2px_rgba(0,0,0,0.05)] px-5 pt-3 pb-3">
       {breadcrumb && breadcrumb.length > 0 && (
         <div className="flex items-center gap-1.5 text-[11px] text-[#706e6b] mb-2">
           {breadcrumb.map((b, i) => (
             <span key={i} className="flex items-center gap-1.5">
-              {i > 0 && <ChevronLeft className="w-3 h-3" />}
+              {i > 0 && <ChevronLeft className="w-3 h-3 rtl:-scale-x-100" />}
               <span className={i === breadcrumb.length - 1 ? "text-[#080707] font-semibold" : ""}>{b}</span>
             </span>
           ))}

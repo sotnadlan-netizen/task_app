@@ -138,6 +138,10 @@ async def update_task(
             raise HTTPException(status_code=403, detail="Participants cannot directly edit tasks")
 
     update_data = data.model_dump(exclude_none=True)
+    # Empty string on nullable fields means "clear" — translate to NULL for the DB.
+    for nullable_field in ("scheduled_at", "deadline", "assignee_id", "project_id"):
+        if update_data.get(nullable_field) == "":
+            update_data[nullable_field] = None
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
 

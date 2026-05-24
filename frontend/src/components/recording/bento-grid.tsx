@@ -6,6 +6,7 @@ import { Plus, Loader2, Check, RotateCcw, Clock, Zap, ListChecks, Brain, FolderO
 import { BentoCard, type BentoCardData, type BentoCardType } from "./bento-card";
 import type { Session, Task, TaskPriority } from "@/types";
 import { useSupabase } from "@/providers/supabase-provider";
+import { useLanguage } from "@/providers/language-provider";
 import { api } from "@/lib/api";
 
 interface Props {
@@ -13,52 +14,11 @@ interface Props {
   tasks: Task[];
 }
 
-const SENTIMENT_HE: Record<string, string> = {
-  positive: "חיובי",
-  negative: "שלילי",
-  neutral:  "נייטרלי",
-  mixed:    "מעורב",
-};
-
-function translateSentiment(raw: string | null | undefined): string {
-  if (!raw) return "נייטרלי";
-  const lower = raw.toLowerCase();
-  for (const [key, val] of Object.entries(SENTIMENT_HE)) {
-    if (lower.includes(key)) return val;
-  }
-  return raw;
-}
-
 function formatDuration(seconds: number | undefined): string {
   if (!seconds) return "—";
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function buildSummaryCard(session: Session): BentoCardData {
-  return {
-    id: `summary-${session.id}`,
-    type: "summary" as BentoCardType,
-    index: 1,
-    title: session.title || "סיכום שיחה",
-    content: session.summary || "לא נמצא סיכום.",
-    sessionId: session.id,
-  };
-}
-
-function taskToCard(task: Task, index: number): BentoCardData {
-  return {
-    id: task.id,
-    type: "task" as BentoCardType,
-    index,
-    title: task.title,
-    content: task.description || "אין הקשר נוסף.",
-    priority: task.priority,
-    status: task.status,
-    taskDescription: task.description,
-    sessionId: task.session_id,
-  };
 }
 
 const containerVariants = {
@@ -76,10 +36,46 @@ const inputCls =
 const selectCls =
   "px-3 py-2 border border-[#dddbda] rounded text-sm text-[#080707] bg-white focus:outline-none focus:ring-2 focus:ring-[#0070d2]/40 focus:border-transparent";
 
+function sentimentKey(raw: string | null | undefined): string {
+  if (!raw) return "neutral";
+  const lower = raw.toLowerCase();
+  for (const key of ["positive", "negative", "neutral", "mixed"]) {
+    if (lower.includes(key)) return key;
+  }
+  return "";
+}
+
 export function BentoGrid({ session, tasks }: Props) {
   const { session: authSession } = useSupabase();
+  const { t } = useLanguage();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [localTasks, setLocalTasks] = useState<Task[]>(tasks);
+
+  const buildSummaryCard = (s: Session): BentoCardData => ({
+    id: `summary-${s.id}`,
+    type: "summary" as BentoCardType,
+    index: 1,
+    title: s.title || t("results.summaryCardTitle"),
+    content: s.summary || t("results.noSummaryFound"),
+    sessionId: s.id,
+  });
+
+  const taskToCard = (task: Task, index: number): BentoCardData => ({
+    id: task.id,
+    type: "task" as BentoCardType,
+    index,
+    title: task.title,
+    content: task.description || t("results.taskNoContext"),
+    priority: task.priority,
+    status: task.status,
+    taskDescription: task.description,
+    sessionId: task.session_id,
+  });
+
+  const translateSentiment = (raw: string | null | undefined): string => {
+    const key = sentimentKey(raw);
+    return key ? t(`sentiment.${key}`) : (raw ?? "");
+  };
 
   useEffect(() => { setLocalTasks(tasks); }, [tasks]);
 
@@ -107,7 +103,7 @@ export function BentoGrid({ session, tasks }: Props) {
       setLocalTasks((prev) => [...prev, created]);
       resetAddForm();
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : "שגיאה בהוספה");
+      setAddError(err instanceof Error ? err.message : t("results.addErr"));
     } finally {
       setAddSaving(false);
     }
@@ -123,7 +119,6 @@ export function BentoGrid({ session, tasks }: Props) {
       initial="hidden"
       animate="show"
       className="space-y-4 w-full"
-      dir="rtl"
     >
       {/* ── Meta chips row ─────────────────────────────────────────────────── */}
       <motion.div variants={fadeUp} className="flex items-center gap-2.5 flex-wrap">
@@ -146,12 +141,12 @@ export function BentoGrid({ session, tasks }: Props) {
         {/* Task count */}
         <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 rounded-full px-3 py-1 text-xs font-semibold border border-emerald-100">
           <ListChecks className="w-3.5 h-3.5" />
-          {doneCount}/{localTasks.length} משימות הושלמו
+          {t("results.tasksCompleted", { done: doneCount, total: localTasks.length })}
         </span>
 
         {/* Session date */}
-        <span className="text-xs text-gray-400 mr-1">
-          {new Date(session.created_at).toLocaleDateString("he-IL", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+        <span className="text-xs text-gray-400 ms-1">
+          {new Date(session.created_at).toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
         </span>
       </motion.div>
 
@@ -176,7 +171,7 @@ export function BentoGrid({ session, tasks }: Props) {
             <div className="w-7 h-7 rounded bg-[#ecf5fe] flex items-center justify-center flex-shrink-0">
               <Brain className="w-3.5 h-3.5 text-[#0070d2]" />
             </div>
-            <h2 className="text-base font-bold text-[#080707]">משימות שזוהו</h2>
+            <h2 className="text-base font-bold text-[#080707]">{t("results.detectedTasks")}</h2>
           </div>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-semibold bg-[#ecf5fe] text-[#0070d2] border border-[#b3d9f6]">
             <FolderOpen className="w-3 h-3" />
@@ -201,7 +196,7 @@ export function BentoGrid({ session, tasks }: Props) {
           </div>
         ) : (
           <div className="px-5 py-8 text-center">
-            <p className="text-sm text-gray-400">לא זוהו משימות בפגישה זו.</p>
+            <p className="text-sm text-gray-400">{t("results.noDetectedTasks")}</p>
           </div>
         )}
 
@@ -216,43 +211,40 @@ export function BentoGrid({ session, tasks }: Props) {
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.2 }}
                 className="space-y-3"
-                dir="rtl"
               >
-                <p className="text-xs font-semibold text-[#0070d2]">משימה חדשה</p>
+                <p className="text-xs font-semibold text-[#0070d2]">{t("tasks.newTask")}</p>
                 <input
                   className={inputCls}
-                  placeholder="כותרת המשימה..."
+                  placeholder={t("results.taskTitlePlaceholder")}
                   value={addTitle}
                   onChange={(e) => setAddTitle(e.target.value)}
-                  dir="rtl"
                   autoFocus
                   onKeyDown={(e) => e.key === "Escape" && resetAddForm()}
                 />
                 <textarea
                   className={inputCls}
-                  placeholder="תיאור (אופציונלי)..."
+                  placeholder={t("tasks.descPlaceholder")}
                   rows={2}
                   value={addDesc}
                   onChange={(e) => setAddDesc(e.target.value)}
-                  dir="rtl"
                 />
                 <div className="flex items-center gap-3 flex-wrap">
-                  <select className={selectCls} value={addPriority} onChange={(e) => setAddPriority(e.target.value as TaskPriority)} dir="rtl">
-                    <option value="low">נמוכה</option>
-                    <option value="medium">בינונית</option>
-                    <option value="high">גבוהה</option>
-                    <option value="critical">קריטית</option>
+                  <select className={selectCls} value={addPriority} onChange={(e) => setAddPriority(e.target.value as TaskPriority)}>
+                    <option value="low">{t("tasks.priorityLow")}</option>
+                    <option value="medium">{t("tasks.priorityMedium")}</option>
+                    <option value="high">{t("tasks.priorityHigh")}</option>
+                    <option value="critical">{t("tasks.priorityCritical")}</option>
                   </select>
                   {addError && <span className="text-xs text-red-500">{addError}</span>}
                 </div>
                 <div className="flex gap-2 pb-1">
                   <button onClick={handleAddTask} disabled={addSaving || !addTitle.trim()} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-white bg-[#0070d2] hover:bg-[#005fb2] disabled:opacity-50 transition-colors">
                     {addSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    הוסף
+                    {t("common.add")}
                   </button>
                   <button onClick={resetAddForm} disabled={addSaving} className="flex items-center gap-1.5 px-4 py-2 rounded text-sm font-medium text-gray-500 border border-[#dddbda] hover:bg-gray-50 transition-colors">
                     <RotateCcw className="w-3.5 h-3.5" />
-                    ביטול
+                    {t("common.cancel")}
                   </button>
                 </div>
               </motion.div>
@@ -264,10 +256,9 @@ export function BentoGrid({ session, tasks }: Props) {
                 exit={{ opacity: 0 }}
                 onClick={() => setIsAddingTask(true)}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded text-sm text-[#0070d2] hover:text-[#005fb2] hover:bg-[#ecf5fe] border border-dashed border-[#b3d9f6] hover:border-[#0070d2] transition-all"
-                dir="rtl"
               >
                 <Plus className="w-4 h-4" />
-                הוסף משימה
+                {t("tasks.add")}
               </motion.button>
             )}
           </AnimatePresence>

@@ -2,6 +2,8 @@ import io
 import json
 import logging
 import time
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import google.generativeai as genai
 
@@ -34,7 +36,21 @@ async def process_audio_with_gemini(
     """
     model = _get_model()
 
+    # Anchor relative phrases ("next Monday", "EOD Friday", "מחר ב-3") to a real date.
+    tz = ZoneInfo("Asia/Jerusalem")
+    now_local = datetime.now(tz)
+    today_iso = now_local.date().isoformat()
+    today_weekday = now_local.strftime("%A")
+    tz_offset = now_local.strftime("%z")  # e.g. "+0200"
+    tz_offset_iso = f"{tz_offset[:3]}:{tz_offset[3:]}" if tz_offset else "+02:00"
+
     extraction_prompt = f"""{system_prompt}
+
+TODAY'S DATE: {today_iso} ({today_weekday}), timezone Asia/Jerusalem ({tz_offset_iso}).
+Resolve every relative time phrase ("tomorrow", "next Monday", "in two weeks", "מחר", "ביום ראשון")
+to an absolute date relative to TODAY. If a specific clock time is mentioned, use it;
+otherwise default to 09:00 local time. Build `scheduled_at` as a full ISO 8601 timestamp
+with the {tz_offset_iso} offset, e.g. "{today_iso}T15:00:00{tz_offset_iso}".
 
 CRITICAL RULES:
 1. Base your entire response ONLY on what was actually spoken in the audio.
@@ -44,7 +60,11 @@ CRITICAL RULES:
    {{"title": "AUDIO_UNPROCESSABLE", "summary": "", "sentiment": "neutral", "tasks": [], "calendar_event": {{"is_detected": false, "title": "", "suggested_date": null, "suggested_time": null, "participants": []}}}}
 4. For EVERY task, explicitly extract and list a deadline if one was mentioned or implied.
    Set "deadline" to null if no deadline was stated or can be reasonably inferred.
-5. Detect any mention of a follow-up meeting, next scheduled call, deadline event, or concrete next step
+5. For EVERY task, also set "scheduled_at" to an absolute ISO 8601 timestamp (with timezone offset)
+   if a date or time was stated or strongly implied in the audio. Use TODAY'S DATE above as the
+   anchor for any relative phrase. Set "scheduled_at" to null if there is no usable time signal.
+   Keep `deadline` as the verbatim human-readable phrase even when `scheduled_at` is filled.
+6. Detect any mention of a follow-up meeting, next scheduled call, deadline event, or concrete next step
    that warrants a calendar entry. Populate "calendar_event" accordingly.
 
 Respond ONLY with valid JSON in this exact structure:
@@ -57,7 +77,8 @@ Respond ONLY with valid JSON in this exact structure:
       "title": "string",
       "description": "string",
       "priority": "low|medium|high|critical",
-      "deadline": "string or null"
+      "deadline": "string or null",
+      "scheduled_at": "ISO 8601 timestamp with offset, or null"
     }}
   ],
   "calendar_event": {{
@@ -205,6 +226,7 @@ For each real task:
   - medium: needs to get done but not urgent
   - low: nice to have, can wait
 - **deadline**: Extract verbatim if stated (e.g. "Sunday EOD", "by next Thursday"). If strongly implied but not stated explicitly, note it with "(implied)". Set to null if none.
+- **scheduled_at**: When a specific date or time is stated or strongly implied, set this to an absolute ISO 8601 timestamp resolved relative to TODAY'S DATE (see header). If only a date is given, default the time to 09:00 local. If no time signal exists, set to null.
 
 If the meeting produced no real tasks, return an empty array — do not invent tasks.
 

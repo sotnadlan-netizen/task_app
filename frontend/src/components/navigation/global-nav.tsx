@@ -21,9 +21,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { LanguageToggle } from "@/components/ui/language-toggle";
+import { useLanguage } from "@/providers/language-provider";
 
 export function GlobalNav() {
   const { user, signOut } = useSupabase();
+  const { t } = useLanguage();
   const {
     organizations,
     currentOrg,
@@ -53,19 +56,19 @@ export function GlobalNav() {
   const navLinks = [
     {
       href: roleBase,
-      label: "דף בית",
+      label: t("nav.home"),
       icon: <Home className="w-3.5 h-3.5" />,
       active: pathname === roleBase,
     },
     {
       href: `${roleBase}/tasks`,
-      label: "משימות",
+      label: t("nav.tasks"),
       icon: <ListChecks className="w-3.5 h-3.5" />,
       active: pathname.startsWith(`${roleBase}/tasks`),
     },
     {
       href: `${roleBase}/meetings`,
-      label: "פגישות",
+      label: t("nav.meetings"),
       icon: <CalendarDays className="w-3.5 h-3.5" />,
       active: pathname.startsWith(`${roleBase}/meetings`),
     },
@@ -73,7 +76,7 @@ export function GlobalNav() {
       ? [
           {
             href: "/dashboard/admin/organization",
-            label: "ארגון",
+            label: t("nav.organization"),
             icon: <Building2 className="w-3.5 h-3.5" />,
             active: pathname.startsWith("/dashboard/admin/organization"),
           },
@@ -83,7 +86,7 @@ export function GlobalNav() {
       ? [
           {
             href: "/dashboard/platform",
-            label: "פלטפורמה",
+            label: t("nav.platform"),
             icon: <ShieldCheck className="w-3.5 h-3.5" />,
             active: pathname === "/dashboard/platform",
           },
@@ -92,14 +95,14 @@ export function GlobalNav() {
   ];
 
   return (
-    <nav className="sf-nav sticky top-0 z-40 bg-[#16325c] text-white" dir="rtl">
+    <nav className="sf-nav sticky top-0 z-40 bg-[#16325c] text-white">
       {/* Utility bar */}
       <div className="px-4 sm:px-6 lg:px-8 h-12 flex items-center gap-3">
         {/* App launcher → dashboard home (role router) */}
         <Link
           href="/dashboard"
           className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10 transition-colors flex-shrink-0"
-          aria-label="App launcher"
+          aria-label={t("nav.appLauncher")}
         >
           {[...Array(9)].map((_, i) => (
             <span key={i} className="w-1 h-1 rounded-full bg-white/80" />
@@ -117,7 +120,7 @@ export function GlobalNav() {
         </Link>
 
         {/* Object tabs — desktop */}
-        <div className="hidden md:flex items-center mr-4 h-12">
+        <div className="hidden md:flex items-center ms-4 h-12">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -140,17 +143,17 @@ export function GlobalNav() {
         <div className="flex items-center gap-1">
           {/* Search */}
           <div className="relative hidden lg:block">
-            <Search className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
+            <Search className="w-3.5 h-3.5 absolute start-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
             <input
-              placeholder="חיפוש"
-              className="w-44 pr-7 pl-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1ab9ff]"
+              placeholder={t("common.search")}
+              className="w-44 ps-7 pe-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1ab9ff]"
             />
           </div>
 
           {/* Platform Admin Badge */}
           {isPlatformAdmin && (
             <span className="px-2 py-1 rounded bg-white/15 text-white text-[11px] font-semibold hidden sm:inline">
-              Platform Admin
+              {t("nav.platformAdmin")}
             </span>
           )}
 
@@ -160,17 +163,17 @@ export function GlobalNav() {
               <button
                 onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/10 text-[13px] font-medium text-white transition-colors"
-                aria-label="Switch organization"
+                aria-label={t("nav.switchOrganization")}
               >
                 <Building2 className="w-4 h-4 text-[#1ab9ff]" />
                 <span className="max-w-[120px] truncate hidden sm:inline">
-                  {currentOrg?.name || "Select Org"}
+                  {currentOrg?.name || t("nav.selectOrg")}
                 </span>
                 <ChevronDown className="w-4 h-4 text-white/70" />
               </button>
 
               {orgDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
+                <div className="absolute top-full start-0 mt-1 w-64 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
                   {organizations.map((org) => (
                     <button
                       key={org.id}
@@ -178,7 +181,7 @@ export function GlobalNav() {
                         switchOrganization(org.id);
                         setOrgDropdownOpen(false);
                       }}
-                      className={`w-full text-right px-4 py-2 text-[13px] transition-colors ${
+                      className={`w-full text-start px-4 py-2 text-[13px] transition-colors ${
                         org.id === currentOrg?.id
                           ? "bg-[#ecf5fe] text-[#0070d2] font-semibold"
                           : "text-[#080707] hover:bg-[#fafaf9]"
@@ -201,7 +204,7 @@ export function GlobalNav() {
                   isOnMemberView ? "bg-white text-[#16325c]" : "text-white/80 hover:text-white"
                 }`}
               >
-                Member
+                {t("nav.member")}
               </button>
               <button
                 onClick={() => router.push("/dashboard/admin")}
@@ -209,10 +212,13 @@ export function GlobalNav() {
                   isOnAdminView ? "bg-white text-[#16325c]" : "text-white/80 hover:text-white"
                 }`}
               >
-                Admin
+                {t("nav.admin")}
               </button>
             </div>
           )}
+
+          {/* Language Toggle */}
+          <LanguageToggle variant="dark" />
 
           {/* Theme Toggle (recolored for navy bar) */}
           <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
@@ -223,11 +229,11 @@ export function GlobalNav() {
           <Link
             href="/dashboard/member/inbox"
             className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center transition-colors"
-            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
+            aria-label={unreadCount > 0 ? t("nav.notificationsUnread", { count: unreadCount }) : t("nav.notifications")}
           >
             <Bell className="w-4 h-4 text-white" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-[#c23934] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-[#16325c]">
+              <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 bg-[#c23934] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-[#16325c]">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -246,13 +252,13 @@ export function GlobalNav() {
             </button>
 
             {userMenuOpen && (
-              <div className="absolute left-0 mt-1 w-56 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
+              <div className="absolute end-0 mt-1 w-56 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
                 <div className="px-4 py-2.5 border-b border-[#dddbda]">
                   <p className="text-[13px] font-medium text-[#080707] truncate">
                     {user?.email}
                   </p>
-                  <p className="text-[11px] text-[#706e6b] capitalize">
-                    {currentRole}
+                  <p className="text-[11px] text-[#706e6b]">
+                    {currentRole ? t(`roles.${currentRole}`) : ""}
                   </p>
                 </div>
                 <button
@@ -260,10 +266,10 @@ export function GlobalNav() {
                     signOut();
                     setUserMenuOpen(false);
                   }}
-                  className="w-full text-right px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2 flex-row-reverse transition-colors"
+                  className="w-full text-start px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  התנתק
+                  {t("nav.signOut")}
                 </button>
               </div>
             )}
@@ -273,7 +279,7 @@ export function GlobalNav() {
           <button
             className="md:hidden p-2 rounded hover:bg-white/10 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
+            aria-label={t("nav.toggleMenu")}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -282,7 +288,7 @@ export function GlobalNav() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 py-2" dir="rtl">
+        <div className="md:hidden border-t border-white/10 py-2">
           <div className="px-2 space-y-0.5">
             {navLinks.map((link) => (
               <Link
@@ -298,13 +304,16 @@ export function GlobalNav() {
               </Link>
             ))}
             <div className="pt-2 mt-1 border-t border-white/10">
+              <div className="px-3 py-2">
+                <LanguageToggle variant="dark" />
+              </div>
               <p className="text-[13px] text-white/70 truncate px-3 py-1">{user?.email}</p>
               <button
                 onClick={signOut}
-                className="w-full text-right text-[13px] text-white py-2 px-3 flex items-center gap-2 flex-row-reverse rounded hover:bg-white/10 transition-colors"
+                className="w-full text-start text-[13px] text-white py-2 px-3 flex items-center gap-2 rounded hover:bg-white/10 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
-                התנתק
+                {t("nav.signOut")}
               </button>
             </div>
           </div>

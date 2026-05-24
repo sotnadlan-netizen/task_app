@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase, check_platform_admin
-from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate, OrgPromptSelect
+from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate, OrgPromptSelect, OrgPromptAssignmentUpdate
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
 
@@ -241,6 +241,104 @@ async def select_org_prompt(
         .execute()
     )
     return result.data[0] if result.data else {}
+
+
+@router.get("/{org_id}/available-prompts")
+async def list_org_available_prompts(
+    org_id: str,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """
+    List the system prompts this org may choose from (headline + description only).
+    Visible to any member of the org and to platform admins. system_text is never returned.
+    """
+    if not check_platform_admin(user["id"], supabase):
+        membership = (
+            supabase.table("org_memberships")
+            .select("id")
+            .eq("user_id", user["id"])
+            .eq("org_id", org_id)
+            .limit(1)
+            .execute()
+        )
+        if not membership.data:
+            raise HTTPException(status_code=403, detail="Not a member of this organization")
+
+    assignments = (
+        supabase.table("org_system_prompts")
+        .select("prompt_id, system_prompts(id, name, description, created_at)")
+        .eq("org_id", org_id)
+        .execute()
+    )
+
+    prompts = []
+    for row in assignments.data or []:
+        sp = row.get("system_prompts")
+        if sp:
+            prompts.append(
+                {
+                    "id": sp["id"],
+                    "name": sp["name"],
+                    "description": sp.get("description", ""),
+                    "created_at": sp.get("created_at"),
+                }
+            )
+    return prompts
+
+
+@router.get("/{org_id}/assigned-prompts")
+async def get_org_assigned_prompts(
+    org_id: str,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Return the system_prompt ids assigned to this org (platform admin only)."""
+    if not check_platform_admin(user["id"], supabase):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    result = (
+        supabase.table("org_system_prompts")
+        .select("prompt_id")
+        .eq("org_id", org_id)
+        .execute()
+    )
+    return [row["prompt_id"] for row in (result.data or [])]
+
+
+@router.put("/{org_id}/assigned-prompts")
+async def set_org_assigned_prompts(
+    org_id: str,
+    data: OrgPromptAssignmentUpdate,
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Replace the full set of system prompts this org may choose from (platform admin only)."""
+    if not check_platform_admin(user["id"], supabase):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    # Replace the assignment set: clear existing, then insert the new ids.
+    supabase.table("org_system_prompts").delete().eq("org_id", org_id).execute()
+
+    unique_ids = list(dict.fromkeys(data.prompt_ids))  # de-dupe, preserve order
+    if unique_ids:
+        supabase.table("org_system_prompts").insert(
+            [{"org_id": org_id, "prompt_id": pid} for pid in unique_ids]
+        ).execute()
+
+    # If the org's current default selection is no longer assigned, clear it.
+    org_row = (
+        supabase.table("organizations")
+        .select("selected_prompt_id")
+        .eq("id", org_id)
+        .single()
+        .execute()
+    )
+    selected = (org_row.data or {}).get("selected_prompt_id")
+    if selected and selected not in unique_ids:
+        supabase.table("organizations").update({"selected_prompt_id": None}).eq("id", org_id).execute()
+
+    return {"prompt_ids": unique_ids}
 
 
 @router.get("/{org_id}/capacity", response_model=CapacityResponse)

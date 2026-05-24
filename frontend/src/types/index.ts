@@ -15,6 +15,7 @@ export interface Profile {
   email: string;
   full_name: string;
   avatar_url: string | null;
+  language?: "en" | "he";
   created_at: string;
 }
 
@@ -73,6 +74,7 @@ export interface Session {
   sentiment: string;
   duration_seconds: number;
   ai_prompt_version: number;
+  system_prompt_id?: string | null;
   created_at: string;
   project_id?: string | null;
   participant_ids?: string[];
