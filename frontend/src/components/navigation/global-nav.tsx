@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Search,
   Zap,
+  LifeBuoy,
+  Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -80,8 +82,20 @@ export function GlobalNav() {
             icon: <Building2 className="w-3.5 h-3.5" />,
             active: pathname.startsWith("/dashboard/admin/organization"),
           },
+          {
+            href: "/dashboard/admin/tickets",
+            label: t("nav.tickets"),
+            icon: <Ticket className="w-3.5 h-3.5" />,
+            active: pathname.startsWith("/dashboard/admin/tickets"),
+          },
         ]
       : []),
+    {
+      href: "/dashboard/support",
+      label: t("nav.support"),
+      icon: <LifeBuoy className="w-3.5 h-3.5" />,
+      active: pathname.startsWith("/dashboard/support"),
+    },
     ...(isPlatformAdmin
       ? [
           {
