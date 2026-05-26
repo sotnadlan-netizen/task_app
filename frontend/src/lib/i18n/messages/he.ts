@@ -543,8 +543,19 @@ export const he: typeof en = {
     priority_medium: "בינונית",
     priority_high: "גבוהה",
     priority_critical: "קריטית",
-    // Admin dashboard
+    // Client tracking list
+    myTicketsTitle: "הפניות שלי",
+    myTicketsEmpty: "עדיין לא שלחת פניות.",
+    // Chat thread
+    threadTitle: "שיחה",
+    threadEmpty: "אין הודעות עדיין. התחילו את השיחה למטה.",
+    threadPlaceholder: "הקלידו הודעה...",
+    threadSend: "שליחה",
+    unknownUser: "לא ידוע",
+    unknownOrg: "ארגון לא ידוע",
+    // Admin / platform dashboards
     adminTitle: "פניות תמיכה",
+    platformTitle: "כל פניות התמיכה",
     kpiTotal: "סך הפניות",
     kpiOpen: "פתוחות",
     kpiCritical: "קריטיות פתוחות",

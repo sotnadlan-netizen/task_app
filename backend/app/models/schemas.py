@@ -110,6 +110,10 @@ class TicketUpdate(BaseModel):
     priority: Optional[TicketPriority] = None
 
 
+class TicketMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=10000)
+
+
 class OrgCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     total_capacity_min: int = Field(ge=0)

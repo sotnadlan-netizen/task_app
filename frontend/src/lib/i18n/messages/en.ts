@@ -547,8 +547,19 @@ export const en = {
     priority_medium: "Medium",
     priority_high: "High",
     priority_critical: "Critical",
-    // Admin dashboard
+    // Client tracking list
+    myTicketsTitle: "My Tickets",
+    myTicketsEmpty: "You haven't submitted any tickets yet.",
+    // Chat thread
+    threadTitle: "Conversation",
+    threadEmpty: "No messages yet. Start the conversation below.",
+    threadPlaceholder: "Type a message...",
+    threadSend: "Send",
+    unknownUser: "Unknown",
+    unknownOrg: "Unknown org",
+    // Admin / platform dashboards
     adminTitle: "Support Tickets",
+    platformTitle: "All Support Tickets",
     kpiTotal: "Total Tickets",
     kpiOpen: "Open",
     kpiCritical: "Critical Open",

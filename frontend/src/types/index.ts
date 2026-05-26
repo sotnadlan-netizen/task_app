@@ -130,6 +130,19 @@ export interface Ticket {
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  // Embedded by the API for display (optional).
+  author?: Pick<Profile, "email" | "full_name"> | null;
+  organization?: { name: string } | null;
+}
+
+export interface TicketMessage {
+  id: string;
+  ticket_id: string;
+  org_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  author?: Pick<Profile, "email" | "full_name"> | null;
 }
 
 export interface Notification {

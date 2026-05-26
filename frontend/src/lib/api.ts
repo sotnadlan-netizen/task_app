@@ -236,6 +236,19 @@ export const api = {
   getTickets: (orgId: string, token: string) =>
     request(`/api/tickets?org_id=${orgId}`, { token }),
 
+  // Global cross-org list — platform admins only.
+  getAllTickets: (token: string) => request("/api/tickets/all", { token }),
+
+  getTicketMessages: (ticketId: string, token: string) =>
+    request(`/api/tickets/${ticketId}/messages`, { token }),
+
+  postTicketMessage: (ticketId: string, body: string, token: string) =>
+    request(`/api/tickets/${ticketId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+      token,
+    }),
+
   createTicket: (
     data: {
       org_id: string;

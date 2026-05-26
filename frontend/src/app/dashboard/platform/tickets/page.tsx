@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
-import { useRealtime } from "@/providers/realtime-provider";
 import { useLanguage } from "@/providers/language-provider";
 import { api } from "@/lib/api";
 import { PageHeader, KpiTile } from "@/components/ui/lightning";
@@ -13,15 +12,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
+import { TicketThread } from "@/components/support/ticket-thread";
 import type { Ticket, TicketStatus } from "@/types";
-import { LifeBuoy, AlertTriangle, Inbox } from "lucide-react";
+import { LifeBuoy, AlertTriangle, Inbox, Building2 } from "lucide-react";
 
-const PRIORITY_RANK: Record<string, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
+const PRIORITY_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
 const priorityVariant: Record<string, "default" | "info" | "warning" | "danger"> = {
   low: "default",
@@ -32,10 +27,9 @@ const priorityVariant: Record<string, "default" | "info" | "warning" | "danger">
 
 const STATUSES: TicketStatus[] = ["open", "in_progress", "resolved"];
 
-export default function AdminTicketsPage() {
-  const { session } = useSupabase();
-  const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
-  const { subscribe } = useRealtime();
+export default function PlatformTicketsPage() {
+  const { supabase, session } = useSupabase();
+  const { isPlatformAdmin, loading: orgLoading } = useOrganization();
   const { t, lang } = useLanguage();
   const router = useRouter();
 
@@ -49,13 +43,13 @@ export default function AdminTicketsPage() {
 
   const token = session?.access_token || "";
 
-  // ── Role guard: org admins only ──
+  // ── Strict guard: platform admins only ──
   useEffect(() => {
     if (orgLoading) return;
-    if (currentRole !== "admin") {
-      router.replace("/dashboard/member");
+    if (!isPlatformAdmin) {
+      router.replace("/dashboard");
     }
-  }, [orgLoading, currentRole, router]);
+  }, [orgLoading, isPlatformAdmin, router]);
 
   const priorityLabels: Record<string, string> = {
     low: t("tickets.priority_low"),
@@ -74,36 +68,44 @@ export default function AdminTicketsPage() {
   };
 
   const loadTickets = useCallback(async () => {
-    if (!currentOrg || !token) return;
+    if (!token || !isPlatformAdmin) return;
     try {
-      const data = (await api.getTickets(currentOrg.id, token)) as Ticket[];
+      const data = (await api.getAllTickets(token)) as Ticket[];
       setTickets(data || []);
     } catch {
-      // silently fail — list stays as-is
+      // keep current list
     }
     setLoading(false);
-  }, [currentOrg, token]);
+  }, [token, isPlatformAdmin]);
 
   useEffect(() => {
     loadTickets();
   }, [loadTickets]);
 
-  // ── Realtime: new tickets/errors appear live with a notification banner ──
+  // ── Global realtime across ALL orgs (org-agnostic channel, not org-filtered) ──
   useEffect(() => {
-    const unsub = subscribe("tickets", (payload) => {
-      loadTickets();
-      if (payload.eventType === "INSERT") {
-        const isError = (payload.new as { type?: string })?.type === "system_error";
-        setBanner(isError ? t("tickets.newErrorToast") : t("tickets.newTicketToast"));
-        if (bannerTimer.current) clearTimeout(bannerTimer.current);
-        bannerTimer.current = setTimeout(() => setBanner(null), 6000);
-      }
-    });
+    if (!isPlatformAdmin) return;
+    const channel = supabase
+      .channel("platform-tickets")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tickets" },
+        (payload) => {
+          loadTickets();
+          if (payload.eventType === "INSERT") {
+            const isError = (payload.new as { type?: string })?.type === "system_error";
+            setBanner(isError ? t("tickets.newErrorToast") : t("tickets.newTicketToast"));
+            if (bannerTimer.current) clearTimeout(bannerTimer.current);
+            bannerTimer.current = setTimeout(() => setBanner(null), 6000);
+          }
+        }
+      )
+      .subscribe();
     return () => {
-      unsub();
+      supabase.removeChannel(channel);
       if (bannerTimer.current) clearTimeout(bannerTimer.current);
     };
-  }, [subscribe, loadTickets, t]);
+  }, [supabase, isPlatformAdmin, loadTickets, t]);
 
   const sorted = useMemo(() => {
     return [...tickets].sort((a, b) => {
@@ -119,18 +121,13 @@ export default function AdminTicketsPage() {
     [tickets]
   );
 
-  const openTicket = (ticket: Ticket) => {
-    setSelected(ticket);
-    setStatusDraft(ticket.status);
-  };
-
   const handleSaveStatus = async () => {
     if (!selected || statusDraft === selected.status) return;
     setSaving(true);
     try {
       const updated = (await api.updateTicket(selected.id, { status: statusDraft }, token)) as Ticket;
       setTickets((prev) => prev.map((x) => (x.id === selected.id ? { ...x, ...updated } : x)));
-      setSelected(null);
+      setSelected((s) => (s ? { ...s, status: statusDraft } : s));
     } catch {
       // keep modal open on failure
     } finally {
@@ -141,15 +138,15 @@ export default function AdminTicketsPage() {
   const fmtDate = (iso: string) =>
     new Date(iso).toLocaleString(lang === "he" ? "he-IL" : "en-US");
 
-  if (orgLoading || currentRole !== "admin") return null;
+  if (orgLoading || !isPlatformAdmin) return null;
 
   return (
     <div className="space-y-5">
       <PageHeader
         icon={<LifeBuoy className="w-5 h-5 text-white" />}
-        eyebrow={t("console.organization")}
-        title={t("tickets.adminTitle")}
-        breadcrumb={[t("nav.admin"), t("nav.tickets")]}
+        eyebrow={t("console.platform")}
+        title={t("tickets.platformTitle")}
+        breadcrumb={[t("nav.platform"), t("nav.tickets")]}
       />
 
       {banner && (
@@ -159,11 +156,7 @@ export default function AdminTicketsPage() {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <KpiTile
-          label={t("tickets.kpiTotal")}
-          value={tickets.length}
-          icon={<Inbox className="w-4 h-4" />}
-        />
+        <KpiTile label={t("tickets.kpiTotal")} value={tickets.length} icon={<Inbox className="w-4 h-4" />} />
         <KpiTile label={t("tickets.kpiOpen")} value={openCount} />
         <KpiTile
           label={t("tickets.kpiCritical")}
@@ -188,7 +181,10 @@ export default function AdminTicketsPage() {
             {sorted.map((ticket) => (
               <button
                 key={ticket.id}
-                onClick={() => openTicket(ticket)}
+                onClick={() => {
+                  setSelected(ticket);
+                  setStatusDraft(ticket.status);
+                }}
                 className="w-full text-start px-6 py-4 hover:bg-[#fafaf9] transition-colors"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -196,7 +192,15 @@ export default function AdminTicketsPage() {
                     <Badge variant={priorityVariant[ticket.priority] ?? "default"}>
                       {priorityLabels[ticket.priority] ?? ticket.priority}
                     </Badge>
-                    <Badge variant={ticket.status === "resolved" ? "success" : ticket.status === "in_progress" ? "warning" : "info"}>
+                    <Badge
+                      variant={
+                        ticket.status === "resolved"
+                          ? "success"
+                          : ticket.status === "in_progress"
+                            ? "warning"
+                            : "info"
+                      }
+                    >
                       {statusLabels[ticket.status] ?? ticket.status}
                     </Badge>
                     {ticket.type === "system_error" && (
@@ -205,9 +209,11 @@ export default function AdminTicketsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="text-sm font-semibold text-[#080707] truncate">{ticket.title}</h4>
-                    {ticket.description && (
-                      <p className="text-sm text-[#3e3e3c] line-clamp-1">{ticket.description}</p>
-                    )}
+                    <p className="text-[12px] text-[#706e6b] flex items-center gap-1 truncate">
+                      <Building2 className="w-3 h-3 flex-shrink-0" />
+                      {ticket.organization?.name || t("tickets.unknownOrg")}
+                      {ticket.author?.email ? ` · ${ticket.author.email}` : ""}
+                    </p>
                   </div>
                   <span className="text-[11px] text-[#706e6b] flex-shrink-0 whitespace-nowrap">
                     {fmtDate(ticket.created_at)}
@@ -222,7 +228,7 @@ export default function AdminTicketsPage() {
       <Modal
         open={selected !== null}
         onClose={() => setSelected(null)}
-        title={selected?.title || t("tickets.adminTitle")}
+        title={selected?.title || t("tickets.platformTitle")}
       >
         {selected && (
           <div className="space-y-4">
@@ -231,57 +237,55 @@ export default function AdminTicketsPage() {
                 {priorityLabels[selected.priority] ?? selected.priority}
               </Badge>
               <Badge variant="default">{typeLabels[selected.type] ?? selected.type}</Badge>
+              <span className="text-[11px] text-[#706e6b] flex items-center gap-1">
+                <Building2 className="w-3 h-3" />
+                {selected.organization?.name || t("tickets.unknownOrg")}
+              </span>
               <span className="text-[11px] text-[#706e6b]">{fmtDate(selected.created_at)}</span>
             </div>
 
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#706e6b] mb-1">
-                {t("tickets.descriptionLabel")}
-              </p>
-              <p className="text-sm text-[#3e3e3c] whitespace-pre-wrap">
-                {selected.description || t("tickets.noDescription")}
-              </p>
-            </div>
+            {selected.description && (
+              <p className="text-sm text-[#3e3e3c] whitespace-pre-wrap">{selected.description}</p>
+            )}
 
             {selected.metadata && Object.keys(selected.metadata).length > 0 && (
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[#706e6b] mb-1">
                   {t("tickets.metadataLabel")}
                 </p>
-                <pre className="text-[11px] bg-[#fafaf9] border border-[#dddbda] rounded p-3 overflow-x-auto max-h-48 text-[#3e3e3c]">
+                <pre className="text-[11px] bg-[#fafaf9] border border-[#dddbda] rounded p-3 overflow-x-auto max-h-40 text-[#3e3e3c]">
                   {JSON.stringify(selected.metadata, null, 2)}
                 </pre>
               </div>
             )}
 
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wide text-[#706e6b] block mb-1">
-                {t("tickets.statusLabel")}
-              </label>
-              <select
-                value={statusDraft}
-                onChange={(e) => setStatusDraft(e.target.value as TicketStatus)}
-                className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {statusLabels[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex gap-2 justify-start pt-1">
-              <Button
-                onClick={handleSaveStatus}
-                loading={saving}
-                disabled={statusDraft === selected.status}
-              >
+            <div className="flex items-end gap-2">
+              <div className="flex-1">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[#706e6b] block mb-1">
+                  {t("tickets.statusLabel")}
+                </label>
+                <select
+                  value={statusDraft}
+                  onChange={(e) => setStatusDraft(e.target.value as TicketStatus)}
+                  className="w-full px-3 py-2 border border-[#dddbda] rounded text-sm focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent bg-white"
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {statusLabels[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Button onClick={handleSaveStatus} loading={saving} disabled={statusDraft === selected.status}>
                 {t("common.saveChanges")}
               </Button>
-              <Button variant="ghost" onClick={() => setSelected(null)}>
-                {t("common.close")}
-              </Button>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#706e6b] mb-2">
+                {t("tickets.threadTitle")}
+              </p>
+              <TicketThread ticketId={selected.id} />
             </div>
           </div>
         )}
