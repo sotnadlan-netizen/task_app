@@ -29,6 +29,24 @@ class PendingTaskStatus(str, Enum):
     rejected = "rejected"
 
 
+class TicketType(str, Enum):
+    manual_complaint = "manual_complaint"
+    system_error = "system_error"
+
+
+class TicketStatus(str, Enum):
+    open = "open"
+    in_progress = "in_progress"
+    resolved = "resolved"
+
+
+class TicketPriority(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+    critical = "critical"
+
+
 # --- Request Schemas ---
 
 class EditRequestCreate(BaseModel):
@@ -74,6 +92,26 @@ class TaskCreate(BaseModel):
     status: TaskStatus = TaskStatus.todo
     session_id: Optional[str] = None
     project_id: Optional[str] = None
+
+
+class TicketCreate(BaseModel):
+    org_id: str
+    type: TicketType = TicketType.manual_complaint
+    title: str = Field(min_length=1, max_length=300)
+    description: str = ""
+    priority: TicketPriority = TicketPriority.medium
+    metadata: dict = Field(default_factory=dict)
+
+
+class TicketUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[TicketStatus] = None
+    priority: Optional[TicketPriority] = None
+
+
+class TicketMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=10000)
 
 
 class OrgCreate(BaseModel):

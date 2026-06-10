@@ -9,6 +9,7 @@ import { GlobalNav } from "@/components/navigation/global-nav";
 import { AccessibilityWidget } from "@/components/accessibility/accessibility-widget";
 import { NotificationLoader } from "@/components/inbox/notification-loader";
 import { LanguageSync } from "@/components/language-sync";
+import { ErrorBoundaryProvider } from "@/components/error-boundary";
 
 function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useSupabase();
@@ -39,14 +40,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <NotificationLoader />
         {fullBleed ? (
           <div className="min-h-screen">
-            {children}
+            <ErrorBoundaryProvider>{children}</ErrorBoundaryProvider>
             <AccessibilityWidget />
           </div>
         ) : (
           <div className="min-h-screen">
             <GlobalNav />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              {children}
+              <ErrorBoundaryProvider>{children}</ErrorBoundaryProvider>
             </main>
             <AccessibilityWidget />
           </div>

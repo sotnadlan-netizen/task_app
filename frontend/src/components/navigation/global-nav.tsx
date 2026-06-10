@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   Search,
   Zap,
+  LifeBuoy,
+  Ticket,
 } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -82,6 +84,17 @@ export function GlobalNav() {
           },
         ]
       : []),
+    // Client support page — for org users (admins, members, participants), not platform admins.
+    ...(!isPlatformAdmin
+      ? [
+          {
+            href: "/dashboard/support",
+            label: t("nav.support"),
+            icon: <LifeBuoy className="w-3.5 h-3.5" />,
+            active: pathname.startsWith("/dashboard/support"),
+          },
+        ]
+      : []),
     ...(isPlatformAdmin
       ? [
           {
@@ -89,6 +102,12 @@ export function GlobalNav() {
             label: t("nav.platform"),
             icon: <ShieldCheck className="w-3.5 h-3.5" />,
             active: pathname === "/dashboard/platform",
+          },
+          {
+            href: "/dashboard/platform/tickets",
+            label: t("nav.tickets"),
+            icon: <Ticket className="w-3.5 h-3.5" />,
+            active: pathname.startsWith("/dashboard/platform/tickets"),
           },
         ]
       : []),

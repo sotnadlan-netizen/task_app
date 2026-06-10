@@ -231,4 +231,49 @@ export const api = {
   // ── Profile (per-user UI language) ───────────────────────────────────────
   updateProfileLanguage: (language: "en" | "he", token: string) =>
     request("/api/profile", { method: "PATCH", body: JSON.stringify({ language }), token }),
+
+  // ── Helpdesk tickets ──────────────────────────────────────────────────────
+  getTickets: (orgId: string, token: string) =>
+    request(`/api/tickets?org_id=${orgId}`, { token }),
+
+  // Global cross-org list — platform admins only.
+  getAllTickets: (token: string) => request("/api/tickets/all", { token }),
+
+  getTicketMessages: (ticketId: string, token: string) =>
+    request(`/api/tickets/${ticketId}/messages`, { token }),
+
+  postTicketMessage: (ticketId: string, body: string, token: string) =>
+    request(`/api/tickets/${ticketId}/messages`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+      token,
+    }),
+
+  createTicket: (
+    data: {
+      org_id: string;
+      title: string;
+      description?: string;
+      type?: "manual_complaint" | "system_error";
+      priority?: "low" | "medium" | "high" | "critical";
+      metadata?: Record<string, unknown>;
+    },
+    token: string
+  ) =>
+    request("/api/tickets", {
+      method: "POST",
+      body: JSON.stringify(data),
+      token,
+    }),
+
+  updateTicket: (
+    ticketId: string,
+    data: { status?: string; priority?: string; title?: string; description?: string },
+    token: string
+  ) =>
+    request(`/api/tickets/${ticketId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+      token,
+    }),
 };
