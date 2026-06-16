@@ -93,7 +93,7 @@ export const he: typeof en = {
     title: "AI Task Orchestrator",
     subtitle:
       "הפכו אודיו חי למשימות לפעולה בעזרת בינה מלאכותית. פרטיות תחילה. רב-ארגוני. שיתוף פעולה בזמן אמת.",
-    signIn: "התחברות עם Google",
+    signIn: "התחבר באמצעות גוגל",
     featureAudioTitle: "מאודיו למשימות",
     featureAudioDesc:
       "הקליטו פגישות וקבלו סיכומים, ניתוח סנטימנט ורשימות משימות שנוצרו על ידי בינה מלאכותית.",
@@ -148,6 +148,10 @@ export const he: typeof en = {
     statusRecording: "מקליט... לחץ לעצירה",
     statusIdle: "לחץ להתחלת הקלטה",
     processing: "מעבד אודיו עם בינה מלאכותית...",
+    reviewTitle: "סקירת ההקלטה",
+    reviewHint: "האזן להקלטה, ולאחר מכן אשר לעיבוד או מחק כדי למחוק.",
+    approve: "אישור",
+    discard: "מחיקה",
     blockedAlert: "ההקלטה חסומה: אין מספיק קיבולת (נותרו ≤55 דקות)",
     micError: "הגישה למיקרופון נכשלה",
     keyMissing: "מפתח ההצפנה חסר — לא ניתן להרכיב את האודיו",
@@ -265,6 +269,17 @@ export const he: typeof en = {
     errQuota: "עדכון המכסה נכשל",
     errRole: "עדכון התפקיד נכשל",
     errQuotaLimit: "לא ניתן להגדיר מכסה ל-{q} דק׳. רק {max} דק׳ זמינות (סך הארגון: {total} דק׳, חברים אחרים: {other} דק׳).",
+  },
+
+  orgLogo: {
+    label: "לוגו הארגון",
+    hint: "PNG, JPG, WEBP או SVG, עד 2 מ״ב.",
+    upload: "העלאת לוגו",
+    change: "החלפת לוגו",
+    uploading: "מעלה...",
+    errType: "יש לבחור קובץ תמונה (PNG, JPG, WEBP או SVG).",
+    errSize: "התמונה גדולה מדי. הגודל המרבי הוא 2 מ״ב.",
+    errUpload: "העלאת הלוגו נכשלה.",
   },
 
   platform: {

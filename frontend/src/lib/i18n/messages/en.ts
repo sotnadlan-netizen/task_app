@@ -148,6 +148,10 @@ export const en = {
     statusRecording: "Recording... tap to stop",
     statusIdle: "Tap to start recording",
     processing: "Processing audio with AI...",
+    reviewTitle: "Review your recording",
+    reviewHint: "Listen back, then approve to process or discard to delete.",
+    approve: "Approve",
+    discard: "Delete",
     blockedAlert: "Recording blocked: insufficient capacity (≤55 minutes remaining)",
     micError: "Failed to access microphone",
     keyMissing: "Encryption key missing — cannot assemble audio",
@@ -265,6 +269,17 @@ export const en = {
     errQuota: "Failed to update quota",
     errRole: "Failed to update role",
     errQuotaLimit: "Cannot set quota to {q} min. Only {max} min available (org total: {total} min, other members: {other} min).",
+  },
+
+  orgLogo: {
+    label: "Organization logo",
+    hint: "PNG, JPG, WEBP or SVG, up to 2 MB.",
+    upload: "Upload logo",
+    change: "Change logo",
+    uploading: "Uploading...",
+    errType: "Please choose an image file (PNG, JPG, WEBP or SVG).",
+    errSize: "Image is too large. Maximum size is 2 MB.",
+    errUpload: "Failed to upload logo.",
   },
 
   platform: {

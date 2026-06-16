@@ -124,6 +124,7 @@ class OrgUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     total_capacity_min: Optional[int] = Field(None, ge=0)
     max_members: Optional[int] = Field(None, ge=1)
+    logo_url: Optional[str] = Field(None, max_length=1000)
 
 
 class MemberAdd(BaseModel):

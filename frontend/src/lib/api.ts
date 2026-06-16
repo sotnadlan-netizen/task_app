@@ -162,6 +162,16 @@ export const api = {
   deleteOrg: (orgId: string, token: string) =>
     request(`/api/organizations/${orgId}`, { method: "DELETE", token }),
 
+  uploadOrgLogo: (orgId: string, file: File, token: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request(`/api/organizations/${orgId}/logo`, {
+      method: "POST",
+      body: formData,
+      token,
+    });
+  },
+
   addOrgMember: (orgId: string, data: { email: string; role: string }, token: string) =>
     request(`/api/organizations/${orgId}/members`, { method: "POST", body: JSON.stringify(data), token }),
 

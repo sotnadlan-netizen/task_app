@@ -183,6 +183,14 @@ html.dark .shadow-lg.bg-white { background-color: #11233f !important; border-col
   }
 }
 
+/* Bi-directional text: let each block resolve its own base direction from its
+   first strong character, so sentences mixing Hebrew (RTL) and English/numbers
+   (LTR) flow naturally without punctuation/word-order breaking. Pair with
+   dir="auto" on the element for robustness regardless of the document dir. */
+.bidi-auto {
+  unicode-bidi: plaintext;
+}
+
 /* Blinking cursor for AI processing state */
 @keyframes cm-blink {
   0%, 49% { opacity: 1; }

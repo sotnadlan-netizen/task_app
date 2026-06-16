@@ -30,6 +30,7 @@ interface OrganizationContextType {
   loading: boolean;
   isPlatformAdmin: boolean;
   switchOrganization: (orgId: string) => void;
+  applyOrgUpdate: (updated: Organization) => void;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(
@@ -112,6 +113,14 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     [memberships, router]
   );
 
+  // Patch a single org in place (e.g. after a logo upload) so the header and
+  // settings reflect the change without a full reload.
+  const applyOrgUpdate = useCallback((updated: Organization) => {
+    setOrganizations((prev) =>
+      prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o))
+    );
+  }, []);
+
   const currentOrg =
     organizations.find((o) => o.id === currentOrgId) || null;
   const currentMembership =
@@ -148,6 +157,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         loading,
         isPlatformAdmin,
         switchOrganization,
+        applyOrgUpdate,
       }}
     >
       {children}

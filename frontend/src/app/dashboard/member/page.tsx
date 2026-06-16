@@ -23,7 +23,7 @@ import {
   Search, Bell, Settings, ChevronDown, ChevronLeft, ChevronRight, Star,
   Plus, RefreshCw, MoreHorizontal, ArrowUpDown,
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
-  Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2,
+  Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2, Check,
   ExternalLink, Edit3, Calendar as CalendarIcon, Settings2, Mic,
   UserPlus, Clock, X, MicVocal, CalendarClock, CalendarPlus, XCircle, Hand,
   LogOut, Building2, Inbox,
@@ -356,7 +356,7 @@ export default function MemberPage() {
 
           <div className="flex-1" />
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {/* Admin ↔ Member toggle (admin-role users only) */}
             {!isPlatformAdmin && currentRole === "admin" && (
               <div className="flex items-center bg-white/10 rounded p-0.5 gap-0.5 me-1">
@@ -378,8 +378,13 @@ export default function MemberPage() {
                   className="flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-white/10 text-[12px] font-medium text-white transition-colors"
                   aria-label={t("nav.switchOrganization")}
                 >
-                  <Building2 className="w-4 h-4 text-[#1ab9ff]" />
-                  <span className="max-w-[110px] truncate hidden lg:inline">{currentOrg?.name || t("nav.selectOrg")}</span>
+                  {currentOrg?.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={currentOrg.logo_url} alt={currentOrg.name} className="w-5 h-5 rounded object-cover shrink-0 bg-white" />
+                  ) : (
+                    <Building2 className="w-4 h-4 text-[#1ab9ff] shrink-0" />
+                  )}
+                  <span className="w-[110px] truncate text-start hidden lg:inline-block align-middle">{currentOrg?.name || t("nav.selectOrg")}</span>
                   <ChevronDown className="w-3.5 h-3.5 text-white/70" />
                 </button>
                 {orgMenuOpen && (
@@ -420,7 +425,7 @@ export default function MemberPage() {
             <Link href="/dashboard/member/inbox" className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center" aria-label={unreadCount > 0 ? t("nav.notificationsUnread", { count: unreadCount }) : t("nav.notifications")}>
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
+                <span className="absolute -top-0.5 -end-0.5 w-4 h-4 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -806,7 +811,7 @@ export default function MemberPage() {
             <div className="flex items-start gap-3 p-3 bg-red-50/60 border border-red-100 rounded-2xl">
               <Trash2 className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-red-700">
-                <p className="font-semibold mb-1">{t("memberHome.deleteSessionQ", { title: confirmDeleteSession.title || t("meetings.untitled") })}</p>
+                <p dir="auto" className="bidi-auto font-semibold mb-1">{t("memberHome.deleteSessionQ", { title: confirmDeleteSession.title || t("meetings.untitled") })}</p>
                 <p>{t("memberHome.deleteSessionDetail")}</p>
               </div>
             </div>
@@ -956,7 +961,7 @@ function TaskDetailModal({
         <div>
           <p className="text-[10px] uppercase tracking-wide text-[#706e6b] font-semibold mb-1">{t("editRequest.fieldDescription")}</p>
           {task.description
-            ? <p className="text-[#3e3e3c] leading-relaxed whitespace-pre-wrap">{task.description}</p>
+            ? <p dir="auto" className="bidi-auto text-[#3e3e3c] leading-relaxed whitespace-pre-wrap">{task.description}</p>
             : <p className="text-[#706e6b] italic">{t("memberHome.noDescription")}</p>}
         </div>
 
@@ -1072,7 +1077,10 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
   const { session: authSession } = useSupabase();
   const { capacity, currentOrg } = useOrganization();
   const { t } = useLanguage();
-  const { isRecording, duration, error, processing, mediaStream, startRecording, stopRecording } = useRecording();
+  const {
+    isRecording, duration, error, processing, mediaStream,
+    reviewBlob, reviewUrl, startRecording, stopRecording, approveRecording, discardRecording,
+  } = useRecording();
   const shouldReduceMotion = useReducedMotion();
 
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -1116,9 +1124,17 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
   const toggleParticipant = (userId: string) =>
     setSelectedParticipantIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
 
+  // Stop only enters the review state; nothing is uploaded yet.
   const handleStop = async () => {
-    await stopRecording({ projectId: selectedProjectId || undefined, participantIds: selectedParticipantIds, onSuccess: onSessionReady });
+    await stopRecording();
   };
+
+  // Approve uploads the reviewed blob with the selected context.
+  const handleApprove = async () => {
+    await approveRecording({ projectId: selectedProjectId || undefined, participantIds: selectedParticipantIds, onSuccess: onSessionReady });
+  };
+
+  const isReviewing = !!reviewBlob && !processing;
 
   const remaining = capacity?.remaining_minutes ?? 0;
   const used = capacity?.used_minutes ?? 0;
@@ -1154,7 +1170,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
       )}
 
       {/* Pre-recording controls */}
-      {!isRecording && !processing && (
+      {!isRecording && !processing && !isReviewing && (
         <div className="px-4 py-4 space-y-4">
           <div>
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#706e6b] mb-1.5 uppercase tracking-wide">
@@ -1235,7 +1251,27 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
         <AudioWaveform mediaStream={mediaStream} isRecording={isRecording} processing={processing} />
       </div>
 
+      {/* Review state — play back the recording, then Approve (upload) or Discard */}
+      {isReviewing && (
+        <div className="px-4 py-6 flex flex-col items-center gap-4">
+          <div className="text-center">
+            <h3 className="text-[15px] font-bold text-[#080707]">{t("recording.reviewTitle")}</h3>
+            <p className="text-[13px] text-[#706e6b] mt-0.5">{t("recording.reviewHint")}</p>
+          </div>
+          <audio controls src={reviewUrl ?? undefined} className="w-full max-w-sm" aria-label={t("recording.reviewTitle")} />
+          <div className="flex items-center gap-3">
+            <Button onClick={handleApprove} disabled={processing}>
+              <Check className="w-4 h-4 me-1" /> {t("recording.approve")}
+            </Button>
+            <Button variant="danger" onClick={discardRecording} disabled={processing}>
+              <Trash2 className="w-4 h-4 me-1" /> {t("recording.discard")}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Recorder */}
+      {!isReviewing && (
       <div className="flex flex-col items-center py-6 px-4 gap-4">
         {isRecording && <div className="text-4xl font-mono font-bold text-[#080707] tabular-nums">{formatDuration(duration)}</div>}
         {isRecording && (
@@ -1281,6 +1317,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
           {capacity?.is_blocked ? t("recording.statusBlocked") : isRecording ? t("recording.statusRecording") : t("recording.statusIdle")}
         </p>
       </div>
+      )}
 
       {processing && (
         <div className="flex items-center justify-center gap-3 py-4 border-t border-[#dddbda] bg-[#fafaf9]">

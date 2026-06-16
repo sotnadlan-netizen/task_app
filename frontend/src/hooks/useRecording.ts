@@ -22,6 +22,13 @@ interface RecordingState {
   error: string | null;
 }
 
+export interface ApproveOptions {
+  projectId?: string;
+  participantIds?: string[];
+  promptId?: string;
+  onSuccess?: (sessionId: string) => void;
+}
+
 export function useRecording() {
   const { session } = useSupabase();
   const { currentOrg, capacity } = useOrganization();
@@ -35,12 +42,19 @@ export function useRecording() {
   });
   const [processing, setProcessing] = useState(false);
 
+  // Review state: after stopping, the merged blob is held here for the user to
+  // play back and explicitly Approve (upload) or Discard — no auto-upload.
+  const [reviewBlob, setReviewBlob] = useState<Blob | null>(null);
+  const [reviewUrl, setReviewUrl] = useState<string | null>(null);
+
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionKeyRef = useRef<string>("");
   const mimeTypeRef = useRef<string>("audio/webm");
+  // Duration frozen at stop, so it survives the Approve step even after reset.
+  const reviewDurationRef = useRef<number>(0);
 
   // In-memory encryption key for the active recording session
   const cryptoKeyRef = useRef<CryptoKey | null>(null);
@@ -121,13 +135,10 @@ export function useRecording() {
     }
   }, [capacity, startTimer, t]);
 
-  // ── Stop recording ───────────────────────────────────────────────────────────
-  const stopRecording = useCallback(async (opts?: {
-    projectId?: string;
-    participantIds?: string[];
-    promptId?: string;
-    onSuccess?: (sessionId: string) => void;
-  }) => {
+  // ── Stop recording → enter REVIEW state (no upload) ──────────────────────────
+  // Merges the encrypted chunks into a single blob and hands it to the UI for
+  // playback. Nothing is sent to the backend until approveRecording() is called.
+  const stopRecording = useCallback(async () => {
     const mediaRecorder = mediaRecorderRef.current;
     if (!mediaRecorder || mediaRecorder.state === "inactive") return;
 
@@ -153,10 +164,36 @@ export function useRecording() {
       const blob = await decryptAndMergeChunks(sessionKey, key, mimeTypeRef.current);
       if (!blob) throw new Error(t("recording.noAudio"));
 
+      // Freeze duration and expose the blob for review. The IndexedDB chunks +
+      // session key are intentionally retained until Approve or Discard.
+      reviewDurationRef.current = state.duration;
+      setReviewBlob(blob);
+      setReviewUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        error: err instanceof Error ? err.message : t("recording.processFailed"),
+      }));
+    } finally {
+      setProcessing(false);
+      setMediaStream(null);
+    }
+  }, [state.duration, stopTimer, t]);
+
+  // ── Approve → upload the reviewed blob to the backend ────────────────────────
+  const approveRecording = useCallback(async (opts?: ApproveOptions) => {
+    if (!reviewBlob) return;
+
+    setProcessing(true);
+    setState((prev) => ({ ...prev, error: null }));
+
+    const sessionKey = sessionKeyRef.current;
+
+    try {
       const formData = new FormData();
-      formData.append("audio", blob, "recording.webm");
+      formData.append("audio", reviewBlob, "recording.webm");
       formData.append("org_id", currentOrg?.id || "");
-      formData.append("duration_seconds", String(state.duration));
+      formData.append("duration_seconds", String(reviewDurationRef.current));
       if (opts?.projectId) {
         formData.append("project_id", opts.projectId);
       }
@@ -177,6 +214,10 @@ export function useRecording() {
       await clearSession(sessionKey);
       clearSessionKey(sessionKey);
       cryptoKeyRef.current = null;
+      if (reviewUrl) URL.revokeObjectURL(reviewUrl);
+      setReviewUrl(null);
+      setReviewBlob(null);
+      setState((prev) => ({ ...prev, duration: 0 }));
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -184,15 +225,35 @@ export function useRecording() {
       }));
     } finally {
       setProcessing(false);
-      setMediaStream(null);
     }
-  }, [currentOrg, session, state.duration, stopTimer, t]);
+  }, [reviewBlob, reviewUrl, currentOrg, session, t]);
+
+  // ── Discard → drop the reviewed blob, no upload ──────────────────────────────
+  const discardRecording = useCallback(async () => {
+    const sessionKey = sessionKeyRef.current;
+    try {
+      await clearSession(sessionKey);
+    } catch {
+      // best-effort cleanup
+    }
+    clearSessionKey(sessionKey);
+    cryptoKeyRef.current = null;
+    if (reviewUrl) URL.revokeObjectURL(reviewUrl);
+    setReviewUrl(null);
+    setReviewBlob(null);
+    reviewDurationRef.current = 0;
+    setState({ isRecording: false, isPaused: false, duration: 0, error: null });
+  }, [reviewUrl]);
 
   return {
     ...state,
     processing,
     mediaStream,
+    reviewBlob,
+    reviewUrl,
     startRecording,
     stopRecording,
+    approveRecording,
+    discardRecording,
   };
 }

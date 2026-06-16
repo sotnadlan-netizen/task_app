@@ -26,6 +26,7 @@ export interface Organization {
   used_capacity_min: number;
   max_members: number;
   selected_prompt_id: string | null;
+  logo_url: string | null;
   created_at: string;
 }
 

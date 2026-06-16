@@ -6,6 +6,7 @@ import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { PromptEditor } from "@/components/inbox/prompt-editor";
 import { PromptSelector } from "@/components/inbox/prompt-selector";
+import { OrgLogoUpload } from "@/components/org-logo-upload";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -276,7 +277,7 @@ function RemoveMemberModal({
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { session } = useSupabase();
-  const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
+  const { currentOrg, currentRole, loading: orgLoading, applyOrgUpdate } = useOrganization();
   const { t } = useLanguage();
   const router = useRouter();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -417,6 +418,16 @@ export default function AdminPage() {
       </div>
 
       {error && <Alert variant="error">{error}</Alert>}
+
+      {/* ── Organization branding ── */}
+      {currentOrg && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("orgLogo.label")}</CardTitle>
+          </CardHeader>
+          <OrgLogoUpload org={currentOrg} onUploaded={applyOrgUpdate} />
+        </Card>
+      )}
 
       {/* ── Members Table (admin + member roles) ── */}
       <Card padding={false}>

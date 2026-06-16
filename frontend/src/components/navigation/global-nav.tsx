@@ -159,7 +159,7 @@ export function GlobalNav() {
         <div className="flex-1" />
 
         {/* Right utility cluster */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           {/* Search */}
           <div className="relative hidden lg:block">
             <Search className="w-3.5 h-3.5 absolute start-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
@@ -184,8 +184,17 @@ export function GlobalNav() {
                 className="flex items-center gap-2 px-3 py-1.5 rounded hover:bg-white/10 text-[13px] font-medium text-white transition-colors"
                 aria-label={t("nav.switchOrganization")}
               >
-                <Building2 className="w-4 h-4 text-[#1ab9ff]" />
-                <span className="max-w-[120px] truncate hidden sm:inline">
+                {currentOrg?.logo_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={currentOrg.logo_url}
+                    alt={currentOrg.name}
+                    className="w-5 h-5 rounded object-cover shrink-0 bg-white"
+                  />
+                ) : (
+                  <Building2 className="w-4 h-4 text-[#1ab9ff] shrink-0" />
+                )}
+                <span className="w-[120px] truncate text-start hidden sm:inline-block align-middle">
                   {currentOrg?.name || t("nav.selectOrg")}
                 </span>
                 <ChevronDown className="w-4 h-4 text-white/70" />
@@ -252,7 +261,7 @@ export function GlobalNav() {
           >
             <Bell className="w-4 h-4 text-white" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -end-0.5 min-w-[16px] h-4 px-1 bg-[#c23934] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-[#16325c]">
+              <span className="absolute -top-0.5 -end-0.5 w-4 h-4 bg-[#c23934] text-white text-[10px] font-bold rounded-full flex items-center justify-center border border-[#16325c]">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}

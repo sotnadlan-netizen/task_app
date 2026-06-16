@@ -1,9 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+import uuid
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from supabase import Client
 from app.api.deps import get_current_user, get_supabase, check_platform_admin
 from app.models.schemas import QuotaUpdate, CapacityResponse, OrgCreate, OrgUpdate, MemberAdd, MemberRoleUpdate, OrgPromptSelect, OrgPromptAssignmentUpdate
 
 router = APIRouter(prefix="/api/organizations", tags=["organizations"])
+
+# Allowed logo content types → file extension.
+ALLOWED_LOGO_TYPES = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/svg+xml": "svg",
+    "image/gif": "gif",
+}
+MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2 MB
 
 
 @router.get("")
@@ -133,6 +145,63 @@ async def update_org(
         raise HTTPException(status_code=400, detail="No fields to update")
 
     result = supabase.table("organizations").update(update_data).eq("id", org_id).execute()
+    return result.data[0] if result.data else {}
+
+
+@router.post("/{org_id}/logo")
+async def upload_org_logo(
+    org_id: str,
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Upload an organization logo (platform admin or that org's admin).
+
+    Stores the image in the public ``org-logos`` bucket and saves the public URL
+    on ``organizations.logo_url``. Audio is never persisted to disk — but logos
+    are deliberate, user-supplied branding assets, so they live in storage.
+    """
+    # ── Authorization: platform admin OR org admin ──────────────────────────
+    if not check_platform_admin(user["id"], supabase):
+        membership_res = (
+            supabase.table("org_memberships")
+            .select("role")
+            .eq("user_id", user["id"])
+            .eq("org_id", org_id)
+            .limit(1)
+            .execute()
+        )
+        membership = membership_res.data[0] if membership_res.data else None
+        if not membership or membership["role"] != "admin":
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+    content_type = (file.content_type or "").lower()
+    ext = ALLOWED_LOGO_TYPES.get(content_type)
+    if not ext:
+        raise HTTPException(status_code=400, detail="Unsupported image type")
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Empty file")
+    if len(data) > MAX_LOGO_BYTES:
+        raise HTTPException(status_code=400, detail="Logo too large (max 2 MB)")
+
+    # Unique path per upload doubles as cache-busting for the public CDN URL.
+    path = f"{org_id}/logo-{uuid.uuid4().hex}.{ext}"
+    storage = supabase.storage.from_("org-logos")
+    try:
+        storage.upload(path, data, {"content-type": content_type})
+    except Exception as exc:  # noqa: BLE001 — surface storage errors to the client
+        raise HTTPException(status_code=500, detail=f"Logo upload failed: {exc}")
+
+    public_url = storage.get_public_url(path)
+
+    result = (
+        supabase.table("organizations")
+        .update({"logo_url": public_url})
+        .eq("id", org_id)
+        .execute()
+    )
     return result.data[0] if result.data else {}
 
 
