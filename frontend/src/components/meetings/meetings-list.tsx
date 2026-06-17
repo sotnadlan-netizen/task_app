@@ -11,8 +11,10 @@ import { Alert } from "@/components/ui/alert";
 import { Modal } from "@/components/ui/modal";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/providers/language-provider";
-import type { Session, Task } from "@/types";
+import type { Session, Task, OrgMembership, Profile } from "@/types";
 import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
+import { FiltersButton, FiltersPanel, type FilterPerson } from "@/components/filters/filters-panel";
+import { emptyFilters, sessionMatchesFilters, type EntityFilters } from "@/lib/filters";
 import {
   CalendarDays,
   ChevronLeft,
@@ -47,9 +49,11 @@ export function MeetingsList() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [taskCounts, setTaskCounts] = useState<Record<string, TaskCount>>({});
   const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
+  const [people, setPeople] = useState<FilterPerson[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>("time");
-  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [filters, setFilters] = useState<EntityFilters>(emptyFilters());
+  const [panelOpen, setPanelOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<Session | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -63,7 +67,7 @@ export function MeetingsList() {
     if (!currentOrg) return;
     setLoading(true);
 
-    const [sessRes, taskRes, projRes] = await Promise.all([
+    const [sessRes, taskRes, projRes, memRes] = await Promise.all([
       supabase
         .from("sessions")
         .select("*")
@@ -78,9 +82,21 @@ export function MeetingsList() {
         .from("projects")
         .select("id, name")
         .eq("org_id", currentOrg.id),
+      api.getOrgMembers(currentOrg.id, token).catch(() => [] as unknown),
     ]);
 
     if (sessRes.data) setSessions(sessRes.data as Session[]);
+
+    // People available to filter by (org members with a linked profile).
+    const members = (memRes as (OrgMembership & { profile?: Profile | null })[]) || [];
+    setPeople(
+      members
+        .filter((m) => m.user_id)
+        .map((m) => ({
+          id: m.user_id as string,
+          name: m.profile?.full_name || m.profile?.email || m.invited_email || "—",
+        }))
+    );
 
     // Build task count map
     if (taskRes.data) {
@@ -103,7 +119,7 @@ export function MeetingsList() {
     }
 
     setLoading(false);
-  }, [supabase, currentOrg]);
+  }, [supabase, currentOrg, token]);
 
   useEffect(() => {
     loadData();
@@ -115,9 +131,7 @@ export function MeetingsList() {
   }, [subscribe, loadData]);
 
   const sorted = useMemo(() => {
-    let copy = projectFilter
-      ? sessions.filter((s) => s.project_id === projectFilter)
-      : [...sessions];
+    const copy = sessions.filter((s) => sessionMatchesFilters(s, filters));
     if (sortMode === "project") {
       copy.sort((a, b) => {
         const pa = a.project_id ? (projects[a.project_id] || "") : "";
@@ -126,7 +140,9 @@ export function MeetingsList() {
       });
     }
     return copy;
-  }, [sessions, sortMode, projectFilter, projects]);
+  }, [sessions, sortMode, filters, projects]);
+
+  const applyFilters = (next: EntityFilters) => { setFilters(next); setPage(0); };
 
   const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
   const paged = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
@@ -165,18 +181,7 @@ export function MeetingsList() {
             <CardTitle>{t("meetings.title", { count: sessions.length })}</CardTitle>
           </CardHeader>
           <div className="flex items-center gap-2">
-            {Object.keys(projects).length > 0 && (
-              <select
-                value={projectFilter}
-                onChange={(e) => { setProjectFilter(e.target.value); setPage(0); }}
-                className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#3e3e3c] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
-              >
-                <option value="">{t("tasks.allProjects")}</option>
-                {Object.entries(projects).map(([id, name]) => (
-                  <option key={id} value={id}>{name}</option>
-                ))}
-              </select>
-            )}
+            <FiltersButton filters={filters} onClick={() => setPanelOpen(true)} />
             <button
               onClick={() => { setSortMode(sortMode === "time" ? "project" : "time"); setPage(0); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#dddbda] hover:bg-[#fafaf9] text-xs text-[#3e3e3c] transition-colors"
@@ -187,9 +192,9 @@ export function MeetingsList() {
           </div>
         </div>
 
-        {sessions.length === 0 ? (
+        {sorted.length === 0 ? (
           <div className="px-6 pb-8 text-center text-sm text-gray-400">
-            {t("meetings.empty")}
+            {sessions.length === 0 ? t("meetings.empty") : t("filters.empty")}
           </div>
         ) : (
           <>
@@ -298,6 +303,17 @@ export function MeetingsList() {
           </>
         )}
       </Card>
+
+      <FiltersPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        filters={filters}
+        onChange={applyFilters}
+        projects={projects}
+        people={people}
+        peopleLabel={t("filters.participants")}
+        showDate
+      />
 
       {/* Delete Confirm Modal */}
       {confirmDelete && (

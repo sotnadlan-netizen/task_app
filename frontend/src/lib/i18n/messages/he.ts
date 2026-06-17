@@ -271,6 +271,24 @@ export const he: typeof en = {
     errQuotaLimit: "לא ניתן להגדיר מכסה ל-{q} דק׳. רק {max} דק׳ זמינות (סך הארגון: {total} דק׳, חברים אחרים: {other} דק׳).",
   },
 
+  filters: {
+    button: "סינון",
+    title: "סינון",
+    clearAll: "נקה הכל",
+    done: "סגור",
+    project: "פרויקט",
+    allProjects: "כל הפרויקטים",
+    participants: "משתתפים",
+    assignee: "אחראי",
+    anyone: "כל אחד",
+    status: "סטטוס",
+    anyStatus: "כל סטטוס",
+    dateRange: "טווח תאריכים",
+    dateFrom: "מתאריך",
+    dateTo: "עד תאריך",
+    empty: "אין תוצאות התואמות את הסינון הנוכחי.",
+  },
+
   orgLogo: {
     label: "לוגו הארגון",
     hint: "PNG, JPG, WEBP או SVG, עד 2 מ״ב.",

@@ -271,6 +271,24 @@ export const en = {
     errQuotaLimit: "Cannot set quota to {q} min. Only {max} min available (org total: {total} min, other members: {other} min).",
   },
 
+  filters: {
+    button: "Filters",
+    title: "Filters",
+    clearAll: "Clear all",
+    done: "Done",
+    project: "Project",
+    allProjects: "All projects",
+    participants: "Participants",
+    assignee: "Assignee",
+    anyone: "Anyone",
+    status: "Status",
+    anyStatus: "Any status",
+    dateRange: "Date range",
+    dateFrom: "From",
+    dateTo: "To",
+    empty: "No results match the current filters.",
+  },
+
   orgLogo: {
     label: "Organization logo",
     hint: "PNG, JPG, WEBP or SVG, up to 2 MB.",

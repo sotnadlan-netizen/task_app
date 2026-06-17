@@ -16,8 +16,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // The member home route renders the full-bleed Lightning console (its own
-  // header replaces the GlobalNav). All other routes keep the shared chrome.
+  // The member home route renders a full-bleed Lightning console (no max-width
+  // content wrapper), but it now shares the same GlobalNav header as every
+  // other route so the top blue bar stays consistent across navigation.
   const fullBleed = pathname === "/dashboard/member";
 
   useEffect(() => {
@@ -40,6 +41,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         <NotificationLoader />
         {fullBleed ? (
           <div className="min-h-screen">
+            <GlobalNav />
             <ErrorBoundaryProvider>{children}</ErrorBoundaryProvider>
             <AccessibilityWidget />
           </div>

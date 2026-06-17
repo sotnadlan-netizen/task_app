@@ -176,8 +176,8 @@ export function GlobalNav() {
             </span>
           )}
 
-          {/* Org Switcher */}
-          {!isPlatformAdmin && organizations.length > 0 && (
+          {/* Org Switcher — only when the user actually belongs to >1 org */}
+          {!isPlatformAdmin && organizations.length > 1 && (
             <div className="relative">
               <button
                 onClick={() => setOrgDropdownOpen(!orgDropdownOpen)}

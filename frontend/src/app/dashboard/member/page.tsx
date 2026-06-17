@@ -20,24 +20,20 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  Search, Bell, Settings, ChevronDown, ChevronLeft, ChevronRight, Star,
+  ChevronLeft, ChevronRight, Star,
   Plus, RefreshCw, MoreHorizontal, ArrowUpDown,
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
   Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2, Check,
   ExternalLink, Edit3, Calendar as CalendarIcon, Settings2, Mic,
   UserPlus, Clock, X, MicVocal, CalendarClock, CalendarPlus, XCircle, Hand,
-  LogOut, Building2, Inbox,
 } from "lucide-react";
-import Link from "next/link";
-
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
 import { useLanguage } from "@/providers/language-provider";
 import type { Lang } from "@/lib/i18n";
-import { useNotificationStore } from "@/stores/notification-store";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { LanguageToggle } from "@/components/ui/language-toggle";
+import { FiltersButton, FiltersPanel, type FilterPerson } from "@/components/filters/filters-panel";
+import { emptyFilters, sessionMatchesFilters, taskMatchesFilters, type EntityFilters } from "@/lib/filters";
 import { useRecording } from "@/hooks/useRecording";
 import { AudioWaveform } from "@/components/recording/audio-waveform";
 import { SessionResultsOverlay } from "@/components/recording/session-results-overlay";
@@ -100,19 +96,14 @@ interface MemberWithProfile extends OrgMembership {
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function MemberPage() {
-  const { supabase, session, user, signOut } = useSupabase();
-  const { currentOrg, capacity, currentRole, loading: orgLoading, organizations, switchOrganization, isPlatformAdmin } = useOrganization();
+  const { supabase, session, user } = useSupabase();
+  const { currentOrg, capacity, currentRole, loading: orgLoading } = useOrganization();
   const { subscribe } = useRealtime();
   const { t, lang } = useLanguage();
   const loc = localeOf(lang);
   const statusLabel = statusLabelsOf(t);
   const priorityLabel = priorityLabelsOf(t);
-  const { unreadCount } = useNotificationStore();
   const router = useRouter();
-
-  // Header utility menus
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [orgMenuOpen, setOrgMenuOpen] = useState(false);
 
   // Role guard: participants are read-only and routed to their own dashboard
   useEffect(() => {
@@ -130,10 +121,13 @@ export default function MemberPage() {
   // ── Sort / filter / pagination ───────────────────────────────────────────
   const [meetingSort, setMeetingSort] = useState<MeetingSort>("time");
   const [meetingPage, setMeetingPage] = useState(0);
-  const [meetingProjectFilter, setMeetingProjectFilter] = useState("");
   const [taskSort, setTaskSort] = useState<TaskSort>("time");
   const [taskPage, setTaskPage] = useState(0);
-  const [taskProjectFilter, setTaskProjectFilter] = useState("");
+
+  // Shared side-panel filters drive the meetings table, tasks table and calendar.
+  const [homeFilters, setHomeFilters] = useState<EntityFilters>(emptyFilters());
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [people, setPeople] = useState<FilterPerson[]>([]);
 
   // ── Overlay / modal state ─────────────────────────────────────────────────
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -154,7 +148,7 @@ export default function MemberPage() {
 
   const loadStats = useCallback(async () => {
     if (!currentOrg) return;
-    const [sessionRes, taskRes, taskCountRes, projRes] = await Promise.all([
+    const [sessionRes, taskRes, taskCountRes, projRes, memRes] = await Promise.all([
       supabase
         .from("sessions")
         .select("*")
@@ -176,7 +170,18 @@ export default function MemberPage() {
         .from("projects")
         .select("id, name")
         .eq("org_id", currentOrg.id),
+      api.getOrgMembers(currentOrg.id, token).catch(() => [] as unknown),
     ]);
+
+    const members = (memRes as (OrgMembership & { profile?: Profile | null })[]) || [];
+    setPeople(
+      members
+        .filter((m) => m.user_id)
+        .map((m) => ({
+          id: m.user_id as string,
+          name: m.profile?.full_name || m.profile?.email || m.invited_email || "—",
+        }))
+    );
 
     if (sessionRes.data) setAllSessions(sessionRes.data as Session[]);
     if (taskRes.data) {
@@ -198,7 +203,7 @@ export default function MemberPage() {
       (projRes.data as { id: string; name: string }[]).forEach((p) => { map[p.id] = p.name; });
       setProjects(map);
     }
-  }, [supabase, currentOrg]);
+  }, [supabase, currentOrg, token]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
 
@@ -249,11 +254,24 @@ export default function MemberPage() {
     }
   };
 
-  // ── Derived: sorted + filtered + paginated ────────────────────────────────
+  // ── Derived: shared filters → sorted + paginated, also feed the calendar ──
+  const filteredSessions = useMemo(
+    () => allSessions.filter((s) => sessionMatchesFilters(s, homeFilters)),
+    [allSessions, homeFilters]
+  );
+  const filteredTasks = useMemo(
+    () => allTasks.filter((t) => taskMatchesFilters(t, homeFilters)),
+    [allTasks, homeFilters]
+  );
+
+  const applyHomeFilters = (next: EntityFilters) => {
+    setHomeFilters(next);
+    setMeetingPage(0);
+    setTaskPage(0);
+  };
+
   const sortedMeetings = useMemo(() => {
-    const copy = meetingProjectFilter
-      ? allSessions.filter((s) => s.project_id === meetingProjectFilter)
-      : [...allSessions];
+    const copy = [...filteredSessions];
     if (meetingSort === "project") {
       copy.sort((a, b) => {
         const pa = a.project_id ? (projects[a.project_id] || "") : "";
@@ -262,15 +280,13 @@ export default function MemberPage() {
       });
     }
     return copy;
-  }, [allSessions, meetingSort, meetingProjectFilter, projects]);
+  }, [filteredSessions, meetingSort, projects]);
 
   const meetingTotalPages = Math.ceil(sortedMeetings.length / ITEMS_PER_PAGE);
   const pagedMeetings = sortedMeetings.slice(meetingPage * ITEMS_PER_PAGE, (meetingPage + 1) * ITEMS_PER_PAGE);
 
   const sortedTasks = useMemo(() => {
-    const copy = taskProjectFilter
-      ? allTasks.filter((t) => t.project_id === taskProjectFilter)
-      : [...allTasks];
+    const copy = [...filteredTasks];
     if (taskSort === "urgency") {
       copy.sort((a, b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
     } else if (taskSort === "status") {
@@ -283,7 +299,7 @@ export default function MemberPage() {
       });
     }
     return copy;
-  }, [allTasks, taskSort, taskProjectFilter, projects]);
+  }, [filteredTasks, taskSort, projects]);
 
   const taskTotalPages = Math.ceil(sortedTasks.length / ITEMS_PER_PAGE);
   const pagedTasks = sortedTasks.slice(taskPage * ITEMS_PER_PAGE, (taskPage + 1) * ITEMS_PER_PAGE);
@@ -307,168 +323,10 @@ export default function MemberPage() {
   const capacityTotal = capacity?.capacity_minutes ?? 0;
   const capacityPct = capacityTotal > 0 ? Math.min(100, Math.round((capacityRemaining / capacityTotal) * 100)) : 0;
 
-  const hasProjects = Object.keys(projects).length > 0;
-
   if (orgLoading || currentRole === "participant") return null;
 
   return (
     <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" style={fontStyle}>
-      {/* ── Global header (Salesforce blue) ───────────────────────────────── */}
-      <header className="bg-[#16325c] text-white">
-        <div className="h-12 px-4 flex items-center gap-3">
-          <Link href="/dashboard" className="grid grid-cols-3 gap-0.5 p-2 rounded hover:bg-white/10" aria-label={t("nav.appLauncher")}>
-            {[...Array(9)].map((_, i) => <span key={i} className="w-1 h-1 rounded-full bg-white/80" />)}
-          </Link>
-          <span className="text-white/40">|</span>
-          <Link href="/dashboard/member" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-black">T</div>
-            <span className="font-semibold text-[15px]">TaskFlow</span>
-            <span className="text-white/60 text-[13px] hidden lg:inline">— {t("console.member")}</span>
-          </Link>
-
-          <nav className="hidden md:flex items-center ms-6 h-12">
-            {[
-              { label: t("nav.home"), icon: Home, href: "/dashboard/member", active: true },
-              { label: t("memberHome.sessions"), icon: Phone, href: "/dashboard/member/meetings", count: allSessions.length },
-              { label: t("nav.tasks"), icon: ListChecks, href: "/dashboard/member/tasks", count: taskCountTotal },
-              { label: t("memberHome.approvals"), icon: Inbox, href: "/dashboard/member/inbox", count: unreadCount || undefined },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`h-12 px-4 flex items-center gap-1.5 text-[13px] transition-colors ${
-                    item.active ? "bg-white text-[#080707] font-semibold" : "text-white/90 hover:bg-white/10"
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5" />
-                  {item.label}
-                  {item.count !== undefined && (
-                    <span className={`ms-1 text-[10px] px-1.5 py-0.5 rounded ${item.active ? "bg-[#0070d2] text-white" : "bg-white/15 text-white"}`}>
-                      {item.count}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Admin ↔ Member toggle (admin-role users only) */}
-            {!isPlatformAdmin && currentRole === "admin" && (
-              <div className="flex items-center bg-white/10 rounded p-0.5 gap-0.5 me-1">
-                <span className="px-2.5 py-1 text-[11px] font-semibold rounded bg-white text-[#16325c]">{t("nav.member")}</span>
-                <button
-                  onClick={() => router.push("/dashboard/admin")}
-                  className="px-2.5 py-1 text-[11px] font-semibold rounded text-white/80 hover:text-white"
-                >
-                  {t("nav.admin")}
-                </button>
-              </div>
-            )}
-
-            {/* Org switcher (multi-org members) */}
-            {!isPlatformAdmin && organizations.length > 1 && (
-              <div className="relative">
-                <button
-                  onClick={() => { setOrgMenuOpen((v) => !v); setUserMenuOpen(false); }}
-                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded hover:bg-white/10 text-[12px] font-medium text-white transition-colors"
-                  aria-label={t("nav.switchOrganization")}
-                >
-                  {currentOrg?.logo_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={currentOrg.logo_url} alt={currentOrg.name} className="w-5 h-5 rounded object-cover shrink-0 bg-white" />
-                  ) : (
-                    <Building2 className="w-4 h-4 text-[#1ab9ff] shrink-0" />
-                  )}
-                  <span className="w-[110px] truncate text-start hidden lg:inline-block align-middle">{currentOrg?.name || t("nav.selectOrg")}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-white/70" />
-                </button>
-                {orgMenuOpen && (
-                  <div className="absolute top-full start-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50">
-                    {organizations.map((org) => (
-                      <button
-                        key={org.id}
-                        onClick={() => { switchOrganization(org.id); setOrgMenuOpen(false); }}
-                        className={`w-full text-start px-4 py-2 text-[13px] transition-colors ${
-                          org.id === currentOrg?.id ? "bg-[#ecf5fe] text-[#0070d2] font-semibold" : "text-[#080707] hover:bg-[#fafaf9]"
-                        }`}
-                      >
-                        {org.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="relative hidden lg:block">
-              <Search className="w-3.5 h-3.5 absolute start-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
-              <input
-                placeholder={t("common.search")}
-                className="w-56 ps-7 pe-3 py-1.5 text-[13px] bg-white text-[#080707] rounded placeholder-[#706e6b] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
-              />
-            </div>
-
-            {/* Language toggle */}
-            <LanguageToggle variant="dark" />
-
-            {/* Theme toggle */}
-            <div className="text-white [&_button]:text-white [&_button:hover]:bg-white/10">
-              <ThemeToggle />
-            </div>
-
-            {/* Notifications → inbox */}
-            <Link href="/dashboard/member/inbox" className="relative w-8 h-8 rounded hover:bg-white/10 flex items-center justify-center" aria-label={unreadCount > 0 ? t("nav.notificationsUnread", { count: unreadCount }) : t("nav.notifications")}>
-              <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -end-0.5 w-4 h-4 rounded-full bg-[#c23934] text-white text-[10px] font-bold flex items-center justify-center border border-[#16325c]">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-            </Link>
-
-            {/* User menu */}
-            <div className="relative ms-1">
-              <button
-                onClick={() => { setUserMenuOpen((v) => !v); setOrgMenuOpen(false); }}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1ab9ff] to-[#0070d2] flex items-center justify-center text-white text-xs font-bold"
-                aria-label={t("memberHome.userMenuAria")}
-              >
-                {user?.email?.charAt(0).toUpperCase() || "?"}
-              </button>
-              {userMenuOpen && (
-                <div className="absolute start-0 mt-1 w-60 bg-white rounded-lg shadow-[0_8px_32px_rgba(0,0,0,0.18)] border border-[#dddbda] py-1.5 z-50 text-[#080707]">
-                  <div className="px-4 py-2.5 border-b border-[#dddbda]">
-                    <p className="text-[13px] font-medium truncate">{user?.email}</p>
-                    <p className="text-[11px] text-[#706e6b]">{t(`roles.${currentRole || "member"}`)}</p>
-                  </div>
-                  <Link href="/dashboard/member/inbox" onClick={() => setUserMenuOpen(false)} className="w-full text-start px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2">
-                    <Inbox className="w-4 h-4 text-[#706e6b]" />
-                    {t("console.approvalsTitle")}
-                  </Link>
-                  {currentRole === "admin" && !isPlatformAdmin && (
-                    <Link href="/dashboard/admin" onClick={() => setUserMenuOpen(false)} className="w-full text-start px-4 py-2 text-[13px] text-[#080707] hover:bg-[#fafaf9] flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-[#706e6b]" />
-                      {t("memberHome.manageOrg")}
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => { signOut(); setUserMenuOpen(false); }}
-                    className="w-full text-start px-4 py-2 text-[13px] text-[#c23934] hover:bg-[#fde9e7] flex items-center gap-2"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    {t("nav.signOut")}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* ── Page header ────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-[#dddbda] px-6 pt-3 pb-2">
@@ -560,16 +418,7 @@ export default function MemberPage() {
                   <span className="text-[11px] text-[#706e6b]">{t("memberHome.items", { count: sortedMeetings.length })}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {hasProjects && (
-                    <select
-                      value={meetingProjectFilter}
-                      onChange={(e) => { setMeetingProjectFilter(e.target.value); setMeetingPage(0); }}
-                      className="px-2 py-1 rounded border border-[#dddbda] bg-white text-[12px] text-[#3e3e3c] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
-                    >
-                      <option value="">{t("tasks.allProjects")}</option>
-                      {Object.entries(projects).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                    </select>
-                  )}
+                  <FiltersButton filters={homeFilters} onClick={() => setFiltersOpen(true)} />
                   <Btn variant="secondary" small onClick={() => { setMeetingSort(meetingSort === "time" ? "project" : "time"); setMeetingPage(0); }}>
                     <ArrowUpDown className="w-3 h-3 me-1" />
                     {meetingSort === "time" ? t("meetings.sortByProject") : t("meetings.sortByTime")}
@@ -578,7 +427,7 @@ export default function MemberPage() {
               </div>
 
               {pagedMeetings.length === 0 ? (
-                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{t("meetings.empty")}</p>
+                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{allSessions.length === 0 ? t("meetings.empty") : t("filters.empty")}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-[13px]">
@@ -664,16 +513,7 @@ export default function MemberPage() {
                   <span className="text-[11px] text-[#706e6b]">{t("memberHome.items", { count: sortedTasks.length })}</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {hasProjects && (
-                    <select
-                      value={taskProjectFilter}
-                      onChange={(e) => { setTaskProjectFilter(e.target.value); setTaskPage(0); }}
-                      className="px-2 py-1 rounded border border-[#dddbda] bg-white text-[12px] text-[#3e3e3c] focus:outline-none focus:ring-2 focus:ring-[#1589ee]"
-                    >
-                      <option value="">{t("tasks.allProjects")}</option>
-                      {Object.entries(projects).map(([id, name]) => <option key={id} value={id}>{name}</option>)}
-                    </select>
-                  )}
+                  <FiltersButton filters={homeFilters} onClick={() => setFiltersOpen(true)} />
                   <div className="flex items-center gap-0.5">
                     {(["time", "project", "status", "urgency"] as TaskSort[]).map((sortKey) => {
                       const labels: Record<TaskSort, string> = {
@@ -699,7 +539,7 @@ export default function MemberPage() {
               </div>
 
               {pagedTasks.length === 0 ? (
-                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{t("tasks.empty")}</p>
+                <p className="px-4 py-10 text-center text-[13px] text-[#706e6b]">{allTasks.length === 0 ? t("tasks.empty") : t("filters.empty")}</p>
               ) : (
                 <table className="w-full text-[13px]">
                   <thead className="bg-[#fafaf9] text-[#3e3e3c]">
@@ -757,8 +597,8 @@ export default function MemberPage() {
         <Card>
           <CardHeader icon={<CalendarIcon className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title={t("calendar.title")} sub={t("calendar.subtitle")} />
           <div className="p-4 bg-white space-y-3">
-            <LightningUnscheduledRail tasks={allTasks} token={token} onTaskUpdate={updateTaskLocal} />
-            <LightningCalendar sessions={allSessions} tasks={allTasks} token={token} onMeetingClick={handleSessionClick} onTaskUpdate={updateTaskLocal} />
+            <LightningUnscheduledRail tasks={filteredTasks} token={token} onTaskUpdate={updateTaskLocal} />
+            <LightningCalendar sessions={filteredSessions} tasks={filteredTasks} token={token} onMeetingClick={handleSessionClick} onTaskUpdate={updateTaskLocal} />
           </div>
         </Card>
       </main>
@@ -829,6 +669,19 @@ export default function MemberPage() {
 
       {/* ── Add Participant Modal ──────────────────────────────────────────── */}
       <AddParticipantModal open={showAddParticipant} onClose={() => setShowAddParticipant(false)} />
+
+      {/* ── Shared filters side panel (meetings + tasks + calendar) ─────────── */}
+      <FiltersPanel
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        filters={homeFilters}
+        onChange={applyHomeFilters}
+        projects={projects}
+        people={people}
+        peopleLabel={t("filters.participants")}
+        showStatus
+        showDate
+      />
     </div>
   );
 }
