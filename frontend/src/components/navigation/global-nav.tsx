@@ -138,8 +138,9 @@ export function GlobalNav() {
           <span className="font-semibold text-[15px] hidden sm:inline">TaskOrch</span>
         </Link>
 
-        {/* Object tabs — desktop */}
-        <div className="hidden md:flex items-center ms-4 h-12">
+        {/* Object tabs — wide screens only (kept off medium widths so the bar
+            never overflows the viewport; the hamburger covers narrower screens). */}
+        <div className="hidden lg:flex items-center ms-4 h-12 min-w-0">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -159,9 +160,9 @@ export function GlobalNav() {
         <div className="flex-1" />
 
         {/* Right utility cluster */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1 min-w-0">
           {/* Search */}
-          <div className="relative hidden lg:block">
+          <div className="relative hidden xl:block">
             <Search className="w-3.5 h-3.5 absolute start-2 top-1/2 -translate-y-1/2 text-[#16325c]" />
             <input
               placeholder={t("common.search")}
@@ -194,7 +195,7 @@ export function GlobalNav() {
                 ) : (
                   <Building2 className="w-4 h-4 text-[#1ab9ff] shrink-0" />
                 )}
-                <span className="w-[120px] truncate text-start hidden sm:inline-block align-middle">
+                <span className="max-w-[120px] truncate text-start hidden sm:inline-block align-middle">
                   {currentOrg?.name || t("nav.selectOrg")}
                 </span>
                 <ChevronDown className="w-4 h-4 text-white/70" />
@@ -303,9 +304,9 @@ export function GlobalNav() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Hamburger — shown whenever the inline tabs are hidden (< lg) */}
           <button
-            className="md:hidden p-2 rounded hover:bg-white/10 transition-colors"
+            className="lg:hidden p-2 rounded hover:bg-white/10 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={t("nav.toggleMenu")}
           >
@@ -316,7 +317,7 @@ export function GlobalNav() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-white/10 py-2">
+        <div className="lg:hidden border-t border-white/10 py-2">
           <div className="px-2 space-y-0.5">
             {navLinks.map((link) => (
               <Link
