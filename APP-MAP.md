@@ -26,8 +26,8 @@
 │                     Python FastAPI                                   │
 │                                                                     │
 │  ┌─────────────┐  ┌─────────────────┐  ┌────────────────────────┐  │
-│  │ /api/audio   │  │ /api/tasks      │  │ /api/prompts           │  │
-│  │ POST process │  │ CRUD + approve  │  │ CRUD + version history │  │
+│  │ /api/audio   │  │ /api/tasks      │  │ /api/system-prompts +  │  │
+│  │ POST process │  │ CRUD + approve  │  │ /api/global-prompt     │  │
 │  └──────┬──────┘  └────────┬────────┘  └───────────┬────────────┘  │
 │         │                  │                        │               │
 │  ┌──────┴──────────────────┴────────────────────────┴───────┐      │
@@ -117,16 +117,21 @@
 │  rejected           │       └──────────────────────┘
 │ reviewed_by (FK)    │
 │ created_at          │       ┌──────────────────────┐
-└─────────────────────┘       │   prompt_versions    │
+└─────────────────────┘       │  Prompt model 2-tier  │
                               ├──────────────────────┤
-                              │ id (uuid PK)         │
-                              │ org_id (FK)          │
-                              │ version (int)        │
-                              │ prompt_text          │
-                              │ created_by (FK)      │
-                              │ is_active            │
-                              │ created_at           │
+                              │ global_base_prompts  │ ← layer 1: single row,
+                              │   system_text         │   platform-wide base,
+                              │   (platform admin)    │   platform admin only
+                              │ ─────────────────────│
+                              │ system_prompts        │ ← layer 2: "missions";
+                              │   name/description    │   headline shown to org,
+                              │   system_text hidden  │   text platform admin only
+                              │ org_system_prompts    │ ← missions an org may pick
+                              │ orgs.selected_prompt_id│  + the org's default pick
                               └──────────────────────┘
+
+Final prompt to Gemini = global base + chosen mission overlay. Org admins/members
+never see or author prompt text — they only choose a mission headline.
 ```
 
 ## Frontend Page Tree
@@ -175,7 +180,7 @@ app/
   │   │       ├── [Admin]
   │   │       │   ├── <MetricsCards/>  → Total minutes, members, capacity
   │   │       │   ├── <MemberTable/>   → Provision users, set quotas
-  │   │       │   └── <PromptEditor/> → Edit system prompt + version history
+  │   │       │   └── <PromptSelector/> → Pick the org's mission prompt (headline only)
   │   │       │
   │   │       ├── [Member]
   │   │       │   ├── <RecordingHub>
@@ -224,7 +229,7 @@ app/
  ┌─────────────────────────┐
  │ Audio stays IN-MEMORY    │  ← Zero disk footprint
  │ Pipe to Gemini 2.5 Flash │
- │  using active prompt      │
+ │  using base + mission     │
  └────────┬────────────────┘
           │  AI returns structured JSON
           ▼

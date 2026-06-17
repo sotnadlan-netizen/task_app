@@ -93,7 +93,7 @@ export function PromptSelector() {
         </p>
       ) : (
         <div className="space-y-2 mb-4">
-          {/* "None" option — use local prompt_versions */}
+          {/* "None" option — global base prompt only, no mission overlay */}
           <label
             className={`flex items-start gap-3 p-3 rounded border cursor-pointer transition-all
               ${selected === null

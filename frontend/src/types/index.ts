@@ -158,15 +158,11 @@ export interface Notification {
   created_at: string;
 }
 
-export interface PromptVersion {
-  id: string;
-  org_id: string;
-  version: number;
-  prompt_text: string;
-  created_by: string;
-  is_active: boolean;
-  created_at: string;
-  creator?: Profile;
+// Platform-wide base prompt ("how to do the job"). Platform admins only.
+export interface GlobalPrompt {
+  system_text: string;
+  updated_at: string | null;
+  is_default: boolean;  // true when no row saved yet — using the in-code default
 }
 
 export interface AudioProcessingResult {
