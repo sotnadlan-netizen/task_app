@@ -8,7 +8,10 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""
     gemini_api_key: str
     allowed_origins: str = "http://localhost:3000,http://localhost:3001"
-    max_audio_size_mb: int = 50
+    # Upload cap for a single recording. Gemini receives audio via the File API
+    # (no 20 MB inline limit), so this can be generous. Override with the
+    # MAX_AUDIO_SIZE_MB env var if needed.
+    max_audio_size_mb: int = 200
     # Email (Resend) — optional; leave empty to disable post-meeting emails
     resend_api_key: str = ""
     email_from: str = "meetings@yourdomain.com"

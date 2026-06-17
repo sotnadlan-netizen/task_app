@@ -108,7 +108,13 @@ export function useRecording() {
         : "audio/webm";
       mimeTypeRef.current = mimeType;
 
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      // 32 kbps Opus is plenty for speech transcription and keeps long meetings
+      // well under the upload size cap (~3.5h fits in 50 MB instead of ~50 min
+      // at the browser default of ~128 kbps). Gemini still transcribes it fine.
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 32000,
+      });
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0 && cryptoKeyRef.current) {
