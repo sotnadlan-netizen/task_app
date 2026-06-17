@@ -14,6 +14,13 @@ dist-ssr
 .env
 .env.local
 
+# Python virtualenv
+.venv/
+venv/
+
+# Claude local config
+.claude.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
