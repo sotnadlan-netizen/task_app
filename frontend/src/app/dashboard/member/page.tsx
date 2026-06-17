@@ -326,7 +326,9 @@ export default function MemberPage() {
   if (orgLoading || currentRole === "participant") return null;
 
   return (
-    <div className="min-h-screen bg-[#f3f3f3] text-[#080707]" style={fontStyle}>
+    // Fill exactly the viewport height minus the 48px (h-12) sticky GlobalNav,
+    // so the page fits the screen instead of overflowing by the nav's height.
+    <div className="min-h-[calc(100vh-3rem)] bg-[#f3f3f3] text-[#080707]" style={fontStyle}>
 
       {/* ── Page header ────────────────────────────────────────────────────── */}
       <div className="bg-white border-b border-[#dddbda] px-6 pt-3 pb-2">
