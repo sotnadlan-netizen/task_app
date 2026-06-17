@@ -20,8 +20,8 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
-  ChevronLeft, ChevronRight, Star,
-  Plus, RefreshCw, MoreHorizontal, ArrowUpDown,
+  ChevronLeft, ChevronRight,
+  Plus, RefreshCw, ArrowUpDown,
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
   Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2, Check,
   ExternalLink, Edit3, Calendar as CalendarIcon, Settings2, Mic,
@@ -143,6 +143,7 @@ export default function MemberPage() {
 
   // ── Lightning-only cosmetic state ────────────────────────────────────────
   const [selected, setSelected] = useState<string[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const token = session?.access_token || "";
 
@@ -206,6 +207,13 @@ export default function MemberPage() {
   }, [supabase, currentOrg, token]);
 
   useEffect(() => { loadStats(); }, [loadStats]);
+
+  // Manual refresh — spins the icon while data refetches so the click has
+  // visible feedback even when the data is unchanged.
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try { await loadStats(); } finally { setRefreshing(false); }
+  }, [loadStats]);
 
   useEffect(() => {
     const unsubSessions = subscribe("sessions", () => loadStats());
@@ -306,19 +314,6 @@ export default function MemberPage() {
 
   const recentTasks = useMemo(() => allTasks.slice(0, 5), [allTasks]);
 
-  // Real avg sentiment: map each session's sentiment label to a polarity score
-  // (positive +1 / neutral·mixed 0 / negative −1) and average across sessions.
-  const sentimentStats = useMemo(() => {
-    const labels = allSessions
-      .map((s) => s.sentiment?.toLowerCase().trim())
-      .filter((v): v is string => !!v);
-    if (labels.length === 0) return { value: "—", label: "neutral", up: false };
-    const score = (s: string) => (/pos|חיוב/.test(s) ? 1 : /neg|שליל/.test(s) ? -1 : 0);
-    const avg = labels.reduce((a, s) => a + score(s), 0) / labels.length;
-    const label = avg > 0.2 ? "positive" : avg < -0.2 ? "negative" : "neutral";
-    return { value: `${avg >= 0 ? "+" : ""}${avg.toFixed(2)}`, label, up: avg >= 0 };
-  }, [allSessions]);
-
   const capacityRemaining = capacity?.remaining_minutes ?? 0;
   const capacityTotal = capacity?.capacity_minutes ?? 0;
   const capacityPct = capacityTotal > 0 ? Math.min(100, Math.round((capacityRemaining / capacityTotal) * 100)) : 0;
@@ -348,19 +343,15 @@ export default function MemberPage() {
               <p className="text-[11px] uppercase tracking-wide text-[#706e6b] font-semibold">
                 {currentOrg?.name ? currentOrg.name : t("memberHome.workspace")}
               </p>
-              <h1 className="text-[20px] font-bold text-[#080707] leading-tight flex items-center gap-2">
+              <h1 className="text-[20px] font-bold text-[#080707] leading-tight">
                 {t("nav.home")}
-                <Star className="w-4 h-4 text-[#dddbda] hover:text-amber-400 cursor-pointer" />
               </h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Btn icon={<UserPlus className="w-3.5 h-3.5 me-1" />} onClick={() => setShowAddParticipant(true)}>{t("memberHome.addParticipant")}</Btn>
             <Btn variant="secondary" icon={<Plus className="w-3.5 h-3.5" />} onClick={() => document.getElementById("quick-action")?.scrollIntoView({ behavior: "smooth" })}>{t("memberHome.newSession")}</Btn>
-            <Btn variant="secondary" icon={<RefreshCw className="w-3.5 h-3.5" />} onClick={() => loadStats()}>{t("memberHome.refresh")}</Btn>
-            <button className="p-2 rounded border border-[#dddbda] hover:bg-[#f3f3f3]">
-              <MoreHorizontal className="w-3.5 h-3.5 text-[#0070d2]" />
-            </button>
+            <Btn variant="secondary" icon={<RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />} onClick={handleRefresh}>{t("memberHome.refresh")}</Btn>
           </div>
         </div>
       </div>
@@ -368,11 +359,10 @@ export default function MemberPage() {
       {/* ── Body ────────────────────────────────────────────────────────────── */}
       <main className="max-w-[1600px] mx-auto px-6 py-5 space-y-5">
         {/* KPI tiles */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <section className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           <KpiTile label={t("memberHome.sessions")} value={String(allSessions.length)} trend={t("memberHome.kpiShown", { count: pagedMeetings.length })} trendUp icon={<Phone className="w-5 h-5" />} />
           <KpiTile label={t("memberHome.totalTasks")} value={String(taskCountTotal)} trend={t("memberHome.kpiOpen", { count: sortedTasks.filter((task) => task.status !== "done").length })} trendUp icon={<ListChecks className="w-5 h-5" />} />
           <KpiTile label={t("memberHome.capacityRemaining")} value={String(capacityRemaining)} suffix={t("common.minutes")} trend={capacityTotal > 0 ? `${capacityPct}%` : "—"} trendUp={capacityPct > 30} icon={<BarChart3 className="w-5 h-5" />} />
-          <KpiTile label={t("memberHome.avgSentiment")} value={sentimentStats.value} trend={sentimentStats.value === "—" ? t("memberHome.noData") : t(`sentiment.${sentimentStats.label}`)} trendUp={sentimentStats.up} icon={<TrendingUp className="w-5 h-5" />} />
         </section>
 
         {/* Two-column body */}
