@@ -11,7 +11,9 @@ import { Alert } from "@/components/ui/alert";
 import { TaskEditRequestForm } from "./task-edit-request-form";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/providers/language-provider";
-import type { Task } from "@/types";
+import type { Task, OrgMembership, Profile } from "@/types";
+import { FiltersButton, FiltersPanel, type FilterPerson } from "@/components/filters/filters-panel";
+import { emptyFilters, taskMatchesFilters, type EntityFilters } from "@/lib/filters";
 import {
   Lock,
   ExternalLink,
@@ -49,7 +51,9 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
   };
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Record<string, string>>({}); // id -> name
-  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [people, setPeople] = useState<FilterPerson[]>([]);
+  const [filters, setFilters] = useState<EntityFilters>(emptyFilters());
+  const [panelOpen, setPanelOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [editRequestTaskId, setEditRequestTaskId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -78,7 +82,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
   const loadTasks = useCallback(async () => {
     if (!currentOrg) return;
     setLoading(true);
-    const [taskRes, projRes] = await Promise.all([
+    const [taskRes, projRes, memRes] = await Promise.all([
       supabase
         .from("tasks")
         .select("*, assignee:profiles!tasks_assignee_id_fkey(*)")
@@ -88,6 +92,7 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
         .from("projects")
         .select("id, name")
         .eq("org_id", currentOrg.id),
+      api.getOrgMembers(currentOrg.id, token).catch(() => [] as unknown),
     ]);
 
     if (taskRes.data) setTasks(taskRes.data as Task[]);
@@ -96,8 +101,17 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
       (projRes.data as { id: string; name: string }[]).forEach((p) => { map[p.id] = p.name; });
       setProjects(map);
     }
+    const members = (memRes as (OrgMembership & { profile?: Profile | null })[]) || [];
+    setPeople(
+      members
+        .filter((m) => m.user_id)
+        .map((m) => ({
+          id: m.user_id as string,
+          name: m.profile?.full_name || m.profile?.email || m.invited_email || "—",
+        }))
+    );
     setLoading(false);
-  }, [supabase, currentOrg]);
+  }, [supabase, currentOrg, token]);
 
   useEffect(() => {
     loadTasks();
@@ -209,20 +223,23 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
             <CardTitle>{t("tasks.title")}</CardTitle>
             <Badge>{tasks.length}</Badge>
           </div>
-          {!readonly && (
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => {
-                setShowAddForm(!showAddForm);
-                setFormError(null);
-                setEditingTaskId(null);
-              }}
-            >
-              <Plus className="w-4 h-4 me-1" />
-              {t("tasks.add")}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <FiltersButton filters={filters} onClick={() => setPanelOpen(true)} />
+            {!readonly && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setShowAddForm(!showAddForm);
+                  setFormError(null);
+                  setEditingTaskId(null);
+                }}
+              >
+                <Plus className="w-4 h-4 me-1" />
+                {t("tasks.add")}
+              </Button>
+            )}
+          </div>
         </CardHeader>
       </div>
 
@@ -273,26 +290,11 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
         </div>
       )}
 
-      {Object.keys(projects).length > 0 && (
-        <div className="px-6 pb-0 pt-2">
-          <select
-            value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded border border-[#dddbda] text-xs text-[#706e6b] bg-white focus:ring-2 focus:ring-[#0070d2]/30 focus:border-transparent"
-          >
-            <option value="">{t("tasks.allProjects")}</option>
-            {Object.entries(projects).map(([id, name]) => (
-              <option key={id} value={id}>{name}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
       {(() => {
-        const filtered = projectFilter ? tasks.filter((t) => t.project_id === projectFilter) : tasks;
+        const filtered = tasks.filter((task) => taskMatchesFilters(task, filters));
         return filtered.length === 0 ? (
         <div className="px-6 pb-6 text-center text-sm text-gray-500 py-8">
-          {projectFilter ? t("tasks.emptyInProject") : t("tasks.emptyHint")}
+          {tasks.length === 0 ? t("tasks.emptyHint") : t("filters.empty")}
         </div>
       ) : (
         <div className="divide-y divide-[#dddbda] mt-3">
@@ -499,6 +501,18 @@ export function TaskList({ readonly = false }: { readonly?: boolean }) {
         </div>
       );
       })()}
+
+      <FiltersPanel
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
+        filters={filters}
+        onChange={setFilters}
+        projects={projects}
+        people={people}
+        peopleLabel={t("filters.assignee")}
+        showStatus
+        showDate
+      />
     </Card>
   );
 }

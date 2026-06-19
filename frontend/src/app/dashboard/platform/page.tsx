@@ -17,7 +17,9 @@ import {
   ChevronLeft, Save, BarChart3, ListChecks, Trash2, Settings, UserPlus,
 } from "lucide-react";
 import { SystemPromptsPanel } from "@/components/platform/system-prompts-panel";
+import { GlobalBasePromptPanel } from "@/components/platform/global-base-prompt-panel";
 import { OrgPromptAssignment } from "@/components/platform/org-prompt-assignment";
+import { OrgLogoUpload } from "@/components/org-logo-upload";
 import { useLanguage } from "@/providers/language-provider";
 
 interface MemberWithProfile extends OrgMembership {
@@ -116,6 +118,10 @@ function EditOrgModal({ open, onClose, org, onSaved }: { open: boolean; onClose:
     <Modal open={open} onClose={onClose} title={t("platform.editOrg")}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && <Alert variant="error">{error}</Alert>}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t("orgLogo.label")}</label>
+          <OrgLogoUpload org={org} onUploaded={onSaved} />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t("platform.orgName")}</label>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} required
@@ -752,7 +758,10 @@ export default function PlatformPage() {
 
       <CreateOrgModal open={showCreateModal} onClose={() => setShowCreateModal(false)} onCreated={loadOrgs} />
 
-      {/* ── System Prompts CRUD ── */}
+      {/* ── Global base prompt (layer 1: "how to do the job") ── */}
+      <GlobalBasePromptPanel />
+
+      {/* ── Mission prompts CRUD (layer 2: per-mission specialization) ── */}
       <SystemPromptsPanel />
     </div>
   );

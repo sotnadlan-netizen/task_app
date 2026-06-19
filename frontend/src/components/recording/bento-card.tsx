@@ -240,13 +240,13 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                     transition={{ duration: 0.28, delay: 0.1 }}
                     className="flex-1 overflow-y-auto px-6 py-5 space-y-4"
                   >
-                    <h2 className="text-xl font-bold text-gray-800">{displayTitle}</h2>
+                    <h2 dir="auto" className="bidi-auto text-xl font-bold text-gray-800">{displayTitle}</h2>
 
                     {isEditing ? (
                       <div className="space-y-3">
                         <div className="space-y-1">
                           <label className="text-xs font-medium text-gray-500">{t("results.editSummaryFieldLabel")}</label>
-                          <textarea className={inputCls} rows={10} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} autoFocus />
+                          <textarea dir="auto" className={`${inputCls} bidi-auto`} rows={10} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} autoFocus />
                         </div>
                         {saveError && <p className="text-xs text-red-500">{saveError}</p>}
                         <div className="flex gap-2 pt-1">
@@ -262,7 +262,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       </div>
                     ) : (
                       <div className="space-y-4">
-                        <p className="text-sm leading-relaxed text-gray-600">{displayDesc}</p>
+                        <p dir="auto" className="bidi-auto text-sm leading-relaxed text-gray-600">{displayDesc}</p>
                         <button
                           onClick={startEdit}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-medium text-[#0070d2] border border-[#b3d9f6] hover:bg-[#ecf5fe] transition-colors"
@@ -414,11 +414,11 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                     <div className="space-y-4">
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldTitle")}</label>
-                        <input className={inputCls} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
+                        <input dir="auto" className={`${inputCls} bidi-auto`} value={editTitle} onChange={(e) => setEditTitle(e.target.value)} autoFocus />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-gray-500">{t("editRequest.fieldDescription")}</label>
-                        <textarea className={inputCls} rows={4} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+                        <textarea dir="auto" className={`${inputCls} bidi-auto`} rows={4} value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
                       </div>
                       <div className="flex gap-4 flex-wrap">
                         <div className="space-y-1">
@@ -454,7 +454,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                   ) : (
                     <>
                       {/* Title */}
-                      <h2 className={`text-xl font-bold ${isDone ? "line-through text-gray-400" : "text-gray-800"}`}>
+                      <h2 dir="auto" className={`bidi-auto text-xl font-bold ${isDone ? "line-through text-gray-400" : "text-gray-800"}`}>
                         {displayTitle}
                       </h2>
 
@@ -470,7 +470,7 @@ export function BentoCard({ card, expandedId, onExpand, entryDelay = 0, onDelete
                       {displayDesc && (
                         <div>
                           <p className="text-xs font-medium text-gray-400 mb-2">{t("editRequest.fieldDescription")}</p>
-                          <p className="text-sm leading-relaxed text-gray-600">{displayDesc}</p>
+                          <p dir="auto" className="bidi-auto text-sm leading-relaxed text-gray-600">{displayDesc}</p>
                         </div>
                       )}
 

@@ -23,7 +23,7 @@ import {
   Search, Bell, Settings, ChevronDown, ChevronLeft, ChevronRight, Star,
   Plus, RefreshCw, MoreHorizontal, ArrowUpDown,
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
-  Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2,
+  Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2, Check,
   ExternalLink, HelpCircle, Edit3, Calendar as CalendarIcon, Settings2, Mic,
   UserPlus, Clock, X, MicVocal, CalendarClock, CalendarPlus, XCircle, Hand,
 } from "lucide-react";
@@ -865,7 +865,10 @@ function LightningPager({ page, totalPages, total, pageSize, onPrev, onNext }: {
 function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId: string) => void }) {
   const { session: authSession } = useSupabase();
   const { capacity, currentOrg } = useOrganization();
-  const { isRecording, duration, error, processing, mediaStream, startRecording, stopRecording } = useRecording();
+  const {
+    isRecording, duration, error, processing, mediaStream,
+    reviewBlob, reviewUrl, startRecording, stopRecording, approveRecording, discardRecording,
+  } = useRecording();
   const shouldReduceMotion = useReducedMotion();
 
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -910,8 +913,14 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
     setSelectedParticipantIds((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
 
   const handleStop = async () => {
-    await stopRecording({ projectId: selectedProjectId || undefined, participantIds: selectedParticipantIds, onSuccess: onSessionReady });
+    await stopRecording();
   };
+
+  const handleApprove = async () => {
+    await approveRecording({ projectId: selectedProjectId || undefined, participantIds: selectedParticipantIds, onSuccess: onSessionReady });
+  };
+
+  const isReviewing = !!reviewBlob && !processing;
 
   const remaining = capacity?.remaining_minutes ?? 0;
   const used = capacity?.used_minutes ?? 0;
@@ -947,7 +956,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
       )}
 
       {/* Pre-recording controls */}
-      {!isRecording && !processing && (
+      {!isRecording && !processing && !isReviewing && (
         <div className="px-4 py-4 space-y-4">
           <div>
             <label className="flex items-center gap-1.5 text-[11px] font-semibold text-[#706e6b] mb-1.5 uppercase tracking-wide">
@@ -1028,7 +1037,27 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
         <AudioWaveform mediaStream={mediaStream} isRecording={isRecording} processing={processing} />
       </div>
 
+      {/* Review state — play back, then Approve (upload) or Discard */}
+      {isReviewing && (
+        <div className="px-4 py-6 flex flex-col items-center gap-4">
+          <div className="text-center">
+            <h3 className="text-[15px] font-bold text-[#080707]">סקירת ההקלטה</h3>
+            <p className="text-[13px] text-[#706e6b] mt-0.5">האזן להקלטה, ולאחר מכן אשר לעיבוד או מחק כדי למחוק.</p>
+          </div>
+          <audio controls src={reviewUrl ?? undefined} className="w-full max-w-sm" aria-label="סקירת ההקלטה" />
+          <div className="flex items-center gap-3">
+            <Button onClick={handleApprove} disabled={processing}>
+              <Check className="w-4 h-4 ml-1" /> אישור
+            </Button>
+            <Button variant="danger" onClick={discardRecording} disabled={processing}>
+              <Trash2 className="w-4 h-4 ml-1" /> מחיקה
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Recorder */}
+      {!isReviewing && (
       <div className="flex flex-col items-center py-6 px-4 gap-4">
         {isRecording && <div className="text-4xl font-mono font-bold text-[#080707] tabular-nums">{formatDuration(duration)}</div>}
         {isRecording && (
@@ -1074,6 +1103,7 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
           {capacity?.is_blocked ? "ההקלטה מושבתת — אין קיבולת" : isRecording ? "מקליט... לחץ לעצירה" : "לחץ להתחלת הקלטה"}
         </p>
       </div>
+      )}
 
       {processing && (
         <div className="flex items-center justify-center gap-3 py-4 border-t border-[#dddbda] bg-[#fafaf9]">

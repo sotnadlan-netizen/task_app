@@ -69,18 +69,30 @@ async def process_audio(
     if mime_type not in ALLOWED_MIME_TYPES:
         mime_type = "audio/webm"
 
-    # Resolve system prompt — priority:
-    # 1. prompt_id chosen by the recorder for THIS recording (must be assigned to the org)
-    # 2. org.selected_prompt_id  → global system_prompts.system_text
-    # 3. org's active prompt_version
-    # 4. DEFAULT_SYSTEM_PROMPT
-    system_prompt = DEFAULT_SYSTEM_PROMPT
+    # ── Resolve the prompt: GLOBAL BASE + optional MISSION overlay ────────────
+    # Layer 1 — base ("how to do the job"): platform-wide, platform-admin editable.
+    #           Falls back to DEFAULT_SYSTEM_PROMPT if none has been saved.
+    # Layer 2 — mission: a system_prompts record that fine-tunes the base to a
+    #           specific use case. Chosen per-recording (prompt_id) or per-org
+    #           (org.selected_prompt_id). Members can only use missions the
+    #           platform admin assigned to the org.
+    base_prompt = DEFAULT_SYSTEM_PROMPT
+    base_row = (
+        supabase.table("global_base_prompts")
+        .select("system_text")
+        .eq("id", 1)
+        .maybe_single()
+        .execute()
+    )
+    if base_row and base_row.data and base_row.data.get("system_text"):
+        base_prompt = base_row.data["system_text"]
+
     prompt_version = 0
     chosen_prompt_id = None
 
     if prompt_id:
-        # The recorder picked a specific prompt — only honor it if the platform admin
-        # assigned it to this org, so members can't run arbitrary prompts.
+        # The recorder picked a specific mission — only honor it if the platform
+        # admin assigned it to this org, so members can't run arbitrary prompts.
         assigned = (
             supabase.table("org_system_prompts")
             .select("prompt_id")
@@ -94,19 +106,10 @@ async def process_audio(
                 status_code=403,
                 detail="Selected prompt is not available for this organization",
             )
-        sp_result = (
-            supabase.table("system_prompts")
-            .select("system_text")
-            .eq("id", prompt_id)
-            .maybe_single()
-            .execute()
-        )
-        if sp_result and sp_result.data:
-            system_prompt = sp_result.data["system_text"]
-            chosen_prompt_id = prompt_id
+        chosen_prompt_id = prompt_id
 
     if not chosen_prompt_id:
-        selected_prompt_id = None
+        # Fall back to the org-wide default mission, if one is set.
         try:
             org_row = (
                 supabase.table("organizations")
@@ -115,34 +118,36 @@ async def process_audio(
                 .single()
                 .execute()
             )
-            selected_prompt_id = (org_row.data or {}).get("selected_prompt_id")
+            chosen_prompt_id = (org_row.data or {}).get("selected_prompt_id")
         except Exception:
-            # Column may not exist yet (migration pending) — fall through to prompt_versions
+            # Column may not exist yet (migration pending) — base prompt only.
             pass
 
-        if selected_prompt_id:
-            sp_result = (
-                supabase.table("system_prompts")
-                .select("system_text")
-                .eq("id", selected_prompt_id)
-                .maybe_single()
-                .execute()
-            )
-            if sp_result and sp_result.data:
-                system_prompt = sp_result.data["system_text"]
-                chosen_prompt_id = selected_prompt_id
+    mission_text = None
+    if chosen_prompt_id:
+        sp_result = (
+            supabase.table("system_prompts")
+            .select("system_text")
+            .eq("id", chosen_prompt_id)
+            .maybe_single()
+            .execute()
+        )
+        if sp_result and sp_result.data:
+            mission_text = sp_result.data["system_text"]
         else:
-            prompt_result = (
-                supabase.table("prompt_versions")
-                .select("*")
-                .eq("org_id", org_id)
-                .eq("is_active", True)
-                .maybe_single()
-                .execute()
-            )
-            if prompt_result and prompt_result.data:
-                system_prompt = prompt_result.data["prompt_text"]
-                prompt_version = prompt_result.data["version"]
+            chosen_prompt_id = None  # referenced prompt was deleted
+
+    if mission_text:
+        system_prompt = (
+            f"{base_prompt}\n\n"
+            "---\n\n"
+            "## MISSION-SPECIFIC INSTRUCTIONS\n"
+            "Apply the following instructions on top of everything above. Where they "
+            "conflict with the general guidance, the mission-specific instructions win.\n\n"
+            f"{mission_text}"
+        )
+    else:
+        system_prompt = base_prompt
 
     # Process with Gemini (in-memory only)
     try:

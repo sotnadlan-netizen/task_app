@@ -60,9 +60,9 @@ class EditRequestReview(BaseModel):
     status: PendingTaskStatus
 
 
-class PromptCreate(BaseModel):
-    org_id: str
-    prompt_text: str = Field(min_length=10, max_length=10000)
+class GlobalPromptUpdate(BaseModel):
+    # The platform-wide base prompt ("how to do the job"). Platform admin only.
+    system_text: str = Field(min_length=10, max_length=20000)
 
 
 class QuotaUpdate(BaseModel):
@@ -124,6 +124,7 @@ class OrgUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     total_capacity_min: Optional[int] = Field(None, ge=0)
     max_members: Optional[int] = Field(None, ge=1)
+    logo_url: Optional[str] = Field(None, max_length=1000)
 
 
 class MemberAdd(BaseModel):
@@ -150,7 +151,7 @@ class SystemPromptUpdate(BaseModel):
 
 
 class OrgPromptSelect(BaseModel):
-    prompt_id: Optional[str] = None  # None = clear selection (fall back to prompt_versions)
+    prompt_id: Optional[str] = None  # None = no mission overlay (global base prompt only)
 
 
 class OrgPromptAssignmentUpdate(BaseModel):

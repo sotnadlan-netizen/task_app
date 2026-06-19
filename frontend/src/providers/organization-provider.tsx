@@ -30,6 +30,7 @@ interface OrganizationContextType {
   loading: boolean;
   isPlatformAdmin: boolean;
   switchOrganization: (orgId: string) => void;
+  applyOrgUpdate: (updated: Organization) => void;
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(
@@ -97,20 +98,35 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const switchOrganization = useCallback(
     (orgId: string) => {
+      // Re-selecting the current org is a no-op — otherwise the user gets
+      // bounced back to their role home page for no reason.
+      if (orgId === currentOrgId) return;
+
+      const prevMembership = memberships.find((m) => m.org_id === currentOrgId);
+      const newMembership = memberships.find((m) => m.org_id === orgId);
+
       setCurrentOrgId(orgId);
       localStorage.setItem("current_org_id", orgId);
 
-      // Re-route to the correct dashboard for the new org's role
-      const newMembership = memberships.find((m) => m.org_id === orgId);
-      if (newMembership) {
+      // Only re-route when the role actually differs between orgs; switching
+      // between same-role orgs keeps the user on the page they were viewing.
+      if (newMembership && newMembership.role !== prevMembership?.role) {
         const role = newMembership.role;
         if (role === "admin") router.push("/dashboard/admin");
         else if (role === "member") router.push("/dashboard/member");
         else router.push("/dashboard/participant");
       }
     },
-    [memberships, router]
+    [memberships, router, currentOrgId]
   );
+
+  // Patch a single org in place (e.g. after a logo upload) so the header and
+  // settings reflect the change without a full reload.
+  const applyOrgUpdate = useCallback((updated: Organization) => {
+    setOrganizations((prev) =>
+      prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o))
+    );
+  }, []);
 
   const currentOrg =
     organizations.find((o) => o.id === currentOrgId) || null;
@@ -148,6 +164,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         loading,
         isPlatformAdmin,
         switchOrganization,
+        applyOrgUpdate,
       }}
     >
       {children}

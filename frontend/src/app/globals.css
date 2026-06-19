@@ -31,6 +31,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* The page must always fit the viewport width — never scroll sideways, on any
+   screen including phones. `overflow-x: clip` clips horizontal overflow without
+   creating a scroll container, so it does NOT break the sticky GlobalNav or
+   vertical scrolling. Individual wide widgets (data tables) keep their own
+   local `overflow-x-auto` so their content stays reachable. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
 body {
   background: var(--sf-bg);
   color: var(--foreground);
@@ -181,6 +192,14 @@ html.dark .shadow-lg.bg-white { background-color: #11233f !important; border-col
   .fixed {
     display: none !important;
   }
+}
+
+/* Bi-directional text: let each block resolve its own base direction from its
+   first strong character, so sentences mixing Hebrew (RTL) and English/numbers
+   (LTR) flow naturally without punctuation/word-order breaking. Pair with
+   dir="auto" on the element for robustness regardless of the document dir. */
+.bidi-auto {
+  unicode-bidi: plaintext;
 }
 
 /* Blinking cursor for AI processing state */

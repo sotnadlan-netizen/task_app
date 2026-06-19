@@ -68,7 +68,7 @@ export function UnscheduledTaskRail({ tasks, token, onTaskUpdate }: Props) {
                 hover:shadow-sm transition-all`}
               aria-label={`תזמן ${t.title}`}
             >
-              <p className="truncate">{t.title}</p>
+              <p dir="auto" className="bidi-auto truncate">{t.title}</p>
               {t.deadline && (
                 <p className="text-[10px] opacity-70 truncate mt-0.5">{t.deadline}</p>
               )}

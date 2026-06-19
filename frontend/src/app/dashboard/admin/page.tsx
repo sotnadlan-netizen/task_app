@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
-import { PromptEditor } from "@/components/inbox/prompt-editor";
 import { PromptSelector } from "@/components/inbox/prompt-selector";
+import { OrgLogoUpload } from "@/components/org-logo-upload";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -276,7 +276,7 @@ function RemoveMemberModal({
 // ─── Admin Page ───────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const { session } = useSupabase();
-  const { currentOrg, currentRole, loading: orgLoading } = useOrganization();
+  const { currentOrg, currentRole, loading: orgLoading, applyOrgUpdate } = useOrganization();
   const { t } = useLanguage();
   const router = useRouter();
   const [members, setMembers] = useState<MemberWithProfile[]>([]);
@@ -418,6 +418,16 @@ export default function AdminPage() {
 
       {error && <Alert variant="error">{error}</Alert>}
 
+      {/* ── Organization branding ── */}
+      {currentOrg && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("orgLogo.label")}</CardTitle>
+          </CardHeader>
+          <OrgLogoUpload org={currentOrg} onUploaded={applyOrgUpdate} />
+        </Card>
+      )}
+
       {/* ── Members Table (admin + member roles) ── */}
       <Card padding={false}>
         <div className="p-6 pb-4 flex items-center justify-between border-b border-[#dddbda]">
@@ -537,11 +547,8 @@ export default function AdminPage() {
         )}
       </Card>
 
-      {/* Global System Prompt Selector (from platform admin library) */}
+      {/* Mission prompt selector (from the platform admin library) */}
       <PromptSelector />
-
-      {/* Local Org Prompt Editor (fallback / override) */}
-      <PromptEditor />
 
       {/* Modals */}
       <AddMemberModal

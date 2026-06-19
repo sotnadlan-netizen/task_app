@@ -8,7 +8,7 @@ import { useSupabase } from "@/providers/supabase-provider";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { AudioWaveform } from "@/components/recording/audio-waveform";
-import { Mic, Square, Clock, FolderOpen, Users, Plus, X, Sparkles } from "lucide-react";
+import { Mic, Square, Clock, FolderOpen, Users, Plus, X, Sparkles, Check, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/providers/language-provider";
 import type { OrgMembership, Profile, SystemPrompt } from "@/types";
@@ -37,8 +37,12 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
     error,
     processing,
     mediaStream,
+    reviewBlob,
+    reviewUrl,
     startRecording,
     stopRecording,
+    approveRecording,
+    discardRecording,
   } = useRecording();
 
   const shouldReduceMotion = useReducedMotion();
@@ -106,14 +110,22 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
     );
   };
 
+  // Stop only enters the review state — nothing is uploaded yet.
   const handleStopRecording = async () => {
-    await stopRecording({
+    await stopRecording();
+  };
+
+  // Approve uploads the reviewed blob with the selected context.
+  const handleApproveRecording = async () => {
+    await approveRecording({
       projectId: selectedProjectId || undefined,
       participantIds: selectedParticipantIds,
       promptId: selectedPromptId || undefined,
       onSuccess: onSessionReady,
     });
   };
+
+  const isReviewing = !!reviewBlob && !processing;
 
   const remaining = capacity?.remaining_minutes ?? 0;
   const used = capacity?.used_minutes ?? 0;
@@ -178,7 +190,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
       )}
 
       {/* Pre-recording Controls */}
-      {!isRecording && !processing && (
+      {!isRecording && !processing && !isReviewing && (
         <div className="px-6 py-5 space-y-5">
           {/* Project selection */}
           <div>
@@ -309,6 +321,7 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
       </div>
 
       {/* Recording Interface */}
+      {!isReviewing && (
       <div className="flex flex-col items-center py-8 px-6 gap-5">
         {/* Timer */}
         {isRecording && (
@@ -405,6 +418,35 @@ export function RecordingHub({ onSessionReady }: RecordingHubProps) {
           </div>
         )}
       </div>
+      )}
+
+      {/* Review state — play back the recording, then Approve (upload) or Discard */}
+      {isReviewing && (
+        <div className="px-6 py-8 flex flex-col items-center gap-5">
+          <div className="text-center">
+            <h3 className="text-base font-bold text-[#080707]">{t("recording.reviewTitle")}</h3>
+            <p className="text-sm text-gray-400 mt-1">{t("recording.reviewHint")}</p>
+          </div>
+
+          <audio
+            controls
+            src={reviewUrl ?? undefined}
+            className="w-full max-w-md"
+            aria-label={t("recording.reviewTitle")}
+          />
+
+          <div className="flex items-center gap-3">
+            <Button onClick={handleApproveRecording} disabled={processing}>
+              <Check className="w-4 h-4 me-1" />
+              {t("recording.approve")}
+            </Button>
+            <Button variant="danger" onClick={discardRecording} disabled={processing}>
+              <Trash2 className="w-4 h-4 me-1" />
+              {t("recording.discard")}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Processing Indicator */}
       {processing && (

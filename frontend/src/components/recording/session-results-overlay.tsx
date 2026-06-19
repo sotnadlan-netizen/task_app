@@ -74,7 +74,8 @@ export function SessionResultsOverlay({ session, tasks, onClose }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.35 }}
-                className="font-sans text-sm font-medium truncate max-w-[40vw] text-center text-gray-700"
+                dir="auto"
+                className="bidi-auto font-sans text-sm font-medium truncate max-w-[40vw] text-center text-gray-700"
               >
                 {session.title}
               </motion.p>

@@ -88,19 +88,6 @@ export const api = {
       token,
     }),
 
-  getPromptVersions: (orgId: string, token: string) =>
-    request(`/api/prompts?org_id=${orgId}`, { token }),
-
-  createPromptVersion: (
-    data: { org_id: string; prompt_text: string },
-    token: string
-  ) =>
-    request("/api/prompts", {
-      method: "POST",
-      body: JSON.stringify(data),
-      token,
-    }),
-
   getOrganizations: (token: string) =>
     request("/api/organizations", { token }),
 
@@ -162,6 +149,16 @@ export const api = {
   deleteOrg: (orgId: string, token: string) =>
     request(`/api/organizations/${orgId}`, { method: "DELETE", token }),
 
+  uploadOrgLogo: (orgId: string, file: File, token: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request(`/api/organizations/${orgId}/logo`, {
+      method: "POST",
+      body: formData,
+      token,
+    });
+  },
+
   addOrgMember: (orgId: string, data: { email: string; role: string }, token: string) =>
     request(`/api/organizations/${orgId}/members`, { method: "POST", body: JSON.stringify(data), token }),
 
@@ -190,6 +187,20 @@ export const api = {
 
   deleteSystemPrompt: (promptId: string, token: string) =>
     request(`/api/system-prompts/${promptId}`, { method: "DELETE", token }),
+
+  // ── Global Base Prompt (platform admin) ──────────────────────────────────
+  getGlobalPrompt: (token: string) =>
+    request<{ system_text: string; updated_at: string | null; is_default: boolean }>(
+      "/api/global-prompt",
+      { token }
+    ),
+
+  updateGlobalPrompt: (systemText: string, token: string) =>
+    request("/api/global-prompt", {
+      method: "PUT",
+      body: JSON.stringify({ system_text: systemText }),
+      token,
+    }),
 
   // ── Org Prompt Selection (org admin) ─────────────────────────────────────
   selectOrgPrompt: (orgId: string, promptId: string | null, token: string) =>

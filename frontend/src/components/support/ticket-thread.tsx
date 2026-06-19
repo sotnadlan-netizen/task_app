@@ -102,12 +102,12 @@ export function TicketThread({ ticketId }: { ticketId: string }) {
                       : "bg-white border border-[#dddbda] text-[#080707]"
                   }`}
                 >
-                  <p className={`text-[11px] mb-0.5 ${mine ? "text-white/80" : "text-[#706e6b]"}`}>
+                  <p dir="auto" className={`bidi-auto text-[11px] mb-0.5 ${mine ? "text-white/80" : "text-[#706e6b]"}`}>
                     {m.author?.full_name || m.author?.email || t("tickets.unknownUser")}
                     {" · "}
                     {fmtTime(m.created_at)}
                   </p>
-                  <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p>
+                  <p dir="auto" className="bidi-auto text-sm whitespace-pre-wrap break-words">{m.body}</p>
                 </div>
               </div>
             );
