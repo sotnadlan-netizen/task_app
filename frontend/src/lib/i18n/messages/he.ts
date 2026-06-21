@@ -110,6 +110,7 @@ export const he: typeof en = {
     subtitle:
       "הפכו אודיו חי למשימות לפעולה בעזרת בינה מלאכותית. פרטיות תחילה. רב-ארגוני. שיתוף פעולה בזמן אמת.",
     signIn: "התחבר באמצעות גוגל",
+    signUpFree: "התחילו בחינם — 300 דקות",
     featureAudioTitle: "מאודיו למשימות",
     featureAudioDesc:
       "הקליטו פגישות וקבלו סיכומים, ניתוח סנטימנט ורשימות משימות שנוצרו על ידי בינה מלאכותית.",
@@ -136,6 +137,10 @@ export const he: typeof en = {
     emailAdmin: "שלח דוא״ל למנהל",
     mailSubject: "אנא הוסף אותי לארגון",
     mailBody: "שלום, אנא הוסף את {email} לארגון ב-AI Task Orchestrator.",
+    trialDivider: "או, כדי להצטרף לארגון קיים:",
+    startTrial: "התחילו תקופת ניסיון חינם",
+    startingTrial: "מגדירים את תקופת הניסיון שלך...",
+    startTrialError: "לא ניתן להתחיל את תקופת הניסיון. אנא נסו שוב.",
   },
 
   auth: {
@@ -365,6 +370,11 @@ export const he: typeof en = {
     colUtilization: "ניצול",
     colCreated: "נוצר",
     manage: "נהל",
+    trialUsers: "משתמשי ניסיון חינם",
+    loadingTrials: "טוען משתמשי ניסיון...",
+    noTrials: "אין משתמשי ניסיון עדיין.",
+    colTrialUser: "משתמש",
+    colMinutesUsed: "דקות שנוצלו",
   },
 
   memberHome: {

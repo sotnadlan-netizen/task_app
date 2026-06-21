@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useSupabase } from "./supabase-provider";
+import { api } from "@/lib/api";
 import type {
   Organization,
   OrgMembership,
@@ -88,6 +89,29 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         );
         setCurrentOrgId(validSaved ? savedOrgId : orgs[0].id);
       } else {
+        // First login with no org. If the user clicked "Start free" on the
+        // landing page, auto-provision a trial workspace instead of sending
+        // them to /no-org.
+        const pendingTrial =
+          typeof window !== "undefined" &&
+          localStorage.getItem("pending_trial");
+        if (pendingTrial) {
+          localStorage.removeItem("pending_trial");
+          try {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+            await api.startTrial(session?.access_token || "");
+            // Reload now that the trial org + admin membership exist, then drop
+            // the user straight into the recording view so they can start using
+            // the app immediately (as admin they keep the admin↔member toggle).
+            await loadOrganizations();
+            router.push("/dashboard/member");
+            return;
+          } catch {
+            // Provisioning failed (e.g. trial already used) — fall through.
+          }
+        }
         router.push("/no-org");
       }
       setLoading(false);

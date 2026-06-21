@@ -14,7 +14,7 @@ import { PageHeader, KpiTile } from "@/components/ui/lightning";
 import type { Organization, OrgMembership, Profile, Session, UserRole } from "@/types";
 import {
   Building2, Clock, Users, Activity, Plus, ChevronRight,
-  ChevronLeft, Save, BarChart3, ListChecks, Trash2, Settings, UserPlus,
+  ChevronLeft, Save, BarChart3, ListChecks, Trash2, Settings, UserPlus, Zap,
 } from "lucide-react";
 import { SystemPromptsPanel } from "@/components/platform/system-prompts-panel";
 import { GlobalBasePromptPanel } from "@/components/platform/global-base-prompt-panel";
@@ -31,6 +31,13 @@ interface OrgDetail {
   members: MemberWithProfile[];
   sessions: Session[];
   taskCount: number;
+}
+
+// A free-trial user: the admin membership of a trial org, joined with the
+// owner's profile and the trial organization itself.
+interface TrialRow extends Omit<OrgMembership, "profile" | "organization"> {
+  profile: Profile | null;
+  organization: Organization | null;
 }
 
 // ─── Create Org Modal ─────────────────────────────────────────────────────────
@@ -601,11 +608,13 @@ function OrgDetailView({ detail, onBack, onRefresh, onDeleted }: {
 
 // ─── Main Platform Page ───────────────────────────────────────────────────────
 export default function PlatformPage() {
-  const { supabase } = useSupabase();
+  const { supabase, session } = useSupabase();
   const { t } = useLanguage();
   const { isPlatformAdmin, loading: orgLoading } = useOrganization();
   const router = useRouter();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [trials, setTrials] = useState<TrialRow[]>([]);
+  const [trialsLoading, setTrialsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<OrgDetail | null>(null);
@@ -621,12 +630,27 @@ export default function PlatformPage() {
 
   const loadOrgs = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from("organizations").select("*").order("created_at", { ascending: false });
+    // Free-trial orgs are auto-provisioned personal workspaces — keep them out
+    // of the real-org table; they get their own panel below.
+    const { data } = await supabase.from("organizations").select("*").eq("is_trial", false).order("created_at", { ascending: false });
     if (data) setOrganizations(data as Organization[]);
     setLoading(false);
   }, [supabase]);
 
+  const loadTrials = useCallback(async () => {
+    setTrialsLoading(true);
+    try {
+      const token = session?.access_token || "";
+      const data = await api.listTrials(token);
+      setTrials((data as TrialRow[]) || []);
+    } catch {
+      setTrials([]);
+    }
+    setTrialsLoading(false);
+  }, [session]);
+
   useEffect(() => { loadOrgs(); }, [loadOrgs]);
+  useEffect(() => { loadTrials(); }, [loadTrials]);
 
   const loadOrgDetail = useCallback(async (org: Organization) => {
     setDetailLoading(true);
@@ -662,9 +686,9 @@ export default function PlatformPage() {
     return (
       <OrgDetailView
         detail={selectedDetail}
-        onBack={() => setSelectedDetail(null)}
+        onBack={() => { setSelectedDetail(null); loadTrials(); }}
         onRefresh={() => loadOrgDetail(selectedDetail.org)}
-        onDeleted={() => { setSelectedDetail(null); loadOrgs(); }}
+        onDeleted={() => { setSelectedDetail(null); loadOrgs(); loadTrials(); }}
       />
     );
   }
@@ -750,6 +774,60 @@ export default function PlatformPage() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Free trial users (read-only) */}
+      <Card padding={false}>
+        <div className="p-6 pb-4 border-b border-[#dddbda]">
+          <CardHeader className="mb-0">
+            <CardTitle>{t("platform.trialUsers")} ({trials.length})</CardTitle>
+          </CardHeader>
+        </div>
+        {trialsLoading ? (
+          <div className="px-6 pb-6 text-center py-8">
+            <div className="animate-pulse text-sm text-gray-400">{t("platform.loadingTrials")}</div>
+          </div>
+        ) : trials.length === 0 ? (
+          <div className="px-6 pb-8 text-center py-8">
+            <Zap className="w-10 h-10 text-[#b3d9f6] mx-auto mb-3" />
+            <p className="text-sm text-gray-400">{t("platform.noTrials")}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-[#fafaf9] border-b border-[#dddbda]">
+                <tr>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colTrialUser")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colMinutesUsed")}</th>
+                  <th className="text-start px-6 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">{t("platform.colCreated")}</th>
+                  <th className="px-6 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#dddbda]">
+                {trials.map((trial) => (
+                  <tr key={trial.id} className="hover:bg-[#fafaf9] transition-colors">
+                    <td className="px-6 py-3">
+                      <div className="font-semibold text-gray-800">{trial.profile?.full_name || trial.profile?.email || "—"}</div>
+                      {trial.profile?.full_name && trial.profile?.email && (
+                        <div className="text-xs text-gray-400">{trial.profile.email}</div>
+                      )}
+                    </td>
+                    <td className="px-6 py-3 text-gray-500">{trial.used_minutes} / {trial.capacity_minutes} {t("common.minutes")}</td>
+                    <td className="px-6 py-3 text-gray-400">{new Date(trial.created_at).toLocaleDateString()}</td>
+                    <td className="px-6 py-3">
+                      {trial.organization && (
+                        <button onClick={() => loadOrgDetail(trial.organization!)}
+                          className="flex items-center gap-1 text-[#0070d2] hover:text-[#005fb2] text-sm font-medium transition-colors">
+                          {t("platform.manage")}<ChevronRight className="w-4 h-4 rtl:-scale-x-100" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

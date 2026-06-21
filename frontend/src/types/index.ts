@@ -27,6 +27,7 @@ export interface Organization {
   max_members: number;
   selected_prompt_id: string | null;
   logo_url: string | null;
+  is_trial?: boolean;
   created_at: string;
 }
 

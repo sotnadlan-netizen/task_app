@@ -1,15 +1,37 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSupabase } from "@/providers/supabase-provider";
 import { SupabaseProvider } from "@/providers/supabase-provider";
 import { Button } from "@/components/ui/button";
 import { LanguageToggle } from "@/components/ui/language-toggle";
 import { useLanguage } from "@/providers/language-provider";
-import { Building2, Mail, LogOut } from "lucide-react";
+import { api } from "@/lib/api";
+import { Building2, Mail, LogOut, Zap } from "lucide-react";
 
 function NoOrgContent() {
-  const { user, signOut } = useSupabase();
+  const { user, signOut, supabase } = useSupabase();
   const { t } = useLanguage();
+  const router = useRouter();
+  const [trialLoading, setTrialLoading] = useState(false);
+  const [trialError, setTrialError] = useState("");
+
+  const startTrial = async () => {
+    setTrialLoading(true);
+    setTrialError("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      await api.startTrial(session?.access_token || "");
+      // Land in the recording view so the trial user can start immediately.
+      router.push("/dashboard/member");
+    } catch {
+      setTrialError(t("noOrg.startTrialError"));
+      setTrialLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f3f3f3] flex items-center justify-center px-4">
@@ -50,6 +72,22 @@ function NoOrgContent() {
             <div className="w-7 h-7 rounded-full bg-[#0070d2] text-white text-xs font-bold flex items-center justify-center shrink-0">3</div>
             <p className="text-sm text-gray-600 pt-0.5">{t("noOrg.step3")}</p>
           </div>
+        </div>
+
+        {/* Self-serve free trial */}
+        <div className="mb-8">
+          <Button
+            onClick={startTrial}
+            disabled={trialLoading}
+            className="w-full gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            {trialLoading ? t("noOrg.startingTrial") : t("noOrg.startTrial")}
+          </Button>
+          {trialError && (
+            <p className="text-sm text-red-600 mt-2">{trialError}</p>
+          )}
+          <p className="text-xs text-gray-400 mt-4 mb-2">{t("noOrg.trialDivider")}</p>
         </div>
 
         {/* Actions */}

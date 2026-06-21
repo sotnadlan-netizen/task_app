@@ -143,6 +143,14 @@ export const api = {
   createOrg: (data: { name: string; total_capacity_min: number; max_members: number }, token: string) =>
     request("/api/organizations", { method: "POST", body: JSON.stringify(data), token }),
 
+  // Self-serve free trial: provisions a personal org (as admin) for the caller.
+  startTrial: (token: string) =>
+    request("/api/organizations/trial", { method: "POST", token }),
+
+  // Platform-admin: list free-trial users for the dashboard panel.
+  listTrials: (token: string) =>
+    request("/api/organizations/trials", { token }),
+
   updateOrg: (orgId: string, data: { name?: string; total_capacity_min?: number; max_members?: number }, token: string) =>
     request(`/api/organizations/${orgId}`, { method: "PATCH", body: JSON.stringify(data), token }),
 
