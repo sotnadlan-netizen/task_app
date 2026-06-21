@@ -17,6 +17,10 @@ ALLOWED_LOGO_TYPES = {
 }
 MAX_LOGO_BYTES = 2 * 1024 * 1024  # 2 MB
 
+# Free-trial provisioning constants.
+TRIAL_MINUTES = 300
+TRIAL_MAX_MEMBERS = 3  # lets a trial user invite a couple participants to try the flow
+
 
 @router.get("")
 async def list_user_organizations(
@@ -126,6 +130,101 @@ async def create_org(
         "max_members": data.max_members,
     }).execute()
     return result.data[0] if result.data else {}
+
+
+@router.post("/trial")
+async def start_free_trial(
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """Self-serve free trial: create a personal org (as admin) with a fixed
+    minute allowance. Any authenticated user with no existing membership may
+    call this exactly once.
+    """
+    # Platform admins already have full access — no trial needed.
+    if check_platform_admin(user["id"], supabase):
+        raise HTTPException(status_code=400, detail="Platform admins cannot start a trial")
+
+    # One trial per account: reject anyone who already belongs to any org.
+    existing = (
+        supabase.table("org_memberships")
+        .select("id")
+        .eq("user_id", user["id"])
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        raise HTTPException(status_code=400, detail="Trial already used")
+
+    # Build a friendly workspace name from the profile (fall back to email).
+    profile_res = (
+        supabase.table("profiles")
+        .select("full_name, email")
+        .eq("id", user["id"])
+        .limit(1)
+        .execute()
+    )
+    profile = profile_res.data[0] if profile_res.data else {}
+    display = (profile.get("full_name") or "").strip()
+    if not display:
+        email = profile.get("email") or user.get("email") or "My"
+        display = email.split("@")[0]
+
+    org_res = supabase.table("organizations").insert({
+        "name": f"{display}'s Free Trial",
+        "total_capacity_min": TRIAL_MINUTES,
+        "max_members": TRIAL_MAX_MEMBERS,
+        "is_trial": True,
+    }).execute()
+    org = org_res.data[0] if org_res.data else None
+    if not org:
+        raise HTTPException(status_code=500, detail="Failed to create trial workspace")
+
+    supabase.table("org_memberships").insert({
+        "user_id": user["id"],
+        "org_id": org["id"],
+        "role": "admin",
+        "capacity_minutes": TRIAL_MINUTES,
+        "used_minutes": 0,
+    }).execute()
+
+    return org
+
+
+@router.get("/trials")
+async def list_trial_orgs(
+    user: dict = Depends(get_current_user),
+    supabase: Client = Depends(get_supabase),
+):
+    """List free-trial users for the platform-admin panel (platform admin only).
+
+    Returns the admin membership of each trial org joined with the owner's
+    profile and the parent organization, so the panel can show owner email and
+    minute usage without depending on undocumented platform-admin RLS reads.
+    """
+    if not check_platform_admin(user["id"], supabase):
+        raise HTTPException(status_code=403, detail="Platform admin only")
+
+    # Trial org ids first, then their admin memberships + owner profile.
+    trial_orgs_res = (
+        supabase.table("organizations")
+        .select("id")
+        .eq("is_trial", True)
+        .execute()
+    )
+    trial_org_ids = [o["id"] for o in (trial_orgs_res.data or [])]
+    if not trial_org_ids:
+        return []
+
+    result = (
+        supabase.table("org_memberships")
+        .select("*, profile:profiles(*), organization:organizations(*)")
+        .in_("org_id", trial_org_ids)
+        .eq("role", "admin")
+        .order("created_at", desc=True)
+        .execute()
+    )
+    return result.data or []
 
 
 @router.patch("/{org_id}")

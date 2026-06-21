@@ -31,6 +31,13 @@ function LandingContent() {
     }
   }, [user, router]);
 
+  // "Start free" reuses Google OAuth; the intent flag tells the post-login flow
+  // (OrganizationProvider) to auto-provision a trial workspace.
+  const startFreeTrial = () => {
+    localStorage.setItem("pending_trial", "1");
+    signInWithGoogle();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -60,17 +67,30 @@ function LandingContent() {
           <p className="text-lg sm:text-xl text-white/80 max-w-2xl mx-auto mb-10">
             {t("landing.subtitle")}
           </p>
-          <button
-            type="button"
-            onClick={signInWithGoogle}
-            className="inline-flex items-center justify-center gap-3 rounded-md border border-gray-300
-              bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-xl
-              hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2
-              focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-          >
-            <GoogleIcon className="w-5 h-5 shrink-0" />
-            {t("landing.signIn")}
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={startFreeTrial}
+              className="inline-flex items-center justify-center gap-3 rounded-md
+                bg-[#1ab9ff] px-6 py-3 text-base font-semibold text-[#08213d] shadow-xl
+                hover:bg-[#46c7ff] transition-colors focus:outline-none focus-visible:ring-2
+                focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              <Zap className="w-5 h-5 shrink-0" />
+              {t("landing.signUpFree")}
+            </button>
+            <button
+              type="button"
+              onClick={signInWithGoogle}
+              className="inline-flex items-center justify-center gap-3 rounded-md border border-gray-300
+                bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-xl
+                hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2
+                focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+            >
+              <GoogleIcon className="w-5 h-5 shrink-0" />
+              {t("landing.signIn")}
+            </button>
+          </div>
         </div>
       </div>
 

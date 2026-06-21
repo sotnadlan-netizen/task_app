@@ -110,6 +110,7 @@ export const en = {
     subtitle:
       "Transform live audio into actionable tasks with AI. Privacy-first. Multi-tenant. Real-time collaboration.",
     signIn: "Sign in with Google",
+    signUpFree: "Start free — 300 minutes",
     featureAudioTitle: "Audio to Tasks",
     featureAudioDesc:
       "Record meetings, get AI-generated summaries, sentiment analysis, and task lists.",
@@ -136,6 +137,10 @@ export const en = {
     emailAdmin: "Email my admin",
     mailSubject: "Please add me to the organization",
     mailBody: "Hi, please add {email} to the organization on AI Task Orchestrator.",
+    trialDivider: "Or, to join an existing organization:",
+    startTrial: "Start free trial",
+    startingTrial: "Setting up your free trial...",
+    startTrialError: "Could not start your free trial. Please try again.",
   },
 
   auth: {
@@ -365,6 +370,11 @@ export const en = {
     colUtilization: "Utilization",
     colCreated: "Created",
     manage: "Manage",
+    trialUsers: "Free Trial Users",
+    loadingTrials: "Loading trial users...",
+    noTrials: "No free trial users yet.",
+    colTrialUser: "User",
+    colMinutesUsed: "Minutes Used",
   },
 
   memberHome: {
