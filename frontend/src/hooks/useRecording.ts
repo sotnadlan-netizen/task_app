@@ -267,8 +267,10 @@ export function useRecording() {
       if (!token) throw new Error(t("recording.notAuthenticated"));
 
       // Diagnostics for remote (mobile) debugging — surfaces the exact blob the
-      // device produced before it leaves the client.
-      console.error("[approveRecording] uploading audio", {
+      // device produced before it leaves the client. Uses console.info (not
+      // console.error) because this is a success-path log: console.error would
+      // trip the Next.js dev error overlay on every upload.
+      console.info("[approveRecording] uploading audio", {
         size: reviewBlob.size,
         type: reviewBlob.type,
         mimeType: mimeTypeRef.current,
