@@ -23,7 +23,7 @@ import {
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useLanguage } from "@/providers/language-provider";
-import type { Lang } from "@/lib/i18n";
+import { localeOf } from "@/lib/i18n";
 import { PageHeader } from "@/components/ui/lightning";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,6 @@ import { Alert } from "@/components/ui/alert";
 import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
 import { api } from "@/lib/api";
 import type { Session, Task } from "@/types";
-
-const localeOf = (lang: Lang) => (lang === "he" ? "he-IL" : "en-US");
 
 const priorityColor: Record<string, string> = {
   critical: "bg-[#ba0517] text-white",

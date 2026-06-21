@@ -302,6 +302,10 @@ export const en = {
     dateRange: "Date range",
     dateFrom: "From",
     dateTo: "To",
+    searchByName: "Search by name",
+    searchPlaceholder: "Search missions…",
+    meeting: "Meeting",
+    allMeetings: "All meetings",
     empty: "No results match the current filters.",
   },
 
@@ -513,6 +517,7 @@ export const en = {
     dateTime: "Date and time",
     addToGoogleCalendar: "Add to Google Calendar",
     clearSchedule: "Clear schedule",
+    useSuggestion: "Suggested time: {when}",
     errUpdate: "Error updating the schedule",
   },
 

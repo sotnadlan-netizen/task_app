@@ -302,6 +302,10 @@ export const he: typeof en = {
     dateRange: "טווח תאריכים",
     dateFrom: "מתאריך",
     dateTo: "עד תאריך",
+    searchByName: "חיפוש לפי שם",
+    searchPlaceholder: "חיפוש משימות…",
+    meeting: "פגישה",
+    allMeetings: "כל הפגישות",
     empty: "אין תוצאות התואמות את הסינון הנוכחי.",
   },
 
@@ -510,6 +514,7 @@ export const he: typeof en = {
     dateTime: "תאריך ושעה",
     addToGoogleCalendar: "הוסף ליומן גוגל",
     clearSchedule: "נקה תזמון",
+    useSuggestion: "זמן מוצע: {when}",
     errUpdate: "שגיאה בעדכון התזמון",
   },
 

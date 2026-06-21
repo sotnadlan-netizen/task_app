@@ -7,16 +7,16 @@
  * calendar, click-throughs) in a clean enterprise console style. Full-bleed:
  * the console header replaces the dashboard GlobalNav.
  *
- * Recording hub, calendar, and unscheduled-task rail are rendered natively in
- * the console style (LightningRecordingHub / LightningCalendar /
- * LightningUnscheduledRail below) and reuse the real recording hook, schedule
- * picker, and API so all behavior is preserved.
+ * The recording hub is rendered natively in the console style
+ * (LightningRecordingHub below). The calendar, unscheduled-task rail and
+ * schedule picker live in @/components/calendar and reuse the real recording
+ * hook and API so all behavior is preserved.
  *
  * Cosmetic only (no backing data): the "Avg Sentiment" KPI tile, the global
  * search input, the 9-dot app launcher, and the bulk-row checkbox column.
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -25,13 +25,13 @@ import {
   TrendingUp, TrendingDown, Users, Phone, ListChecks, BarChart3, FolderOpen,
   Home, Briefcase, ChevronsUpDown, CheckSquare, Square, Pencil, Trash2, Check,
   ExternalLink, Edit3, Calendar as CalendarIcon, Settings2, Mic,
-  UserPlus, Clock, X, MicVocal, CalendarClock, CalendarPlus, XCircle, Hand,
+  UserPlus, Clock, X,
 } from "lucide-react";
 import { useSupabase } from "@/providers/supabase-provider";
 import { useOrganization } from "@/providers/organization-provider";
 import { useRealtime } from "@/providers/realtime-provider";
 import { useLanguage } from "@/providers/language-provider";
-import type { Lang } from "@/lib/i18n";
+import { localeOf } from "@/lib/i18n";
 import { FiltersButton, FiltersPanel, type FilterPerson } from "@/components/filters/filters-panel";
 import { emptyFilters, sessionMatchesFilters, taskMatchesFilters, type EntityFilters } from "@/lib/filters";
 import { useRecording } from "@/hooks/useRecording";
@@ -39,8 +39,10 @@ import { AudioWaveform } from "@/components/recording/audio-waveform";
 import { SessionResultsOverlay } from "@/components/recording/session-results-overlay";
 import { ProcessingBar } from "@/components/recording/processing-bar";
 import { SessionDetailModal } from "@/components/meetings/session-detail-modal";
-import { TaskSchedulePicker } from "@/components/calendar/task-schedule-picker";
-import { buildGoogleCalendarUrlForTask } from "@/lib/calendar-url";
+import { DashboardCalendar } from "@/components/calendar/dashboard-calendar";
+import { UnscheduledTaskRail } from "@/components/calendar/unscheduled-task-rail";
+import { CalendarFilterBar } from "@/components/calendar/calendar-filter-bar";
+import { CalendarDndProvider } from "@/components/calendar/calendar-dnd";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -62,7 +64,6 @@ const statusColor: Record<string, string> = {
 
 // Translate-aware label maps (built per component from the active language).
 type TFn = (path: string, vars?: Record<string, string | number>) => string;
-const localeOf = (lang: Lang) => (lang === "he" ? "he-IL" : "en-US");
 const statusLabelsOf = (t: TFn): Record<string, string> => ({
   todo: t("tasks.statusTodo"),
   in_progress: t("tasks.statusInProgress"),
@@ -277,6 +278,21 @@ export default function MemberPage() {
     setMeetingPage(0);
     setTaskPage(0);
   };
+
+  // Calendar-only filter bar (name / meeting / date). It narrows ONLY the
+  // "to schedule" pool — the unscheduled missions in the rail / day-panel add
+  // menu. Already-scheduled missions always stay on the grid regardless of the
+  // bar, so the full schedule remains visible while you filter to find what to
+  // place. Meetings on the grid likewise ignore the bar (shared side-panel
+  // filters still apply to everything).
+  const [calendarFilters, setCalendarFilters] = useState<EntityFilters>(emptyFilters());
+  const calendarTasks = useMemo(() => {
+    const scheduled = filteredTasks.filter((t) => t.scheduled_at);
+    const unscheduledMatching = filteredTasks.filter(
+      (t) => !t.scheduled_at && taskMatchesFilters(t, calendarFilters)
+    );
+    return [...scheduled, ...unscheduledMatching];
+  }, [filteredTasks, calendarFilters]);
 
   const sortedMeetings = useMemo(() => {
     const copy = [...filteredSessions];
@@ -589,8 +605,11 @@ export default function MemberPage() {
         <Card>
           <CardHeader icon={<CalendarIcon className="w-4 h-4 text-white" />} iconBg="bg-[#0070d2]" title={t("calendar.title")} sub={t("calendar.subtitle")} />
           <div className="p-4 bg-white space-y-3">
-            <LightningUnscheduledRail tasks={filteredTasks} token={token} onTaskUpdate={updateTaskLocal} />
-            <LightningCalendar sessions={filteredSessions} tasks={filteredTasks} token={token} onMeetingClick={handleSessionClick} onTaskUpdate={updateTaskLocal} />
+            <CalendarFilterBar filters={calendarFilters} sessions={allSessions} onChange={setCalendarFilters} />
+            <CalendarDndProvider token={token} onTaskUpdate={updateTaskLocal}>
+              <UnscheduledTaskRail tasks={calendarTasks} sessions={allSessions} token={token} onTaskUpdate={updateTaskLocal} />
+              <DashboardCalendar sessions={filteredSessions} tasks={calendarTasks} token={token} onMeetingClick={handleSessionClick} onTaskUpdate={updateTaskLocal} />
+            </CalendarDndProvider>
           </div>
         </Card>
       </main>
@@ -1174,368 +1193,5 @@ function LightningRecordingHub({ onSessionReady }: { onSessionReady?: (sessionId
         </div>
       )}
     </div>
-  );
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// Console-styled calendar helpers + components (reuse api + TaskSchedulePicker)
-// ════════════════════════════════════════════════════════════════════════════
-const WEEK_HOURS = Array.from({ length: 14 }, (_, i) => i + 8);
-const priorityDot: Record<string, string> = { critical: "bg-[#ba0517]", high: "bg-[#ea001e]", medium: "bg-[#fe9339]", low: "bg-[#0070d2]" };
-const isoToDay = (iso: string) => new Date(iso).toLocaleDateString("sv-SE");
-const isoToHour = (iso: string) => new Date(iso).getHours();
-const todayLocal = () => new Date().toLocaleDateString("sv-SE");
-const dateToYMD = (d: Date) => d.toLocaleDateString("sv-SE");
-function startOfWeek(anchor: Date): Date {
-  const d = new Date(anchor);
-  d.setDate(anchor.getDate() - anchor.getDay());
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function LightningUnscheduledRail({ tasks, token, onTaskUpdate }: { tasks: Task[]; token: string; onTaskUpdate: (u: Task) => void }) {
-  const { t } = useLanguage();
-  const [pickerTask, setPickerTask] = useState<Task | null>(null);
-  const unscheduled = useMemo(() => tasks.filter((tk) => !tk.scheduled_at && tk.status !== "done"), [tasks]);
-
-  if (unscheduled.length === 0) {
-    return (
-      <div className="rounded border border-[#dddbda] bg-[#fafaf9] px-4 py-3 text-[13px] text-[#706e6b] flex items-center gap-2">
-        <CalendarClock className="w-4 h-4 text-[#aeb0b3]" /> {t("calendar.allScheduled")}
-      </div>
-    );
-  }
-  const onDragStart = (e: React.DragEvent, task: Task) => {
-    e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("application/x-task-id", task.id);
-    e.dataTransfer.setData("text/plain", task.id);
-  };
-  return (
-    <>
-      <div className="rounded border border-[#dddbda] bg-white overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center gap-2 bg-[#fafaf9]">
-          <Hand className="w-4 h-4 text-[#0070d2]" />
-          <h3 className="text-[13px] font-semibold text-[#080707]">{t("calendar.unscheduledTitle")}</h3>
-          <span className="text-[11px] text-[#706e6b] ms-1">{t("calendar.unscheduledHint", { count: unscheduled.length })}</span>
-        </div>
-        <div className="flex gap-2 overflow-x-auto px-4 py-3">
-          {unscheduled.map((tk) => (
-            <button
-              key={tk.id}
-              type="button"
-              draggable
-              onDragStart={(e) => onDragStart(e, tk)}
-              onClick={() => setPickerTask(tk)}
-              className="flex-shrink-0 max-w-[180px] cursor-grab active:cursor-grabbing px-3 py-2 rounded border border-[#dddbda] bg-white text-start text-[12px] font-medium text-[#3e3e3c] hover:border-[#0070d2] hover:shadow-sm transition-all"
-              aria-label={t("calendar.scheduleAria", { title: tk.title })}
-            >
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[tk.priority] || priorityDot.medium}`} />
-                <span className="truncate">{tk.title}</span>
-              </div>
-              {tk.deadline && <p className="text-[10px] text-[#706e6b] truncate mt-0.5">{tk.deadline}</p>}
-            </button>
-          ))}
-        </div>
-      </div>
-      {pickerTask && <TaskSchedulePicker task={pickerTask} token={token} onClose={() => setPickerTask(null)} onSaved={onTaskUpdate} />}
-    </>
-  );
-}
-
-function LightningCalendar({ sessions, tasks, token, onMeetingClick, onTaskUpdate }: { sessions: Session[]; tasks: Task[]; token: string; onMeetingClick: (s: Session) => void; onTaskUpdate: (u: Task) => void }) {
-  const { t, lang } = useLanguage();
-  const loc = localeOf(lang);
-  const [view, setView] = useState<"month" | "week">("month");
-  const [currentMonth, setCurrentMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [selectedDay, setSelectedDay] = useState<string | null>(todayLocal());
-  const [dropError, setDropError] = useState<string | null>(null);
-  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
-
-  const sessionsByDay = useMemo(() => {
-    const map: Record<string, Session[]> = {};
-    sessions.forEach((s) => { const d = isoToDay(s.created_at); (map[d] ||= []).push(s); });
-    return map;
-  }, [sessions]);
-  const tasksByDay = useMemo(() => {
-    const map: Record<string, Task[]> = {};
-    tasks.forEach((t) => { if (!t.scheduled_at) return; const d = isoToDay(t.scheduled_at); (map[d] ||= []).push(t); });
-    return map;
-  }, [tasks]);
-
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const today = todayLocal();
-
-  const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
-  const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
-  const prevWeek = () => { const d = new Date(weekStart); d.setDate(d.getDate() - 7); setWeekStart(d); };
-  const nextWeek = () => { const d = new Date(weekStart); d.setDate(d.getDate() + 7); setWeekStart(d); };
-  const goToday = () => { const n = new Date(); setCurrentMonth(new Date(n.getFullYear(), n.getMonth(), 1)); setWeekStart(startOfWeek(n)); setSelectedDay(todayLocal()); };
-
-  const persistSchedule = async (task: Task, target: Date) => {
-    const iso = target.toISOString();
-    onTaskUpdate({ ...task, scheduled_at: iso });
-    setSelectedDay(dateToYMD(target));
-    try {
-      const updated = (await api.updateTask(task.id, { scheduled_at: iso }, token)) as Task;
-      onTaskUpdate({ ...task, ...updated, scheduled_at: iso });
-    } catch (err) {
-      onTaskUpdate({ ...task, scheduled_at: task.scheduled_at });
-      setDropError(err instanceof Error ? err.message : t("schedule.errUpdate"));
-      setTimeout(() => setDropError(null), 4000);
-    }
-  };
-  const handleDrop = async (e: React.DragEvent, dayStr: string) => {
-    e.preventDefault();
-    setDragOverDay(null);
-    const taskId = e.dataTransfer.getData("application/x-task-id");
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    const target = new Date(`${dayStr}T00:00:00`);
-    if (task.scheduled_at) { const o = new Date(task.scheduled_at); target.setHours(o.getHours(), o.getMinutes(), 0, 0); }
-    else target.setHours(9, 0, 0, 0);
-    await persistSchedule(task, target);
-  };
-  const handleSlotDrop = async (e: React.DragEvent, dayStr: string, hour: number) => {
-    e.preventDefault();
-    setDragOverSlot(null);
-    const taskId = e.dataTransfer.getData("application/x-task-id");
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-    const target = new Date(`${dayStr}T00:00:00`);
-    target.setHours(hour, 0, 0, 0);
-    await persistSchedule(task, target);
-  };
-
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-      <div className="rounded border border-[#dddbda] bg-white overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center justify-between gap-3 flex-wrap bg-[#fafaf9]">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="w-4 h-4 text-[#0070d2]" />
-            <h2 className="text-[13px] font-semibold text-[#080707]">{t("calendar.headerTitle")}</h2>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center bg-white border border-[#dddbda] rounded p-0.5">
-              <button onClick={() => setView("month")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "month" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>{t("calendar.month")}</button>
-              <button onClick={() => setView("week")} className={`px-2.5 py-1 text-[11px] font-semibold rounded transition-colors ${view === "week" ? "bg-[#0070d2] text-white" : "text-[#706e6b] hover:bg-[#f3f3f3]"}`}>{t("calendar.week")}</button>
-            </div>
-            <div className="flex items-center gap-1">
-              <button onClick={view === "month" ? nextMonth : nextWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label={t("calendar.next")}><ChevronRight className="w-4 h-4 text-[#706e6b] rtl:-scale-x-100" /></button>
-              <span className="font-semibold text-[#080707] text-[13px] min-w-[140px] text-center">
-                {view === "month"
-                  ? currentMonth.toLocaleString(loc, { month: "long", year: "numeric" })
-                  : (() => { const end = new Date(weekStart); end.setDate(end.getDate() + 6); return `${weekStart.toLocaleDateString(loc, { day: "numeric", month: "short" })} – ${end.toLocaleDateString(loc, { day: "numeric", month: "short" })}`; })()}
-              </span>
-              <button onClick={view === "month" ? prevMonth : prevWeek} className="p-1.5 rounded hover:bg-[#ecf5fe]" aria-label={t("calendar.prev")}><ChevronLeft className="w-4 h-4 text-[#706e6b] rtl:-scale-x-100" /></button>
-              <button onClick={goToday} className="ms-1 px-2.5 py-1 text-[11px] font-semibold text-[#0070d2] border border-[#dddbda] rounded hover:bg-[#ecf5fe]">{t("calendar.today")}</button>
-            </div>
-          </div>
-        </div>
-
-        {dropError && <div className="px-4 py-2 bg-[#fde9e8] border-b border-[#f5c0bc] text-[11px] text-[#c23934]">{dropError}</div>}
-
-        {view === "month" && (
-          <>
-            <div className="grid grid-cols-7 text-center px-2 pt-2">
-              {[0, 1, 2, 3, 4, 5, 6].map((i) => <div key={i} className="text-[10px] font-semibold text-[#706e6b] py-1">{t(`calendar.d${i}`)}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1 p-2">
-              {Array.from({ length: firstDayOfWeek }).map((_, i) => <div key={`e-${i}`} className="aspect-square" />)}
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                const daySessions = sessionsByDay[dateStr] || [];
-                const dayTasks = tasksByDay[dateStr] || [];
-                const isSelected = selectedDay === dateStr;
-                const isToday = dateStr === today;
-                const isDragOver = dragOverDay === dateStr;
-                const MAX = 4;
-                const visS = daySessions.slice(0, MAX);
-                const visT = dayTasks.slice(0, Math.max(0, MAX - visS.length));
-                const hidden = daySessions.length - visS.length + (dayTasks.length - visT.length);
-                return (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(isSelected ? null : dateStr)}
-                    onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverDay !== dateStr) setDragOverDay(dateStr); }}
-                    onDragLeave={() => { if (dragOverDay === dateStr) setDragOverDay(null); }}
-                    onDrop={(e) => handleDrop(e, dateStr)}
-                    className={`relative aspect-square p-1 rounded text-start transition-all overflow-hidden border ${
-                      isSelected ? "bg-[#ecf5fe] border-[#0070d2]" : isToday ? "bg-[#f4f9fe] border-[#cfe3fa]" : "border-transparent hover:bg-[#f3f3f3]"
-                    } ${isDragOver ? "ring-2 ring-[#0070d2] bg-[#ecf5fe]" : ""}`}
-                  >
-                    <div className={`text-[11px] font-semibold ${isToday ? "text-[#0070d2]" : "text-[#3e3e3c]"}`}>{day}</div>
-                    <div className="flex flex-col gap-0.5 mt-0.5 items-start">
-                      {visS.map((s) => (
-                        <span key={s.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#dceffb] text-[#0070d2] text-start" title={s.title || t("calendar.meeting")}>• {s.title || t("calendar.meeting")}</span>
-                      ))}
-                      {visT.map((vt) => (
-                        <span key={vt.id} className="w-full truncate text-[9px] leading-tight px-1 py-[1px] rounded bg-[#fdecdd] text-[#c4521a] text-start" title={vt.title}>✓ {vt.title}</span>
-                      ))}
-                      {hidden > 0 && <span className="text-[9px] font-semibold text-[#0070d2]">{t("calendar.more", { count: hidden })}</span>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {view === "week" && (() => {
-          const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; });
-          return (
-            <div className="overflow-x-auto">
-              <div className="grid grid-cols-[44px_repeat(7,minmax(80px,1fr))] gap-px bg-[#dddbda] border-b border-[#dddbda]">
-                <div className="bg-white" />
-                {days.map((d) => {
-                  const ymd = dateToYMD(d);
-                  const isToday = ymd === today;
-                  const isSel = selectedDay === ymd;
-                  return (
-                    <button key={ymd} onClick={() => setSelectedDay(isSel ? null : ymd)} className={`p-2 text-center transition-colors ${isSel ? "bg-[#ecf5fe]" : isToday ? "bg-[#f4f9fe]" : "bg-white hover:bg-[#f3f3f3]"}`}>
-                      <div className="text-[10px] text-[#706e6b]">{d.toLocaleDateString(loc, { weekday: "short" })}</div>
-                      <div className={`text-[13px] font-bold ${isToday ? "text-[#0070d2]" : "text-[#080707]"}`}>{d.getDate()}</div>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="grid grid-cols-[44px_repeat(7,minmax(80px,1fr))] gap-px bg-[#dddbda]">
-                {WEEK_HOURS.map((h) => (
-                  <Fragment key={h}>
-                    <div className="bg-white text-[10px] text-[#706e6b] text-center pt-1">{String(h).padStart(2, "0")}:00</div>
-                    {days.map((d) => {
-                      const ymd = dateToYMD(d);
-                      const slotKey = `${ymd}-${h}`;
-                      const isDragOver = dragOverSlot === slotKey;
-                      const slotSessions = (sessionsByDay[ymd] || []).filter((s) => isoToHour(s.created_at) === h);
-                      const slotTasks = (tasksByDay[ymd] || []).filter((t) => t.scheduled_at && isoToHour(t.scheduled_at) === h);
-                      return (
-                        <div
-                          key={slotKey}
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dragOverSlot !== slotKey) setDragOverSlot(slotKey); }}
-                          onDragLeave={() => { if (dragOverSlot === slotKey) setDragOverSlot(null); }}
-                          onDrop={(e) => handleSlotDrop(e, ymd, h)}
-                          className={`bg-white min-h-[40px] p-1 transition-colors ${isDragOver ? "ring-2 ring-inset ring-[#0070d2] bg-[#ecf5fe]" : ""}`}
-                        >
-                          {slotSessions.map((s) => (
-                            <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-start block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#dceffb] text-[#0070d2] hover:bg-[#c5e3fa] truncate" title={s.title || t("calendar.meeting")}>{s.title || t("calendar.meeting")}</button>
-                          ))}
-                          {slotTasks.map((st) => (
-                            <div key={st.id} draggable onDragStart={(e) => { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("application/x-task-id", st.id); e.dataTransfer.setData("text/plain", st.id); }} className="w-full cursor-grab active:cursor-grabbing text-start block text-[10px] leading-tight px-1.5 py-0.5 mb-0.5 rounded bg-[#fdecdd] text-[#c4521a] truncate" title={st.title}>✓ {st.title}</div>
-                          ))}
-                        </div>
-                      );
-                    })}
-                  </Fragment>
-                ))}
-              </div>
-            </div>
-          );
-        })()}
-
-        <div className="px-4 py-2 border-t border-[#dddbda] flex items-center gap-4 text-[11px] text-[#706e6b]">
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#dceffb]" /><MicVocal className="w-3 h-3" /> {t("calendar.legendMeetings")}</span>
-          <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#fdecdd]" /><CheckSquare className="w-3 h-3" /> {t("calendar.legendTasks")}</span>
-          <span className="text-[#aeb0b3] ms-auto">{t("calendar.dragHint")}</span>
-        </div>
-      </div>
-
-      <LightningDayPanel selectedDate={selectedDay} sessions={sessions} tasks={tasks} token={token} onClose={() => setSelectedDay(null)} onMeetingClick={onMeetingClick} onTaskUpdate={onTaskUpdate} />
-    </div>
-  );
-}
-
-function LightningDayPanel({ selectedDate, sessions, tasks, token, onClose, onMeetingClick, onTaskUpdate }: { selectedDate: string | null; sessions: Session[]; tasks: Task[]; token: string; onClose: () => void; onMeetingClick: (s: Session) => void; onTaskUpdate: (u: Task) => void }) {
-  const { t, lang } = useLanguage();
-  const loc = localeOf(lang);
-  const [pickerTask, setPickerTask] = useState<Task | null>(null);
-  const [showAddMenu, setShowAddMenu] = useState(false);
-  const [clearingId, setClearingId] = useState<string | null>(null);
-
-  const daySessions = useMemo(() => !selectedDate ? [] : sessions.filter((s) => isoToDay(s.created_at) === selectedDate).sort((a, b) => a.created_at.localeCompare(b.created_at)), [selectedDate, sessions]);
-  const dayTasks = useMemo(() => !selectedDate ? [] : tasks.filter((t) => t.scheduled_at && isoToDay(t.scheduled_at) === selectedDate).sort((a, b) => (a.scheduled_at || "").localeCompare(b.scheduled_at || "")), [selectedDate, tasks]);
-  const unscheduled = useMemo(() => tasks.filter((t) => !t.scheduled_at && t.status !== "done"), [tasks]);
-
-  const clearFromDay = async (t: Task) => {
-    setClearingId(t.id);
-    onTaskUpdate({ ...t, scheduled_at: null });
-    try { await api.updateTask(t.id, { scheduled_at: "" }, token); }
-    catch { onTaskUpdate({ ...t, scheduled_at: t.scheduled_at }); }
-    finally { setClearingId(null); }
-  };
-
-  if (!selectedDate) return null;
-  return (
-    <AnimatePresence>
-      <motion.div initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }} transition={{ duration: 0.2 }} className="rounded border border-[#dddbda] bg-white overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-[#dddbda] flex items-center justify-between bg-[#fafaf9]">
-          <div>
-            <p className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-0.5">{t("calendar.selectedDate")}</p>
-            <p className="text-[13px] font-bold text-[#080707]">{new Date(selectedDate + "T00:00:00").toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 rounded hover:bg-[#f3f3f3]" aria-label={t("common.close")}><X className="w-4 h-4 text-[#706e6b]" /></button>
-        </div>
-        <div className="p-4 space-y-4 max-h-[60vh] overflow-y-auto">
-          <section>
-            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><MicVocal className="w-3 h-3" /> {t("calendar.meetingsCount", { count: daySessions.length })}</h4>
-            {daySessions.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noMeetings")}</p> : (
-              <div className="space-y-1.5">
-                {daySessions.map((s) => (
-                  <button key={s.id} onClick={() => onMeetingClick(s)} className="w-full text-start p-2.5 rounded bg-[#f4f9fe] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] text-[13px] transition-all">
-                    <p className="font-medium text-[#080707] truncate">{s.title || t("meetings.untitled")}</p>
-                    <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(s.created_at).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</p>
-                  </button>
-                ))}
-              </div>
-            )}
-          </section>
-          <section>
-            <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide mb-2 flex items-center gap-1.5"><CalendarClock className="w-3 h-3" /> {t("calendar.scheduledTasksCount", { count: dayTasks.length })}</h4>
-            {dayTasks.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noTasks")}</p> : (
-              <div className="space-y-1.5">
-                {dayTasks.map((dt) => {
-                  const gcal = buildGoogleCalendarUrlForTask(dt);
-                  return (
-                    <div key={dt.id} className="w-full p-2.5 rounded bg-[#fdf6f0] border border-[#f5e3d2] flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[dt.priority] || priorityDot.medium}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[13px] font-medium truncate ${dt.status === "done" ? "line-through text-[#aeb0b3]" : "text-[#080707]"}`}>{dt.title}</p>
-                        <p className="text-[11px] text-[#706e6b] mt-0.5">{new Date(dt.scheduled_at!).toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" })}</p>
-                      </div>
-                      {gcal && <a href={gcal} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded hover:bg-[#ecf5fe]" title={t("schedule.addToGoogleCalendar")}><CalendarPlus className="w-3 h-3 text-[#0070d2]" /></a>}
-                      <button onClick={() => setPickerTask(dt)} className="p-1.5 rounded hover:bg-[#ecf5fe]" title={t("calendar.editSchedule")}><Pencil className="w-3 h-3 text-[#0070d2]" /></button>
-                      <button onClick={() => clearFromDay(dt)} disabled={clearingId === dt.id} className="p-1.5 rounded hover:bg-[#fde9e8] disabled:opacity-40" title={t("calendar.removeFromDay")}><XCircle className="w-3.5 h-3.5 text-[#c23934]" /></button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-          <section>
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-[10px] font-semibold text-[#706e6b] uppercase tracking-wide flex items-center gap-1.5"><Plus className="w-3 h-3" /> {t("calendar.addTaskToDay")}</h4>
-              {unscheduled.length > 0 && <button onClick={() => setShowAddMenu((v) => !v)} className="text-[11px] font-semibold text-[#0070d2] hover:underline">{showAddMenu ? t("common.close") : t("calendar.show", { count: unscheduled.length })}</button>}
-            </div>
-            {unscheduled.length === 0 ? <p className="text-[11px] text-[#aeb0b3] px-1">{t("calendar.noUnscheduled")}</p> : showAddMenu ? (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {unscheduled.map((ut) => (
-                  <button key={ut.id} onClick={() => { setPickerTask(ut); setShowAddMenu(false); }} className="w-full text-start p-2 rounded bg-[#fafaf9] hover:bg-[#ecf5fe] border border-transparent hover:border-[#cfe3fa] transition-all flex items-center gap-2">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[ut.priority] || priorityDot.medium}`} />
-                    <span className="text-[12px] font-medium text-[#3e3e3c] truncate flex-1">{ut.title}</span>
-                    {ut.deadline && <span className="text-[10px] text-[#706e6b] truncate max-w-[100px]">{ut.deadline}</span>}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </section>
-        </div>
-      </motion.div>
-      {pickerTask && <TaskSchedulePicker task={pickerTask} token={token} defaultDate={!pickerTask.scheduled_at ? selectedDate ?? undefined : undefined} onClose={() => setPickerTask(null)} onSaved={onTaskUpdate} />}
-    </AnimatePresence>
   );
 }

@@ -31,7 +31,8 @@
       "Bash(echo \"exit: $?\")",
       "Bash(./.venv/Scripts/uvicorn.exe app.main:app --reload --host 0.0.0.0 --port 8000)",
       "Bash(python -m py_compile app/main.py app/api/routes/global_prompt.py app/api/routes/audio.py app/models/schemas.py app/services/gemini.py)",
-      "PowerShell(cd C:\\\\Users\\\\omerv\\\\git_project\\\\task_app\\\\frontend; npx tsc --noEmit 2>&1 | Select-Object -First 40; \"exit=$LASTEXITCODE\")"
+      "PowerShell(cd C:\\\\Users\\\\omerv\\\\git_project\\\\task_app\\\\frontend; npx tsc --noEmit 2>&1 | Select-Object -First 40; \"exit=$LASTEXITCODE\")",
+      "Skill(run)"
     ]
   },
   "disabledMcpjsonServers": [
