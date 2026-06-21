@@ -22,6 +22,55 @@ interface RecordingState {
   error: string | null;
 }
 
+// Candidate container/codec combos in preference order. Opus-in-WebM is best for
+// quality/size on Chrome/Firefox/Android; iOS Safari only supports MP4 (AAC), so
+// we must fall through to it. The browser default ("") is the final safety net.
+const MIME_CANDIDATES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4",
+  "audio/aac",
+  "audio/ogg;codecs=opus",
+  "audio/ogg",
+];
+
+// Pick the first MIME type the current browser's MediaRecorder can actually record.
+// Returns "" when none match, letting the MediaRecorder constructor choose its default.
+function pickSupportedMimeType(): string {
+  if (
+    typeof MediaRecorder === "undefined" ||
+    typeof MediaRecorder.isTypeSupported !== "function"
+  ) {
+    return "";
+  }
+  for (const candidate of MIME_CANDIDATES) {
+    if (MediaRecorder.isTypeSupported(candidate)) return candidate;
+  }
+  return "";
+}
+
+// Map the actual recorded MIME type to the correct upload file extension, so the
+// backend/Gemini never sees a ".webm" name on an iOS MP4 blob (and vice versa).
+function extensionForMimeType(mimeType: string): string {
+  const base = mimeType.split(";")[0].trim().toLowerCase();
+  switch (base) {
+    case "audio/webm":
+      return "webm";
+    case "audio/mp4":
+      return "mp4";
+    case "audio/aac":
+      return "aac";
+    case "audio/ogg":
+      return "ogg";
+    case "audio/mpeg":
+      return "mp3";
+    case "audio/wav":
+      return "wav";
+    default:
+      return "webm";
+  }
+}
+
 export interface ApproveOptions {
   projectId?: string;
   participantIds?: string[];
@@ -103,18 +152,20 @@ export function useRecording() {
       const base64Key = await exportKeyToBase64(encKey);
       storeSessionKey(sessionKey, base64Key);
 
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      mimeTypeRef.current = mimeType;
+      // Pick a format this device can actually record. iOS Safari only supports
+      // audio/mp4 (AAC), so we cannot hardcode webm or recording silently fails.
+      const preferredMimeType = pickSupportedMimeType();
 
-      // 32 kbps Opus is plenty for speech transcription and keeps long meetings
-      // well under the upload size cap (~3.5h fits in 50 MB instead of ~50 min
-      // at the browser default of ~128 kbps). Gemini still transcribes it fine.
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType,
-        audioBitsPerSecond: 32000,
-      });
+      // 32 kbps is plenty for speech transcription and keeps long meetings well
+      // under the upload size cap (~3.5h fits in 50 MB instead of ~50 min at the
+      // browser default of ~128 kbps). Gemini still transcribes it fine.
+      const recorderOptions: MediaRecorderOptions = { audioBitsPerSecond: 32000 };
+      if (preferredMimeType) recorderOptions.mimeType = preferredMimeType;
+
+      const mediaRecorder = new MediaRecorder(stream, recorderOptions);
+      // Record the type the browser actually chose (may add/keep codec params, or
+      // differ from our preference when we passed "" and let it default).
+      mimeTypeRef.current = mediaRecorder.mimeType || preferredMimeType || "audio/webm";
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0 && cryptoKeyRef.current) {
@@ -196,8 +247,10 @@ export function useRecording() {
     const sessionKey = sessionKeyRef.current;
 
     try {
+      const fileName = `recording.${extensionForMimeType(mimeTypeRef.current)}`;
+
       const formData = new FormData();
-      formData.append("audio", reviewBlob, "recording.webm");
+      formData.append("audio", reviewBlob, fileName);
       formData.append("org_id", currentOrg?.id || "");
       formData.append("duration_seconds", String(reviewDurationRef.current));
       if (opts?.projectId) {
@@ -213,6 +266,17 @@ export function useRecording() {
       const token = session?.access_token;
       if (!token) throw new Error(t("recording.notAuthenticated"));
 
+      // Diagnostics for remote (mobile) debugging — surfaces the exact blob the
+      // device produced before it leaves the client. Uses console.info (not
+      // console.error) because this is a success-path log: console.error would
+      // trip the Next.js dev error overlay on every upload.
+      console.info("[approveRecording] uploading audio", {
+        size: reviewBlob.size,
+        type: reviewBlob.type,
+        mimeType: mimeTypeRef.current,
+        fileName,
+      });
+
       const result = await api.processAudio(formData, token) as { session_id?: string };
       if (result?.session_id) opts?.onSuccess?.(result.session_id);
 
@@ -225,10 +289,18 @@ export function useRecording() {
       setReviewBlob(null);
       setState((prev) => ({ ...prev, duration: 0 }));
     } catch (err) {
-      setState((prev) => ({
-        ...prev,
-        error: err instanceof Error ? err.message : t("recording.processFailed"),
-      }));
+      // Log the full error object + blob details so failures that only happen on
+      // a user's mobile device are still diagnosable from a captured console.
+      console.error("[approveRecording] upload failed", err, {
+        blobSize: reviewBlob?.size,
+        blobType: reviewBlob?.type,
+        mimeType: mimeTypeRef.current,
+      });
+      // Surface the actual backend reason (the fetch client throws an Error whose
+      // message is the FastAPI `detail`), not a generic "upload failed".
+      const message =
+        err instanceof Error && err.message ? err.message : t("recording.processFailed");
+      setState((prev) => ({ ...prev, error: message }));
     } finally {
       setProcessing(false);
     }

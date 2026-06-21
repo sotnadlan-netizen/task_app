@@ -10,7 +10,16 @@ from typing import Optional
 
 router = APIRouter(prefix="/api/audio", tags=["audio"])
 
-ALLOWED_MIME_TYPES = {"audio/webm", "audio/ogg", "audio/wav", "audio/mp4", "audio/mpeg"}
+# Accept every container/codec a browser MediaRecorder may emit across platforms.
+# iOS Safari records audio/mp4 (AAC); Chrome/Firefox/Android use audio/webm or ogg.
+ALLOWED_MIME_TYPES = {
+    "audio/webm",
+    "audio/ogg",
+    "audio/wav",
+    "audio/mp4",
+    "audio/aac",
+    "audio/mpeg",
+}
 
 
 @router.post("/process")
@@ -65,7 +74,9 @@ async def process_audio(
             detail=f"Audio file too large (max {settings.max_audio_size_mb}MB)",
         )
 
-    mime_type = audio.content_type or "audio/webm"
+    # Normalize: strip codec params ("audio/mp4;codecs=mp4a.40.2") and lowercase
+    # before matching, so a valid type isn't misclassified and defaulted to webm.
+    mime_type = (audio.content_type or "audio/webm").split(";")[0].strip().lower()
     if mime_type not in ALLOWED_MIME_TYPES:
         mime_type = "audio/webm"
 
