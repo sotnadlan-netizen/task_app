@@ -3,7 +3,7 @@
 import { SlidersHorizontal, X } from "lucide-react";
 import { useLanguage } from "@/providers/language-provider";
 import { Button } from "@/components/ui/button";
-import { activeFilterCount, type EntityFilters } from "@/lib/filters";
+import { activeFilterCount, emptyFilters, type EntityFilters } from "@/lib/filters";
 
 export interface FilterPerson {
   id: string;
@@ -218,7 +218,7 @@ export function FiltersPanel({
 
         <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-[#dddbda]">
           <button
-            onClick={() => onChange({ projectId: "", personIds: [], status: "", dateFrom: "", dateTo: "" })}
+            onClick={() => onChange(emptyFilters())}
             className="text-xs font-medium text-[#0070d2] hover:underline"
           >
             {t("filters.clearAll")}

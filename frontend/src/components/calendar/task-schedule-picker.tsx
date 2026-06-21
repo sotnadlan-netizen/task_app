@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { api } from "@/lib/api";
 import { buildGoogleCalendarUrlForTask } from "@/lib/calendar-url";
+import { suggestScheduleForTask } from "@/lib/calendar";
 import { useLanguage } from "@/providers/language-provider";
-import type { Task } from "@/types";
-import { CalendarClock, CalendarPlus, Trash2 } from "lucide-react";
+import { localeOf } from "@/lib/i18n";
+import type { Session, Task } from "@/types";
+import { CalendarClock, CalendarPlus, Sparkles, Trash2 } from "lucide-react";
 
 function toDatetimeLocal(iso: string | null, defaultDate?: string): string {
   if (!iso) {
@@ -31,14 +33,22 @@ function formatLocal(d: Date): string {
 interface Props {
   task: Task;
   token: string;
+  /** The task's meeting — used to suggest a smart default time. */
+  owningSession?: Session | null;
   defaultDate?: string; // YYYY-MM-DD; used as 09:00 of this day when task is unscheduled
   onClose: () => void;
   onSaved: (updated: Task) => void;
 }
 
-export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved }: Props) {
-  const { t } = useLanguage();
-  const [value, setValue] = useState<string>(() => toDatetimeLocal(task.scheduled_at, defaultDate));
+export function TaskSchedulePicker({ task, token, owningSession, defaultDate, onClose, onSaved }: Props) {
+  const { t, lang } = useLanguage();
+  // AI-suggested time from the meeting / deadline — only when the task is not
+  // already scheduled and no explicit day was passed by the caller.
+  const suggestion = useMemo(
+    () => (task.scheduled_at || defaultDate ? null : suggestScheduleForTask(task, owningSession)),
+    [task, owningSession, defaultDate]
+  );
+  const [value, setValue] = useState<string>(() => suggestion ?? toDatetimeLocal(task.scheduled_at, defaultDate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +81,23 @@ export function TaskSchedulePicker({ task, token, defaultDate, onClose, onSaved 
             )}
           </div>
         </div>
+
+        {suggestion && suggestion !== value && (
+          <button
+            type="button"
+            onClick={() => setValue(suggestion)}
+            className="flex items-center gap-2 w-full text-start p-2.5 rounded border border-[#cfe3fa] bg-[#f4f9fe] hover:bg-[#ecf5fe] transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-[#0070d2] flex-shrink-0" />
+            <span className="text-xs text-[#3e3e3c]">
+              {t("schedule.useSuggestion", {
+                when: new Date(suggestion).toLocaleString(localeOf(lang), {
+                  weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+                }),
+              })}
+            </span>
+          </button>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">

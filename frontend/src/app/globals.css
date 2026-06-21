@@ -213,3 +213,11 @@ html.dark .shadow-lg.bg-white { background-color: #11233f !important; border-col
   animation: cm-blink 1s step-end infinite;
   color: #0070d2;
 }
+
+/* Calendar drag-and-drop: highlight the day cell / hour slot under the pointer
+   while dragging a mission (works for mouse and touch via Pointer Events). */
+.cal-drop-active {
+  outline: 2px solid #0070d2 !important;
+  outline-offset: -2px;
+  background: #ecf5fe !important;
+}

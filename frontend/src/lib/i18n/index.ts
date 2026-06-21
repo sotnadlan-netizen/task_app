@@ -17,6 +17,11 @@ export function dirFor(lang: Lang): "rtl" | "ltr" {
   return lang === "he" ? "rtl" : "ltr";
 }
 
+/** BCP-47 locale for date/number formatting in the active language. */
+export function localeOf(lang: Lang): string {
+  return lang === "he" ? "he-IL" : "en-US";
+}
+
 /** Narrow an arbitrary string to a supported Lang, falling back to the default. */
 export function normalizeLang(value: string | null | undefined): Lang {
   return value === "he" || value === "en" ? value : DEFAULT_LANG;
